@@ -1,0 +1,186 @@
+.navbar {
+    margin-bottom: 3px;
+}
+.strike {
+    text-decoration: line-through;
+}
+
+/* checked until here */
+#sb_bottom {
+  clear: right;
+}
+
+#getting_started {
+  margin-left: 20px;
+}
+
+#getting_started_steps a {
+  text-decoration: none;
+}
+
+#getting_started_steps a:hover {
+  text-decoration: underline;
+}
+
+#getting_started_steps li {
+  margin-bottom: 0.5em;
+}
+
+.code {
+    font-family:monospace;
+    font-size:127%;
+}
+span.code {
+    background:#EEEEEE none repeat scroll 0% 0%;
+    font-weight:bold;
+}
+
+a.alert {
+    color: #fff;
+    background: #f00;
+}
+
+#flash .alert,
+#flash .info {
+    background:#EEEEFF url(../images/info.png) no-repeat scroll 10px center;
+}
+.notice {
+    background:#EEEEFF url(../images/info.png) no-repeat scroll 10px center;
+}
+.red {
+    color: red;
+}
+.fielderror {
+color:red;
+font-weight:bold;
+}
+
+div.clearingdiv {
+clear:both;
+}
+
+.TODO {
+    text-decoration: line-through;
+}
+
+
+#map {
+    border: 2px solid #ddd;
+}
+
+#new_user_form {
+    border: 1pt solid #ddd;
+    float: right;
+    width: 50%;
+    padding: 1em;
+}
+
+#user_indicator {
+	padding-left: 5px;
+}
+
+.resA {
+    background: #008800;
+
+}
+
+.resB {
+    background: #ff0;
+}
+.resC {
+    background: #f90;
+}
+.resD {
+    background: #969696;
+}
+.resE {
+    background: #f00;
+}
+.resF {
+    background: #9999ff;
+}
+
+#homepage h2 {
+    background: #ddd;
+    clear: none;
+    float: left;
+    padding: 8px;
+    width: 15%;
+    text-align: right;
+    color: red;
+    display: inline;
+    border-radius: 8px;
+}
+
+#homepage img {
+    margin: 20px;
+    margin-left: 50px;
+}
+#homepage  p, #homepage ul {
+   float: right;
+    width: 80%;
+}
+
+#homepage ul {
+    margin: 0;
+    width: 75%;
+}
+
+#credits {
+    border-top: 1px solid #ddd;
+    text-align: center;
+}
+
+.team_row {
+    background-color: #ddd;
+}
+div.team_summary ul {
+    float: none;
+}
+
+.request_safety {
+    padding: 1px;
+    margin: 2px;
+    border: 1px solid #000;
+
+}
+
+.odd {
+    background: #ddd;
+}
+
+div.stats_by_mun {
+    width: 450px;
+    float: left;
+    border: 1px solid black;
+    padding: 2px;
+}
+
+div.stats_by_mun table {
+    width: 40%;
+    float: left;
+
+}
+div.stats_by_mun  tr {
+    border-spacing: 0px 0px;
+}
+div.stats_by_mun  td {
+    border: 1px solid #ddd;
+    border-bottom: 1px solid black;
+    text-align: center;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    
+}
+
+/* Override bootstrap's width for input widgets */
+input {
+    width: auto;
+}
+
+
+.ui-selectmenu-menu {
+    z-index:1000;
+}
+
+.ui-autocomplete { position: absolute; cursor: default;z-index:1000 !important;} 

@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)http://geosisma-demo.faunalia.it/missions/safety/ -->
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+		<link href="./GeosismaSchedaAgibilita_files/bootstrap.css" rel="stylesheet">
+		<link href="./GeosismaSchedaAgibilita_files/bootstrap-responsive.css" rel="stylesheet">
+		<script type="text/javascript" src="./GeosismaSchedaAgibilita_files/jquery.js"></script><style type="text/css"></style>
+		<script type="text/javascript" src="./GeosismaSchedaAgibilita_files/bootstrap.min.js"></script>
+
+		<link href="./GeosismaSchedaAgibilita_files/mainstyle.css" rel="stylesheet">
+
+		<link rel="stylesheet" type="text/css" media="all" href="./GeosismaSchedaAgibilita_files/safety.css">
+		<link rel="stylesheet" type="text/css" media="screen" href="./GeosismaSchedaAgibilita_files/jquery-ui-1.10.1.custom.min.css">
+		<script src="./GeosismaSchedaAgibilita_files/jquery-ui-1.10.1.custom.min.js"></script>
+		<link href="./GeosismaSchedaAgibilita_files/safety.css" type="text/css" media="all" rel="stylesheet">
+		<link href="./GeosismaSchedaAgibilita_files/jquery-ui-1.8.22.custom.css" type="text/css" media="all" rel="stylesheet">
+		<script type="text/javascript" src="./GeosismaSchedaAgibilita_files/jfwidgets-jquery-1.7.1.min.js"></script>
+		<script type="text/javascript" src="./GeosismaSchedaAgibilita_files/jfwidgets-jquery-ui-1.8.21.custom.min.js"></script>
+		<script type="text/javascript" src="./GeosismaSchedaAgibilita_files/jfwidgets.js"></script>
+		<script src="./GeosismaSchedaAgibilita_files/OpenLayers.js"></script>
+		<script src="./GeosismaSchedaAgibilita_files/proj4.min.js"></script>
+		<script src="./GeosismaSchedaAgibilita_files/safety_fields.js"></script>
+		<script src="./GeosismaSchedaAgibilita_files/safety.js"></script>
+		<script type="text/javascript">
+            // needed by proj4
+
+            proj4.defs["EPSG:25832"] = "+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs";
+            $(function() {
+                var autocomplete_istat = "0";
+                console.log("autocomplete_istat: ", autocomplete_istat);
+
+                if (autocomplete_istat == "1") {
+                    // Fill the ISTAT fields
+                    var provincia = $("#s1prov").val();
+                    var comune = $("#s1com").val();
+                    var localita = $("#s1loc").val();
+                    var foglio = $("#s1catfoglio").val();
+                    var part1 = $("#s1catpart1").val();
+                    var api_url = "/api/v1/";
+                    if (provincia != "") {
+                        var q = {
+                            "format" : "json",
+                            "limit" : 1,
+                            "sigla__iexact" : provincia,
+                        };
+                        $.getJSON(api_url + "provincia/", q, function(data) {
+                            var p = data.objects[0];
+                            $("#s1prov").data("poly_subfield").set(p.sigla);
+                            $("#s1istatreg").data("poly_subfield").set(p.idregione);
+                            $("#s1istatprov").data("poly_subfield").set(p.id_istat);
+                        });
+                    }
+
+                    if (comune != "") {
+                        var q = {
+                            "format" : "json",
+                            "limit" : 1,
+                            "toponimo__iexact" : comune,
+                        };
+                        $.getJSON(api_url + "comune/", q, function(data) {
+                            var c = data.objects[0];
+                            $("#s1istatcom").data("poly_subfield").set(c.id_istat);
+                            // Now we have s1istatcom, and so we have also s1istatprov
+                            // If there is foglio and part1, we can zoom on particella
+                            if (foglio != "" && part1 != "") {
+                                var query = {
+                                    "format" : "json",
+                                    "limit" : 0,
+                                };
+                                if (!provincia || !comune || !foglio)
+                                    return;
+
+                                query["belfiore__provincia__id_istat"] = $("#s1istatprov").val();
+                                query["belfiore__comune__id_istat"] = $("#s1istatcom").val();
+                                query["foglio"] = foglio;
+                                query["codbo"] = part1;
+
+                                console.log("PART_CHANGED", query);
+
+                                // Piazza al Serchio (LU) foglio=1 belfiore="G582", part 10 to 19 are all good
+
+                                $.getJSON(api_url + "catasto2010/", query, function(data) {
+                                    var p = data.objects[0];
+                                    var geoms = $.map(data.objects, function(el) {
+                                        return el.the_geom
+                                    });
+                                    var c = OpenLayers.Geometry.fromWKT(geoms);
+                                    var bounds = c.getBounds();
+                                    map.zoomToExtent(bounds);
+                                });
+                            }
+                        });
+                    }
+
+                    if (localita != "") {
+                        var q = {
+                            "format" : "json",
+                            "limit" : 1,
+                            "denom_loc__iexact" : localita,
+                        };
+                        $.getJSON(api_url + "localita/", q, function(data) {
+                            var l = data.objects[0];
+                            $("#s1istatprov").data("poly_subfield").set(l.cod_pro);
+                            $("#s1istatcom").data("poly_subfield").set(l.cod_com);
+                            $("#s1istatloc").data("poly_subfield").set(l.cod_loc);
+                            $("#s1istatcens").data("poly_subfield").set(l.sez2001.substring(l.sez2001.length - 3));
+                            // And zoom the map if there is no particella
+                            if (part1 == "") {
+                                var geoms = $.map(data.objects, function(el) {
+                                    return el.the_geom
+                                });
+                                var c = OpenLayers.Geometry.fromWKT(geoms);
+                                var bounds = c.getBounds();
+                                map.zoomToExtent(bounds);
+                            }
+                            // Trigger s1catfoglio and s1catpart1 change() to save them in the jsonfield
+                            $("#s1catfoglio").trigger("change");
+                            $("#s1catpart1").trigger("change");
+                        });
+                    }
+                }
+
+                $("#id_created").datepicker({
+                    dateFormat : "dd/mm/yy"
+                });
+                $("#sdate").datepicker({
+                    dateFormat : "dd/mm/yy"
+                });
+
+                if ($("#sdate").val() == "") {
+                    var now = $.datepicker.formatDate('dd/mm/yy', new Date());
+                    $("#sdate").datepicker("setDate", now);
+                    $("#id_safety").jsonfield("set", "sdate", now);
+                }
+                $("#save_and_continue").click(function() {
+                    $("#save_and_continue_field").val("true");
+                });
+
+                // https://labs.truelite.it/issues/2123
+                $("#select_from_map").click(select_from_map);
+
+                // Get some data usable via javascript
+                var session_team_name = "distruzione del mondo conosciuto 1";
+                console.log("session_team_name", session_team_name);
+
+                var safety_team_name = "distruzione del mondo conosciuto 1";
+                console.log("safety_team_name", safety_team_name);
+
+                // Fill the team name
+                $("#j_team").text(safety_team_name);
+
+                var safety_request_test = "None"
+                if (safety_request_test != "None") {
+                    var safety_request_object = "n.  del  ()";
+                    console.log("safety_request_object", safety_request_object);
+                    $("#j_request_content").text(safety_request_object);
+                } else {
+                    $("#j_request").hide();
+                }
+            });
+
+            function toggle_help(index) {
+                $('#help' + index).toggle();
+            }
+
+
+            $(document).ready(function() {
+                // TODO: this does not seem to work atm
+                $('#content h2').each(function(intIndex1, o) {
+                    var i = '<img onClick="toggle_help(' + intIndex1.toString() + ');" src="./GeosismaSchedaAgibilita_files/help.png"/>';
+                    $(o).append(i);
+                });
+                $(".helpcontainer").each(function(i, o) {
+                    var close_button = $("<a class='btn btn-small'></a>")
+                    var icon = $("<i class='icon-remove'></i>")
+                    close_button.append(icon)
+                    $(o).append(close_button);
+                    close_button.click(function() {
+                        $(o).toggle();
+                    });
+                });
+                $("form").bind("keypress", function(e) {
+                    if (e.keyCode == 13) {
+                        $("#submit_box").show();
+                        return false;
+                    }
+                });
+
+            });
+
+		</script>
+
+		<title> GeoSisma - Scheda di agibilità </title>
+		<link rel="stylesheet" type="text/css" href="./GeosismaSchedaAgibilita_files/style.css">
+	</head>
+
+	<body style="zoom: 1;">
+
+		<div id="content" class="container">
+			<div class="row">
+				<!-- CONTENT -->
+
+				<div id="logo">
+					<table>
+						<tbody>
+							<tr>
+								<td><img id="logori" src="./GeosismaSchedaAgibilita_files/repubblicaitaliana.png"></td>
+								<td><img id="logopdc" src="./GeosismaSchedaAgibilita_files/presidenzadelconsiglio.png">
+								<p>
+									<b>Dipartimento Della Protezione Civile</b>
+								</p></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div id="logo1">
+					<table>
+						<tbody>
+							<tr>
+								<td>
+								<p>
+									Conferenza delle regioni e delle province autonome
+								</p></td>
+								<td><img id="logocsr" src="./GeosismaSchedaAgibilita_files/conferenzastatoregioni.png"></td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+
+				<div class="clearingdiv">
+					<form method="POST" action="./GeosismaSchedaAgibilita.html">
+						<div style="display:none">
+							<input type="hidden" name="csrfmiddlewaretoken" value="LHmOePD1iz3tUAQI3EHmgaTt8DSo0iJn">
+						</div>
+						<div style="display: none;">
+							<input type="text" name="created" value="19/09/2013" id="id_created" class="hasDatepicker">
+							<input type="hidden" name="initial-created" value="2013-09-19" id="initial-id_created">
+							<select name="team" id="id_team">
+								<option value="">---------</option>
+								<option value="1" selected="selected">distruzione del mondo conosciuto 1</option>
+							</select>
+							<input type="submit" value="Salva scheda">
+						</div>
+						<input class="JSONInput" type="hidden" name="safety" value="{}" id="id_safety">
+						<div>
+							<!-- Hidden fields -->
+							<input type="hidden" id="safety_id" class="IntHiddenField" name="safety_id" value="">
+							<input type="hidden" id="team_id" class="IntHiddenField" name="team_id" value="">
+							<input type="hidden" id="s1maptop" class="FloatHiddenField" name="s1maptop" value="">
+							<input type="hidden" id="s1mapbottom" class="FloatHiddenField" name="s1mapbottom" value="">
+							<input type="hidden" id="s1mapleft" class="FloatHiddenField" name="s1mapleft" value="">
+							<input type="hidden" id="s1mapright" class="FloatHiddenField" name="s1mapright" value="">
+							<input type="hidden" id="s1mapres" class="FloatHiddenField" name="s1mapres" value="">
+
+							<h2 class="safetytitle">Scheda di 1° livello di rilevamento danno, pronto intervento e agibilità per edifici ordinari nell'emergenza post-sismica</h2>
+							<h3 class="safetytitle">(AeDES 06/2008)</h3>
+
+							<p id="j_request" style="display: none;">
+								Codice Richiesta: <span id="j_request_content"></span>
+							</p>
+							<p>
+								C.O.M.:
+								<input type="text" id="s0com" class="NullableUnicodeField" name="s0com" value="">
+								Sigla:
+								<input type="text" id="s0sigla" class="NullableUnicodeField" name="s0sigla" value="">
+							</p>
+							<div id="s1" class="sezione">
+								<div id="s1box">
+									<div id="s1idsop">
+										<h3>Identificativo sopralluogo</h3>
+										<p>
+											Squadra <span id="j_team">distruzione del mondo conosciuto 1</span> Scheda n.
+											<input type="text" id="number" class="NullableFloatField" size="3" name="number" value="">
+											<!--input type="button" value="update" id="s1number_update" /-->
+											Data
+											<input type="text" id="sdate" class="DateField hasDatepicker" size="10" name="sdate" value="">
+										</p>
+									</div>
+									<div id="s1ided">
+										<table>
+											<tbody>
+												<tr>
+													<th class="dr" colspan="3">Identificativo edificio</th><td colspan="2"></td>
+												</tr>
+												<tr>
+													<td>Istat Reg</td><td>Istat Prov</td><td class="dr">Istat Comune</td>
+													<td>N°aggregato</td><td>N°edificio</td>
+												</tr>
+												<tr>
+													<td>
+													<input type="text" id="s1istatreg" class="NullableUnicodeField" size="3" name="s1istatreg" value="">
+													</td><td>
+													<input type="text" id="s1istatprov" class="NullableUnicodeField" size="3" name="s1istatprov" value="">
+													</td><td class="dr">
+													<input type="text" id="s1istatcom" class="NullableUnicodeField" size="3" name="s1istatcom" value="">
+													</td>
+													<td>
+													<input type="text" id="s1aggn" class="NullableUnicodeField" size="9" name="s1aggn" value="">
+													</td><td>
+													<input type="text" id="s1edn" class="NullableUnicodeField" size="3" name="s1edn" value="">
+													</td>
+												</tr>
+												<tr>
+													<td colspan="2">Cod. di Località ISTAT</td><td class="dr">
+													<input type="text" id="s1istatloc" class="NullableUnicodeField" size="4" name="s1istatloc" value="">
+													</td>
+													<td>Tipo carta</td><td>
+													<input type="text" id="s1cartat" class="NullableUnicodeField" size="10" name="s1cartat" value="">
+													</td>
+												</tr>
+												<tr>
+													<td class="be" colspan="2">Sez. di censimento ISTAT</td><td class="be dr">
+													<input type="text" id="s1istatcens" class="NullableUnicodeField" size="3" name="s1istatcens" value="">
+													</td>
+													<td class="be">N° carta</td><td class="be">
+													<input type="text" id="s1cartan" class="NullableUnicodeField" size="4" name="s1cartan" value="">
+													</td>
+												</tr>
+											</tbody>
+										</table>
+										<p>
+											<b>Dati catastali</b> Foglio
+											<input type="text" id="s1catfoglio" class="NullableUnicodeField" size="3" name="s1catfoglio" value="">
+											Allegato
+											<input type="text" id="s1catalle" class="NullableUnicodeField" size="2" name="s1catalle" value="">
+										</p>
+										<p>
+											Particelle
+											<input type="text" id="s1catpart1" class="NullableUnicodeField" size="4" name="s1catpart1" value="" disabled="disabled">
+											<input type="text" id="s1catpart2" class="NullableUnicodeField" size="4" name="s1catpart2" value="" disabled="disabled">
+											<input type="text" id="s1catpart3" class="NullableUnicodeField" size="4" name="s1catpart3" value="" disabled="disabled">
+											<input type="text" id="s1catpart4" class="NullableUnicodeField" size="4" name="s1catpart4" value="" disabled="disabled">
+										</p>
+										<table>
+											<tbody>
+												<tr>
+													<th>Posizione
+													<br>
+													edificio</th>
+													<td><label for="s1pos_1">
+														<input type="radio" name="s1pos" class="NullableIntLabeledRadioField" id="s1pos_1" value="1">
+														Isolato </label></td>
+													<td><label for="s1pos_2">
+														<input type="radio" name="s1pos" class="NullableIntLabeledRadioField" id="s1pos_2" value="2">
+														Interno </label></td>
+													<td><label for="s1pos_3">
+														<input type="radio" name="s1pos" class="NullableIntLabeledRadioField" id="s1pos_3" value="3">
+														D'estremità </label></td>
+													<td><label for="s1pos_4">
+														<input type="radio" name="s1pos" class="NullableIntLabeledRadioField" id="s1pos_4" value="4">
+														D'angolo </label></td>
+												</tr>
+											</tbody>
+										</table>
+									</div>
+								</div>
+								<div id="s1ide">
+									<h2>Sezione 1 - Identificazione edificio</h2>
+									<table>
+										<tbody>
+											<tr>
+												<td>Provincia</td><td>
+												<input type="text" id="s1prov" class="NullableUnicodeField ui-autocomplete-input" name="s1prov" value="" autocomplete="off" role="textbox" aria-autocomplete="list" aria-haspopup="true">
+												</td>
+											</tr>
+											<tr>
+												<td>Comune</td><td>
+												<input type="text" id="s1com" class="NullableUnicodeField ui-autocomplete-input" name="s1com" value="" autocomplete="off" role="textbox" aria-autocomplete="list" aria-haspopup="true">
+												</td>
+											</tr>
+											<tr>
+												<td>Frazione/Località
+												<br>
+												(denominazione Istat)</td><td>
+												<input type="text" id="s1loc" class="NullableUnicodeField ui-autocomplete-input" name="s1loc" value="" autocomplete="off" role="textbox" aria-autocomplete="list" aria-haspopup="true">
+												</td>
+											</tr>
+										</tbody>
+									</table>
+									<table>
+										<tbody>
+											<tr>
+												<td><label for="s1viacorso_1">
+													<input type="radio" name="s1viacorso" class="NullableIntLabeledRadioField" id="s1viacorso_1" value="1">
+													via </label></td><td>
+												<input type="text" id="s1via" class="NullableUnicodeField" size="30" name="s1via" value="">
+												</td>
+											</tr>
+											<tr>
+												<td><label for="s1viacorso_2">
+													<input type="radio" name="s1viacorso" class="NullableIntLabeledRadioField" id="s1viacorso_2" value="2">
+													corso </label></td><td>Num. civico
+												<input type="text" id="s1civico" class="NullableUnicodeField" size="6" name="s1civico" value="">
+												</td>
+											</tr>
+											<tr>
+												<td><label for="s1viacorso_3">
+													<input type="radio" name="s1viacorso" class="NullableIntLabeledRadioField" id="s1viacorso_3" value="3">
+													vicolo </label></td><td></td>
+											</tr>
+											<tr>
+												<td><label for="s1viacorso_4">
+													<input type="radio" name="s1viacorso" class="NullableIntLabeledRadioField" id="s1viacorso_4" value="4">
+													piazza </label></td><td></td>
+											</tr>
+											<tr>
+												<td><label for="s1viacorso_5">
+													<input type="radio" name="s1viacorso" class="NullableIntLabeledRadioField" id="s1viacorso_5" value="5">
+													altro </label></td><td>
+												<input type="text" id="s1vcother" class="NullableUnicodeField" size="20" name="s1vcother" value="" disabled="">
+												</td>
+											</tr>
+										</tbody>
+									</table>
+									<table>
+										<tbody>
+											<tr>
+												<th rowspan="2">Coordinate
+												<br>
+												geografiche
+												<br>
+												(ED50 - UTM fuso 32-33)</th>
+												<td>E
+												<input type="text" id="s1coorde" class="NullableFloatField" size="11" name="s1coorde" value="">
+												</td><th>Fuso</th>
+											</tr>
+											<tr>
+												<td>N
+												<input type="text" id="s1coordn" class="NullableFloatField" size="11" name="s1coordn" value="">
+												</td><th>
+												<input type="text" id="s1fuso" class="NullableIntField" size="2" name="s1fuso" value="">
+												</th>
+											</tr>
+										</tbody>
+									</table>
+									<table>
+										<tbody>
+											<tr>
+												<th rowspan="2">Denominazione
+												<br>
+												edificio o proprietario</th>
+												<td rowspan="2">
+												<input type="text" id="s1name" class="NullableUnicodeField" size="40" name="s1name" value="">
+												</td>
+												<th>Codice uso</th>
+											</tr>
+											<tr>
+												<td>S
+												<input type="text" id="s1coduso" class="NullableUnicodeField ui-autocomplete-input" size="2" name="s1coduso" value="" autocomplete="off" role="textbox" aria-autocomplete="list" aria-haspopup="true">
+												</td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+								<div id="s1map">
+									<h3>Aggregato strutturale con identificazione dell'edificio</h3>
+
+									<script type="text/javascript">
+                                        // making this a global variable so that it is accessible for
+                                        // debugging/inspecting in Firebug
+                                        var map = null;
+
+                                        function init_map() {
+
+                                            var wms_geosisma = "http://geosisma.faunalia.it/cgi-bin/mapserv";
+                                            var wms_geoscopio_ortofoto = "http://web.regione.toscana.it/wmsraster/com.rt.wms.RTmap/wms?map=wmsofc";
+                                            var geoscopio_tile_size = new OpenLayers.Size(512, 512);
+                                            var initCenter = new OpenLayers.LonLat(681600, 4849150);
+                                            var initBounds = new OpenLayers.Bounds(554000, 4677000, 772000, 4927000);
+
+                                            var overview_mapoptions = {
+                                                projection : new OpenLayers.Projection("EPSG:25832"),
+                                                units : "m",
+                                                maxExtent : initBounds
+                                            };
+
+                                            var overview_layer = new OpenLayers.Layer.WMS("Overview", wms_geosisma, {
+                                                LAYERS : "Comuni,istat,comuni_terex,strade",
+                                                MAP : "/ms/geosisma/map_report_overview.map",
+                                                FORMAT : "image/png"
+                                            }, {
+                                                projection : "EPSG:25832",
+                                                singleTile : true,
+                                                ratio : 1
+                                            });
+                                            var rt_overview_layer = new OpenLayers.Layer.WMS("RT", wms_geoscopio_ortofoto, {
+                                                //LAYERS: "rt_ofc.10k09,idrst10k",
+                                                LAYERS : "rt_ofc.10k10",
+                                                FORMAT : "image/png",
+                                                TRANSPARENT : "false"
+                                            }, {
+                                                projection : "EPSG:25832",
+                                            });
+
+                                            map = new OpenLayers.Map('map', {
+                                                controls : [new OpenLayers.Control.Navigation({
+                                                    zoomWheelEnabled : false
+                                                }), new OpenLayers.Control.PanZoomBar(), new OpenLayers.Control.Scale(), new OpenLayers.Control.ScaleLine({
+                                                    bottomOutUnits : '',
+                                                    bottomInUnits : ''
+                                                })],
+                                                projection : new OpenLayers.Projection("EPSG:25832"),
+                                                units : "m",
+                                                maxExtent : initBounds,
+                                                scales : [500000, 300000, 100000, 50000, 30000, 10000, 5000, 3000, 1000, 500, 300, 100]
+                                            });
+
+                                            map.addControl(new OpenLayers.Control.OverviewMap({
+                                                div : $('#overview')[0],
+                                                size : new OpenLayers.Size(400, 256),
+                                                displayClass : 'gsoverview',
+                                                mapOptions : overview_mapoptions,
+                                                //layers: new Array(overview_layer),
+                                                layers : new Array(rt_overview_layer),
+                                                autoPan : true,
+                                                minRectSize : 5,
+                                                minRatio : 1.5,
+                                                maxRatio : 10.0
+                                            }));
+
+                                            var layer = new OpenLayers.Layer.WMS("Geosisma", wms_geosisma, {
+                                                LAYERS : "Comuni,istat,comuni_terex,strade,fab_catasto,fab_10k,civici",
+                                                MAP : "/ms/geosisma/map_report.map",
+                                                FORMAT : "image/png",
+                                            }, {
+                                                projection : "EPSG:25832"
+                                            });
+                                            map.addLayer(layer);
+
+                                            function update_webgis_link(lon, lat) {
+                                                var btn = $("#webgislink");
+                                                var base_url = "/cartografia/index.php/view/map/?repository=geosisma&amp;project=geosisma_gen";
+                                                var proj_from = new proj4.Proj("EPSG:25832");
+                                                var proj_to = new proj4.Proj("EPSG:3857");
+                                                var p = new proj4.Point(lon, lat);
+                                                var new_point = proj4.transform(proj_from, proj_to, p);
+                                                var new_url = base_url + "&lon=" + p.x + "&lat=" + p.y + "&zoom=10";
+                                                new_url = new_url.replace("&amp;", "&");
+                                                btn.attr({
+                                                    "href" : new_url
+                                                });
+                                                btn.attr({
+                                                    "disabled" : false
+                                                });
+
+                                            }
+
+                                            var startbounds = new OpenLayers.Bounds();
+                                            startbounds.left = parseFloat($("#s1mapleft").val());
+                                            startbounds.right = parseFloat($("#s1mapright").val());
+                                            startbounds.top = parseFloat($("#s1maptop").val());
+                                            startbounds.bottom = parseFloat($("#s1mapbottom").val());
+                                            if (isNaN(startbounds.left) || isNaN(startbounds.right) || isNaN(startbounds.top) || isNaN(startbounds.bottom)) {
+                                                // Default map center and zoom.
+                                                map.setCenter(initCenter, 6);
+                                                $("#webgislink").attr({
+                                                    "disabled" : true
+                                                });
+                                                $("#webgislink").removeAttr("href");
+                                            } else {
+                                                map.zoomToExtent(startbounds, true);
+                                                var centre = map.getCenter();
+                                                update_webgis_link(centre.lon, centre.lat);
+                                            }
+                                            map.events.register('moveend', null, function(m) {
+                                                var bounds = map.calculateBounds();
+                                                $("#s1mapleft").val(bounds.left);
+                                                $("#s1mapright").val(bounds.right);
+                                                $("#s1maptop").val(bounds.top);
+                                                $("#s1mapbottom").val(bounds.bottom);
+                                                $("#s1mapres").val(map.resolution);
+                                                var centre = map.getCenter();
+                                                update_webgis_link(centre.lon, centre.lat);
+
+                                            });
+                                        }
+
+                                        $(init_map);
+									</script>
+									<table>
+										<tbody>
+											<tr>
+												<td>
+												<p>
+													<i>Inquadramento:</i>
+												</p>
+												<div id="overview">
+													<div class="gsoverviewElement" style="">
+														<div id="overviewMap37" class="olMap" style="width: 400px; height: 256px; position: relative; overflow: hidden;">
+															<div id="OpenLayers_Map_61_OpenLayers_ViewPort" class="olMapViewport" style="position: relative; overflow: hidden; width: 100%; height: 100%;">
+																<div id="OpenLayers_Map_61_OpenLayers_Container" style="position: absolute; z-index: 749; left: 0px; top: 0px;">
+																	<div id="OpenLayers_Layer_WMS_4" dir="ltr" class="olLayerDiv olLayerGrid" style="position: absolute; width: 100%; height: 100%; z-index: 100;">
+																		<div id="OpenLayers_Layer_WMS_4_bb" class="olBackBuffer" style="position: absolute; z-index: 99;"></div>
+																	</div>
+																</div><div class="gsoverviewExtentRectangle" style="position: absolute; z-index: 1000;"></div>
+															</div>
+														</div>
+													</div>
+												</div></td>
+												<td>
+												<p>
+													<i>Navigazione:</i>
+												</p>
+												<div id="map" class="olMap">
+													<div id="OpenLayers_Map_10_OpenLayers_ViewPort" class="olMapViewport olControlDragPanActive olControlZoomBoxActive olControlPinchZoomActive olControlNavigationActive" style="position: relative; overflow: hidden; width: 100%; height: 100%;">
+														<div id="OpenLayers_Map_10_OpenLayers_Container" style="position: absolute; z-index: 749; left: 0px; top: 0px;">
+															<div id="OpenLayers_Layer_WMS_38" dir="ltr" class="olLayerDiv olLayerGrid" style="position: absolute; width: 100%; height: 100%; z-index: 100;"><img class="olTileImage" src="./GeosismaSchedaAgibilita_files/mapserv" style="visibility: inherit; opacity: 1; position: absolute; left: 52px; top: -67px; width: 256px; height: 256px;"><img class="olTileImage" src="./GeosismaSchedaAgibilita_files/mapserv(1)" style="visibility: inherit; opacity: 1; position: absolute; left: 52px; top: 189px; width: 256px; height: 256px;"><img class="olTileImage" src="./GeosismaSchedaAgibilita_files/mapserv(2)" style="visibility: inherit; opacity: 1; position: absolute; left: 308px; top: -67px; width: 256px; height: 256px;"><img class="olTileImage" src="./GeosismaSchedaAgibilita_files/mapserv(3)" style="visibility: inherit; opacity: 1; position: absolute; left: -204px; top: -67px; width: 256px; height: 256px;"><img class="olTileImage" src="./GeosismaSchedaAgibilita_files/mapserv(4)" style="visibility: inherit; opacity: 1; position: absolute; left: 308px; top: 189px; width: 256px; height: 256px;"><img class="olTileImage" src="./GeosismaSchedaAgibilita_files/mapserv(5)" style="visibility: inherit; opacity: 1; position: absolute; left: -204px; top: 189px; width: 256px; height: 256px;">
+															</div>
+														</div>
+														<div id="OpenLayers_Control_PanZoomBar_7" class="olControlPanZoomBar olControlNoSelect" unselectable="on" style="position: absolute; left: 4px; top: 4px; z-index: 1004;">
+															<div id="OpenLayers_Control_PanZoomBar_7_panup" class="olButton" style="position: absolute; left: 13px; top: 4px; width: 18px; height: 18px; cursor: pointer;"><img id="OpenLayers_Control_PanZoomBar_7_panup_innerImage" class="olAlphaImg" src="./GeosismaSchedaAgibilita_files/north-mini.png" style="position: relative; width: 18px; height: 18px;">
+															</div>
+															<div id="OpenLayers_Control_PanZoomBar_7_panleft" class="olButton" style="position: absolute; left: 4px; top: 22px; width: 18px; height: 18px; cursor: pointer;"><img id="OpenLayers_Control_PanZoomBar_7_panleft_innerImage" class="olAlphaImg" src="./GeosismaSchedaAgibilita_files/west-mini.png" style="position: relative; width: 18px; height: 18px;">
+															</div>
+															<div id="OpenLayers_Control_PanZoomBar_7_panright" class="olButton" style="position: absolute; left: 22px; top: 22px; width: 18px; height: 18px; cursor: pointer;"><img id="OpenLayers_Control_PanZoomBar_7_panright_innerImage" class="olAlphaImg" src="./GeosismaSchedaAgibilita_files/east-mini.png" style="position: relative; width: 18px; height: 18px;">
+															</div>
+															<div id="OpenLayers_Control_PanZoomBar_7_pandown" class="olButton" style="position: absolute; left: 13px; top: 40px; width: 18px; height: 18px; cursor: pointer;"><img id="OpenLayers_Control_PanZoomBar_7_pandown_innerImage" class="olAlphaImg" src="./GeosismaSchedaAgibilita_files/south-mini.png" style="position: relative; width: 18px; height: 18px;">
+															</div>
+															<div id="OpenLayers_Control_PanZoomBar_7_zoomin" class="olButton" style="position: absolute; left: 13px; top: 63px; width: 18px; height: 18px; cursor: pointer;"><img id="OpenLayers_Control_PanZoomBar_7_zoomin_innerImage" class="olAlphaImg" src="./GeosismaSchedaAgibilita_files/zoom-plus-mini.png" style="position: relative; width: 18px; height: 18px;">
+															</div><div id="OpenLayers_Control_PanZoomBar_ZoombarOpenLayers_Map_10" class="olButton" style="background-image: url(http://geosisma-demo.faunalia.it/static/3b91ad008f9d89936b673b1bf35be2399cdbe683/javascript/img/zoombar.png); left: 13px; top: 81px; width: 18px; height: 132px; position: absolute; cursor: pointer;"></div>
+															<div id="OpenLayers_Control_PanZoomBar_7_OpenLayers_Map_10" style="position: absolute; left: 12px; top: 136px; width: 20px; height: 9px; cursor: move;"><img id="OpenLayers_Control_PanZoomBar_7_OpenLayers_Map_10_innerImage" class="olAlphaImg" src="./GeosismaSchedaAgibilita_files/slider.png" style="position: relative; width: 20px; height: 9px;">
+															</div>
+															<div id="OpenLayers_Control_PanZoomBar_7_zoomout" class="olButton" style="position: absolute; left: 13px; top: 213px; width: 18px; height: 18px; cursor: pointer;"><img id="OpenLayers_Control_PanZoomBar_7_zoomout_innerImage" class="olAlphaImg" src="./GeosismaSchedaAgibilita_files/zoom-minus-mini.png" style="position: relative; width: 18px; height: 18px;">
+															</div>
+														</div>
+														<div id="OpenLayers_Control_Scale_8" class="olControlScale olControlNoSelect" unselectable="on" style="position: absolute; z-index: 1004;">
+															<div>
+																Scale = 1 : 5000
+															</div>
+														</div>
+														<div id="OpenLayers_Control_ScaleLine_9" class="olControlScaleLine olControlNoSelect" unselectable="on" style="position: absolute; z-index: 1004;">
+															<div class="olControlScaleLineTop" style="visibility: visible; width: 57px;">
+																100 m
+															</div><div class="olControlScaleLineBottom" style="visibility: hidden;"></div>
+														</div>
+													</div>
+												</div></td>
+												<td valign="top">
+												<button class="btn" id="select_from_map" type="button">
+													Seleziona dalla mappa
+												</button><a id="webgislink" target="_new" class="btn" disabled="disabled">Apri in WebGIS</a><img id="ajax_loader" style="display: none;" src="./GeosismaSchedaAgibilita_files/ajax-loader.gif"></td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+							<div id="s2" class="sezione">
+								<h2>Sezione 2 - Descrizione edificio</h2>
+								<table id="s2desc">
+									<tbody>
+										<tr class="topheader">
+											<th class="bb" colspan="10">Dati metrici</th>
+											<th class="bb" colspan="2">Età</th>
+											<th class="bl" colspan="7">Uso - esposizione</th>
+										</tr>
+										<tr>
+											<th class="bb" colspan="2">N° piani
+											<br>
+											totali con
+											<br>
+											interrati</th>
+											<th class="bb" colspan="4">Altezza media
+											<br>
+											di piano
+											<br>
+											[m]</th>
+											<th class="bb" colspan="4">Superficie media di piano
+											<br>
+											[m²]</th>
+											<th class="bb" colspan="2">Costruzione e ristrutturaz.
+											<br>
+											[max 2]</th>
+											<th class="bl dr" colspan="2">Uso</th>
+											<th class="br">N° unità d'uso</th>
+											<th class="bb" colspan="2">Utilizzazione</th>
+											<th class="bl" colspan="2">Occupanti</th>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_1">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_1" value="1">
+												1 </label></td>
+											<td class="br"><label for="s2nfloors_9">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_9" value="9">
+												9 </label></td>
+											<td class="bl let">1</td><td class="br" colspan="3"><label for="s2floorh_1">
+												<input type="radio" name="s2floorh" class="NullableIntLabeledRadioField" id="s2floorh_1" value="1">
+												≤2.50 </label></td>
+											<td class="bl let">A</td><td><label for="s2floorsfc_0">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_0" value="0">
+												≤50 </label></td>
+											<td class="let">I</td><td class="br"><label for="s2floorsfc_8">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_8" value="8">
+												400÷500 </label></td>
+											<td class="bl let">1</td><td class="br">
+											<input type="checkbox" name="s2cer1" class="CheckBoxField" id="s2cer1" value="1">
+											≤1919</td>
+											<td class="bl let">A</td><td class="dr">
+											<input type="checkbox" name="s2uso1" class="CheckBoxField" id="s2uso1" value="1">
+											Abitativo</td>
+											<td class="br cen">
+											<input type="text" id="s2uson1" class="NullableIntField" size="2" name="s2uson1" value="" disabled="">
+											</td>
+											<td class="bl let">A</td><td class="br"><label for="s2percuse_0">
+												<input type="radio" name="s2percuse" class="NullableIntLabeledRadioField" id="s2percuse_0" value="0">
+												&gt;65% </label></td>
+											<td class="bl" colspan="2" rowspan="2">
+											<input type="text" id="s2occupiers" class="NullableFloatField" size="3" name="s2occupiers" value="">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_2">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_2" value="2">
+												2 </label></td>
+											<td class="br"><label for="s2nfloors_10">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_10" value="10">
+												10 </label></td>
+											<td class="bl let">2</td><td class="br" colspan="3"><label for="s2floorh_2">
+												<input type="radio" name="s2floorh" class="NullableIntLabeledRadioField" id="s2floorh_2" value="2">
+												2.50÷3.50 </label></td>
+											<td class="bl let">B</td><td><label for="s2floorsfc_1">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_1" value="1">
+												50÷70 </label></td>
+											<td class="let">L</td><td class="br"><label for="s2floorsfc_9">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_9" value="9">
+												500÷650 </label></td>
+											<td class="bl let">2</td><td class="br">
+											<input type="checkbox" name="s2cer2" class="CheckBoxField" id="s2cer2" value="1">
+											19÷45</td>
+											<td class="bl let">B</td><td class="dr">
+											<input type="checkbox" name="s2uso2" class="CheckBoxField" id="s2uso2" value="1">
+											Produttivo</td>
+											<td class="br cen">
+											<input type="text" id="s2uson2" class="NullableIntField" size="2" name="s2uson2" value="" disabled="">
+											</td>
+											<td class="bl let">B</td><td class="br"><label for="s2percuse_1">
+												<input type="radio" name="s2percuse" class="NullableIntLabeledRadioField" id="s2percuse_1" value="1">
+												30÷65% </label></td>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_3">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_3" value="3">
+												3 </label></td>
+											<td class="br"><label for="s2nfloors_11">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_11" value="11">
+												11 </label></td>
+											<td class="bl let">3</td><td class="br" colspan="3"><label for="s2floorh_3">
+												<input type="radio" name="s2floorh" class="NullableIntLabeledRadioField" id="s2floorh_3" value="3">
+												3.50÷5.0 </label></td>
+											<td class="bl let">C</td><td><label for="s2floorsfc_2">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_2" value="2">
+												70÷100 </label></td>
+											<td class="let">M</td><td class="br"><label for="s2floorsfc_10">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_10" value="10">
+												650÷900 </label></td>
+											<td class="bl let">3</td><td class="br">
+											<input type="checkbox" name="s2cer3" class="CheckBoxField" id="s2cer3" value="1">
+											46÷61</td>
+											<td class="bl let">C</td><td class="dr">
+											<input type="checkbox" name="s2uso3" class="CheckBoxField" id="s2uso3" value="1">
+											Commercio</td>
+											<td class="br cen">
+											<input type="text" id="s2uson3" class="NullableIntField" size="2" name="s2uson3" value="" disabled="">
+											</td>
+											<td class="bl let">C</td><td class="br"><label for="s2percuse_2">
+												<input type="radio" name="s2percuse" class="NullableIntLabeledRadioField" id="s2percuse_2" value="2">
+												&lt;30% </label></td>
+											<th class="bt" colspan="2">Proprietà</th>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_4">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_4" value="4">
+												4 </label></td>
+											<td class="br"><label for="s2nfloors_12">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_12" value="12">
+												12 </label></td>
+											<td class="bl let">4</td><td class="br" colspan="3"><label for="s2floorh_4">
+												<input type="radio" name="s2floorh" class="NullableIntLabeledRadioField" id="s2floorh_4" value="4">
+												&gt;5.0 </label></td>
+											<td class="bl let">D</td><td><label for="s2floorsfc_3">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_3" value="3">
+												100÷130 </label></td>
+											<td class="let">N</td><td class="br"><label for="s2floorsfc_11">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_11" value="11">
+												900÷1200 </label></td>
+											<td class="bl let">4</td><td class="br">
+											<input type="checkbox" name="s2cer4" class="CheckBoxField" id="s2cer4" value="1">
+											62÷71</td>
+											<td class="bl let">D</td><td class="dr">
+											<input type="checkbox" name="s2uso4" class="CheckBoxField" id="s2uso4" value="1">
+											Uffici</td>
+											<td class="br cen">
+											<input type="text" id="s2uson4" class="NullableIntField" size="2" name="s2uson4" value="" disabled="">
+											</td>
+											<td class="bl let">D</td><td class="br"><label for="s2percuse_3">
+												<input type="radio" name="s2percuse" class="NullableIntLabeledRadioField" id="s2percuse_3" value="3">
+												Non utilizz. </label></td>
+											<td class="let">A</td><td><label for="s2prop_0">
+												<input type="radio" name="s2prop" class="NullableIntLabeledRadioField" id="s2prop_0" value="0">
+												Pubblica </label></td>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_5">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_5" value="5">
+												5 </label></td>
+											<td class="br"><label for="s2nfloors_13">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_13" value="13">
+												&gt;12 </label></td>
+											<th class="bt" colspan="4" rowspan="2">Piani interrati</th>
+											<td class="bl let">E</td><td><label for="s2floorsfc_4">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_4" value="4">
+												130÷170 </label></td>
+											<td class="let">O</td><td class="br"><label for="s2floorsfc_12">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_12" value="12">
+												1200÷1600 </label></td>
+											<td class="bl let">5</td><td class="br">
+											<input type="checkbox" name="s2cer5" class="CheckBoxField" id="s2cer5" value="1">
+											72÷81</td>
+											<td class="bl let">E</td><td class="dr">
+											<input type="checkbox" name="s2uso5" class="CheckBoxField" id="s2uso5" value="1">
+											Serv. Pub.</td>
+											<td class="br cen">
+											<input type="text" id="s2uson5" class="NullableIntField" size="2" name="s2uson5" value="" disabled="">
+											</td>
+											<td class="bl let">E</td><td class="br"><label for="s2percuse_4">
+												<input type="radio" name="s2percuse" class="NullableIntLabeledRadioField" id="s2percuse_4" value="4">
+												In costruz. </label></td>
+											<td class="let">B</td><td><label for="s2prop_1">
+												<input type="radio" name="s2prop" class="NullableIntLabeledRadioField" id="s2prop_1" value="1">
+												Privata </label></td>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_6">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_6" value="6">
+												6 </label></td>
+											<td class="br"></td>
+											<td class="bl let">F</td><td><label for="s2floorsfc_5">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_5" value="5">
+												170÷230 </label></td>
+											<td class="let">P</td><td class="br"><label for="s2floorsfc_13">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_13" value="13">
+												1600÷2200 </label></td>
+											<td class="bl let">6</td><td class="br">
+											<input type="checkbox" name="s2cer6" class="CheckBoxField" id="s2cer6" value="1">
+											82÷91</td>
+											<td class="bl let">F</td><td class="dr">
+											<input type="checkbox" name="s2uso6" class="CheckBoxField" id="s2uso6" value="1">
+											Deposito</td>
+											<td class="br cen">
+											<input type="text" id="s2uson6" class="NullableIntField" size="2" name="s2uson6" value="" disabled="">
+											</td>
+											<td class="bl let">F</td><td class="br"><label for="s2percuse_5">
+												<input type="radio" name="s2percuse" class="NullableIntLabeledRadioField" id="s2percuse_5" value="5">
+												Non finito </label></td>
+											<td colspan="2" rowspan="3"></td>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_7">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_7" value="7">
+												7 </label></td>
+											<td class="br"></td>
+											<td class="let">A</td><td><label for="s2nunder_0">
+												<input type="radio" name="s2nunder" class="NullableIntLabeledRadioField" id="s2nunder_0" value="0">
+												0 </label></td>
+											<td class="let">C</td><td><label for="s2nunder_2">
+												<input type="radio" name="s2nunder" class="NullableIntLabeledRadioField" id="s2nunder_2" value="2">
+												2 </label></td>
+											<td class="bl let">G</td><td><label for="s2floorsfc_6">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_6" value="6">
+												230÷300 </label></td>
+											<td class="let">Q</td><td class="br"><label for="s2floorsfc_14">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_14" value="14">
+												2200÷3000 </label></td>
+											<td class="bl let">7</td><td class="br">
+											<input type="checkbox" name="s2cer7" class="CheckBoxField" id="s2cer7" value="1">
+											92÷01</td>
+											<td class="bl let">G</td><td class="dr">
+											<input type="checkbox" name="s2uso7" class="CheckBoxField" id="s2uso7" value="1">
+											Strategico</td>
+											<td class="br cen">
+											<input type="text" id="s2uson7" class="NullableIntField" size="2" name="s2uson7" value="" disabled="">
+											</td>
+											<td class="bl let">G</td><td class="br"><label for="s2percuse_6">
+												<input type="radio" name="s2percuse" class="NullableIntLabeledRadioField" id="s2percuse_6" value="6">
+												Abbandon. </label></td>
+										</tr>
+										<tr>
+											<td class="bl"><label for="s2nfloors_8">
+												<input type="radio" name="s2nfloors" class="NullableIntLabeledRadioField" id="s2nfloors_8" value="8">
+												8 </label></td>
+											<td class="br"></td>
+											<td class="let">B</td><td><label for="s2nunder_1">
+												<input type="radio" name="s2nunder" class="NullableIntLabeledRadioField" id="s2nunder_1" value="1">
+												1 </label></td>
+											<td class="let">D</td><td><label for="s2nunder_3">
+												<input type="radio" name="s2nunder" class="NullableIntLabeledRadioField" id="s2nunder_3" value="3">
+												≥3 </label></td>
+											<td class="bl let">H</td><td><label for="s2floorsfc_7">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_7" value="7">
+												300÷400 </label></td>
+											<td class="let">R</td><td class="br"><label for="s2floorsfc_15">
+												<input type="radio" name="s2floorsfc" class="NullableIntLabeledRadioField" id="s2floorsfc_15" value="15">
+												&gt;3000 </label></td>
+											<td class="bl let">8</td><td class="br">
+											<input type="checkbox" name="s2cer8" class="CheckBoxField" id="s2cer8" value="1">
+											≥2002</td>
+											<td class="bl let">H</td><td class="dr">
+											<input type="checkbox" name="s2uso8" class="CheckBoxField" id="s2uso8" value="1">
+											Turis-ricet.</td>
+											<td class="br cen">
+											<input type="text" id="s2uson8" class="NullableIntField" size="2" name="s2uson8" value="" disabled="">
+											</td>
+											<td class="bb" colspan="2"></td>
+										</tr>
+									</tbody>
+								</table>
+								<table>
+									<tbody>
+										<tr>
+											<td> Istat provincia: <span id="footer_istat_prov"></span> Istat comune: <span id="footer_istat_com"></span></td>
+											<td> Rilevatore: TODO FORMFIELD
+											N° scheda: <span class="footer_number"></span> Data: <span id="footer_date"></span></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div id="s3" class="sezione">
+								<h2>Sezione 3 - Tipologia</h2>
+
+								<table>
+									<tbody>
+										<tr>
+											<td>
+											<table id="tipologia" cellspacing="0">
+												<tbody>
+													<tr>
+														<td class="br" colspan="2"></td>
+														<th rowspan="3" class="vertical br be">Non identificate</th>
+														<th class="be" colspan="7">Strutture in muratura</th>
+													</tr>
+													<tr>
+														<td></td>
+														<td class="br">Strutture verticali</td>
+														<td class="bb be" colspan="2">A tessitura irregolare e di cattiva qualità (Pietrame non squadrato, ciottoli…)</td>
+														<td class="bb be" colspan="2">A tessitura regolare e di buona qualità (Blocchi; mattoni; pietra squadrata…)</td>
+														<td rowspan="2" class="bb be vertical">Pilastri isolati</td>
+														<td rowspan="2" class="bb be vertical">Mista</td>
+														<td rowspan="2" class="bb be vertical">Rinforzata</td>
+													</tr>
+													<tr>
+														<td class="be" rowspan="2">Strutture orizzontali</td>
+														<td class="br be" rowspan="2"></td>
+														<td class="bb be">Senza catene o cordoli</td>
+														<td class="bb be">Con catene o cordoli</td>
+														<td class="bb be">Senza catene o cordoli</td>
+														<td class="bb be">Con catene o cordoli</td>
+													</tr>
+													<tr class="bordered">
+														<td class="bt bb">A</td>
+														<td class="bl">B</td>
+														<td class="br">C</td>
+														<td class="bl">D</td>
+														<td class="br">E</td>
+														<td class="bb">F</td>
+														<td class="bb">G</td>
+														<td class="bb">H</td>
+													</tr>
+													<tr class="bordered">
+														<td class="rowtitle br" colspan="2">
+														<table>
+															<tbody>
+																<tr>
+																	<td>1</td>
+																	<td>Non identificate</td>
+																</tr>
+															</tbody>
+														</table></td>
+														<td class="br w">
+														<input type="checkbox" name="s3tA1" class="CheckBoxField" id="s3tA1" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tB1" class="CheckBoxField" id="s3tB1" value="1">
+														</td>
+														<td class="br e">
+														<input type="checkbox" name="s3tC1" class="CheckBoxField" id="s3tC1" value="1">
+														</td>
+														<td class="w">
+														<input type="checkbox" name="s3tD1" class="CheckBoxField" id="s3tD1" value="1">
+														</td>
+														<td class="br w">
+														<input type="checkbox" name="s3tE1" class="CheckBoxField" id="s3tE1" value="1">
+														</td>
+														<td rowspan="3" class="br be w">SI
+														<br>
+														<input type="radio" name="s3isolpill" class="NullableIntRadioField" id="s3isolpill_0" value="0">
+														</td>
+														<td rowspan="2" class="br">
+														<input type="checkbox" name="s3tG1" class="CheckBoxField" id="s3tG1" value="1">
+														<br>
+														G1</td>
+														<td rowspan="2" class="br">
+														<input type="checkbox" name="s3tH1" class="CheckBoxField" id="s3tH1" value="1">
+														<br>
+														H1</td>
+													</tr>
+													<tr class="bordered">
+														<td class="rowtitle br" colspan="2">
+														<table>
+															<tbody>
+																<tr>
+																	<td>2</td>
+																	<td>Volte senza catene</td>
+																</tr>
+															</tbody>
+														</table></td>
+														<td class="br e">
+														<input type="checkbox" name="s3tA2" class="CheckBoxField" id="s3tA2" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tB2" class="CheckBoxField" id="s3tB2" value="1">
+														</td>
+														<td class="br e">
+														<input type="checkbox" name="s3tC2" class="CheckBoxField" id="s3tC2" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tD2" class="CheckBoxField" id="s3tD2" value="1">
+														</td>
+														<td class="br w">
+														<input type="checkbox" name="s3tE2" class="CheckBoxField" id="s3tE2" value="1">
+														</td>
+													</tr>
+													<tr class="bordered">
+														<td class="rowtitle br" colspan="2">
+														<table>
+															<tbody>
+																<tr>
+																	<td>3</td>
+																	<td>Volte con catene</td>
+																</tr>
+															</tbody>
+														</table></td>
+														<td class="br e">
+														<input type="checkbox" name="s3tA3" class="CheckBoxField" id="s3tA3" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tB3" class="CheckBoxField" id="s3tB3" value="1">
+														</td>
+														<td class="br e">
+														<input type="checkbox" name="s3tC3" class="CheckBoxField" id="s3tC3" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tD3" class="CheckBoxField" id="s3tD3" value="1">
+														</td>
+														<td class="br w">
+														<input type="checkbox" name="s3tE3" class="CheckBoxField" id="s3tE3" value="1">
+														</td>
+														<td class="br" rowspan="2">
+														<input type="checkbox" name="s3tG2" class="CheckBoxField" id="s3tG2" value="1">
+														<br>
+														G2</td>
+														<td class="br" rowspan="2">
+														<input type="checkbox" name="s3tH2" class="CheckBoxField" id="s3tH2" value="1">
+														<br>
+														H2</td>
+													</tr>
+													<tr class="bordered">
+														<td class="rowtitle br" colspan="2">
+														<table>
+															<tbody>
+																<tr>
+																	<td>4</td>
+																	<td>Travi con soletta <b>deformabile</b>
+																	<br>
+																	<span class="sub">(travi in legno con semplice tavolato, travi e voltine…)</span></td>
+																</tr>
+															</tbody>
+														</table></td>
+														<td class="br e">
+														<input type="checkbox" name="s3tA4" class="CheckBoxField" id="s3tA4" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tB4" class="CheckBoxField" id="s3tB4" value="1">
+														</td>
+														<td class="br e">
+														<input type="checkbox" name="s3tC4" class="CheckBoxField" id="s3tC4" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tD4" class="CheckBoxField" id="s3tD4" value="1">
+														</td>
+														<td class="br w">
+														<input type="checkbox" name="s3tE4" class="CheckBoxField" id="s3tE4" value="1">
+														</td>
+														<td class="br" rowspan="3">NO
+														<br>
+														<input type="radio" name="s3isolpill" class="NullableIntRadioField" id="s3isolpill_1" value="1">
+														</td>
+													</tr>
+													<tr class="bordered">
+														<td class="rowtitle br" colspan="2">
+														<table>
+															<tbody>
+																<tr>
+																	<td>5</td>
+																	<td>Travi con soletta <b>semirigida</b>
+																	<br>
+																	<span class="sub">(travi in legno con doppio tavolato, travi e tavelloni…)</span></td>
+																</tr>
+															</tbody>
+														</table></td>
+														<td class="br w">
+														<input type="checkbox" name="s3tA5" class="CheckBoxField" id="s3tA5" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tB5" class="CheckBoxField" id="s3tB5" value="1">
+														</td>
+														<td class="br w">
+														<input type="checkbox" name="s3tC5" class="CheckBoxField" id="s3tC5" value="1">
+														</td>
+														<td class="w">
+														<input type="checkbox" name="s3tD5" class="CheckBoxField" id="s3tD5" value="1">
+														</td>
+														<td class="br">
+														<input type="checkbox" name="s3tE5" class="CheckBoxField" id="s3tE5" value="1">
+														</td>
+														<td class="br" rowspan="2">
+														<input type="checkbox" name="s3tG3" class="CheckBoxField" id="s3tG3" value="1">
+														<br>
+														G3</td>
+														<td class="br" rowspan="2">
+														<input type="checkbox" name="s3tH3" class="CheckBoxField" id="s3tH3" value="1">
+														<br>
+														H3</td>
+													</tr>
+													<tr class="bordered">
+														<td class="rowtitle br" colspan="2">
+														<table>
+															<tbody>
+																<tr>
+																	<td>6</td>
+																	<td>Travi con soletta <b>rigida</b>
+																	<br>
+																	<span class="sub">(solai di c.a., travi ben collegate a solette di c.a.…)</span></td>
+																</tr>
+															</tbody>
+														</table></td>
+														<td class="br w">
+														<input type="checkbox" name="s3tA6" class="CheckBoxField" id="s3tA6" value="1">
+														</td>
+														<td class="e">
+														<input type="checkbox" name="s3tB6" class="CheckBoxField" id="s3tB6" value="1">
+														</td>
+														<td class="br w">
+														<input type="checkbox" name="s3tC6" class="CheckBoxField" id="s3tC6" value="1">
+														</td>
+														<td>
+														<input type="checkbox" name="s3tD6" class="CheckBoxField" id="s3tD6" value="1">
+														</td>
+														<td class="br">
+														<input type="checkbox" name="s3tE6" class="CheckBoxField" id="s3tE6" value="1">
+														</td>
+													</tr>
+												</tbody>
+											</table></td><td>
+											<table id="altrestrutture">
+												<tbody>
+													<tr>
+														<th colspan="2">Altre strutture</th>
+													</tr>
+													<tr>
+														<td>Telai in c.a.</td><td>
+														<input type="checkbox" name="s3as1" class="CheckBoxField" id="s3as1" value="1">
+														</td>
+													</tr>
+													<tr>
+														<td>Pareti in c.a.</td><td>
+														<input type="checkbox" name="s3as2" class="CheckBoxField" id="s3as2" value="1">
+														</td>
+													</tr>
+													<tr>
+														<td>Telai in acciaio</td><td>
+														<input type="checkbox" name="s3as3" class="CheckBoxField" id="s3as3" value="1">
+														</td>
+													</tr>
+												</tbody>
+											</table>
+											<table id="regolarita">
+												<tbody>
+													<tr>
+														<th colspan="2" rowspan="2">Regolarità</th><th>Non regolare</th><th>Regolare</th>
+													</tr>
+													<tr>
+														<td>A</td><td>B</td>
+													</tr>
+													<tr>
+														<td>1</td><td>Forma pianta ed elevazione</td><td class="e">
+														<input type="radio" name="s3reg1" class="NullableIntRadioField" id="s3reg1_0" value="0">
+														</td><td>
+														<input type="radio" name="s3reg1" class="NullableIntRadioField" id="s3reg1_1" value="1">
+														</td>
+													</tr>
+													<tr>
+														<td>2</td><td>Disposizione tamponature</td><td class="e">
+														<input type="radio" name="s3reg2" class="NullableIntRadioField" id="s3reg2_0" value="0">
+														</td><td>
+														<input type="radio" name="s3reg2" class="NullableIntRadioField" id="s3reg2_1" value="1">
+														</td>
+													</tr>
+												</tbody>
+											</table>
+											<table id="copertura">
+												<tbody>
+													<tr>
+														<th>Copertura</th>
+													</tr>
+													<tr>
+														<td class="e">1 <label for="s3cover_1">
+															<input type="radio" name="s3cover" class="NullableIntLabeledRadioField" id="s3cover_1" value="1">
+															Spingente pesante </label></td>
+													</tr>
+													<tr>
+														<td class="w">2 <label for="s3cover_2">
+															<input type="radio" name="s3cover" class="NullableIntLabeledRadioField" id="s3cover_2" value="2">
+															Non spingente pesante </label></td>
+													</tr>
+													<tr>
+														<td class="w">3 <label for="s3cover_3">
+															<input type="radio" name="s3cover" class="NullableIntLabeledRadioField" id="s3cover_3" value="3">
+															Spingente leggera </label></td>
+													</tr>
+													<tr>
+														<td>4 <label for="s3cover_4">
+															<input type="radio" name="s3cover" class="NullableIntLabeledRadioField" id="s3cover_4" value="4">
+															Non spingente leggera </label></td>
+													</tr>
+												</tbody>
+											</table></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div id="s4" class="sezione">
+								<h2>Sezione 4 - Danni a ELEMENTI STRUTTURALI e provvedimenti di pronto intervento (P.I.) eseguiti</h2>
+
+								<table id="s4d">
+									<tbody>
+										<tr>
+											<td colspan="2" rowspan="2" class="bb tltitler">Livello - estensione</td>
+											<td colspan="10" class="br be">Danno¹</td>
+											<td colspan="6" class="bl br be">Provvedimenti di P.I. eseguiti</td>
+										</tr>
+										<tr style="height: 130px;">
+											<th colspan="3" class="br be">D4-D5 Gravissimo</th>
+											<th colspan="3" class="br be">D2-D3 Medio-grave</th>
+											<th colspan="3" class="br be">D1 Leggero</th>
+											<th rowspan="2" class="vertical tall br be">Nullo</th>
+											<td rowspan="2" class="vertical tall br be">Nessuno</td>
+											<td rowspan="2" class="vertical tall br be">Demolizioni</td>
+											<td rowspan="2" class="vertical tall br be">Cerchiature e/o tiranti</td>
+											<td rowspan="2" class="vertical tall br be">Riparazione</td>
+											<td rowspan="2" class="vertical tall br be">Puntelli</td>
+											<td rowspan="2" class="vertical tall br be">Transenne e protezione passaggi</td>
+										</tr>
+										<tr>
+											<td colspan="2" rowspan="2" class="bb be tltitleb">Componente strutturale - Danno preesistente</td>
+											<td class="vertical br be">&gt;⅔</td>
+											<td class="vertical br be">⅓-⅔</td>
+											<td class="vertical br be">&lt;⅓</td>
+											<td class="vertical br be">&gt;⅔</td>
+											<td class="vertical br be">⅓-⅔</td>
+											<td class="vertical br be">&lt;⅓</td>
+											<td class="vertical br be">&gt;⅔</td>
+											<td class="vertical br be">⅓-⅔</td>
+											<td class="vertical br be">&lt;⅓</td>
+										</tr>
+										<tr>
+											<td class="let">A</td><td class="let">B</td><td class="let br">C</td>
+											<td class="let">D</td><td class="let">E</td><td class="let br">F</td>
+											<td class="let">G</td><td class="let">H</td><td class="let br">I</td>
+											<td class="let br">L</td>
+											<td class="let br">A</td><td class="let">B</td><td class="let">C</td>
+											<td class="let">D</td><td class="let">E</td><td class="let br">F</td>
+										</tr>
+
+										<tr>
+											<td class="bl">1</td><td class="br">Strutture verticali</td>
+											<td class="e">
+											<input type="checkbox" name="s4dA1" class="CheckBoxField" id="s4dA1" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dB1" class="CheckBoxField" id="s4dB1" value="1">
+											</td>
+											<td class="e br">
+											<input type="checkbox" name="s4dC1" class="CheckBoxField" id="s4dC1" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dD1" class="CheckBoxField" id="s4dD1" value="1">
+											</td>
+											<td class="w">
+											<input type="checkbox" name="s4dE1" class="CheckBoxField" id="s4dE1" value="1">
+											</td>
+											<td class="w br">
+											<input type="checkbox" name="s4dF1" class="CheckBoxField" id="s4dF1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dG1" class="CheckBoxField" id="s4dG1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dH1" class="CheckBoxField" id="s4dH1" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dI1" class="CheckBoxField" id="s4dI1" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dL1" class="CheckBoxField" id="s4dL1" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pA1" class="CheckBoxField" id="s4pA1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pB1" class="CheckBoxField" id="s4pB1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pC1" class="CheckBoxField" id="s4pC1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pD1" class="CheckBoxField" id="s4pD1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pE1" class="CheckBoxField" id="s4pE1" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pF1" class="CheckBoxField" id="s4pF1" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">2</td><td class="br">Solai</td>
+											<td class="e">
+											<input type="checkbox" name="s4dA2" class="CheckBoxField" id="s4dA2" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dB2" class="CheckBoxField" id="s4dB2" value="1">
+											</td>
+											<td class="e br">
+											<input type="checkbox" name="s4dC2" class="CheckBoxField" id="s4dC2" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dD2" class="CheckBoxField" id="s4dD2" value="1">
+											</td>
+											<td class="w">
+											<input type="checkbox" name="s4dE2" class="CheckBoxField" id="s4dE2" value="1">
+											</td>
+											<td class="w br">
+											<input type="checkbox" name="s4dF2" class="CheckBoxField" id="s4dF2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dG2" class="CheckBoxField" id="s4dG2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dH2" class="CheckBoxField" id="s4dH2" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dI2" class="CheckBoxField" id="s4dI2" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dL2" class="CheckBoxField" id="s4dL2" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pA2" class="CheckBoxField" id="s4pA2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pB2" class="CheckBoxField" id="s4pB2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pC2" class="CheckBoxField" id="s4pC2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pD2" class="CheckBoxField" id="s4pD2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pE2" class="CheckBoxField" id="s4pE2" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pF2" class="CheckBoxField" id="s4pF2" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">3</td><td class="br">Scale</td>
+											<td class="e">
+											<input type="checkbox" name="s4dA3" class="CheckBoxField" id="s4dA3" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dB3" class="CheckBoxField" id="s4dB3" value="1">
+											</td>
+											<td class="e br">
+											<input type="checkbox" name="s4dC3" class="CheckBoxField" id="s4dC3" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dD3" class="CheckBoxField" id="s4dD3" value="1">
+											</td>
+											<td class="w">
+											<input type="checkbox" name="s4dE3" class="CheckBoxField" id="s4dE3" value="1">
+											</td>
+											<td class="w br">
+											<input type="checkbox" name="s4dF3" class="CheckBoxField" id="s4dF3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dG3" class="CheckBoxField" id="s4dG3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dH3" class="CheckBoxField" id="s4dH3" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dI3" class="CheckBoxField" id="s4dI3" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dL3" class="CheckBoxField" id="s4dL3" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pA3" class="CheckBoxField" id="s4pA3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pB3" class="CheckBoxField" id="s4pB3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pC3" class="CheckBoxField" id="s4pC3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pD3" class="CheckBoxField" id="s4pD3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pE3" class="CheckBoxField" id="s4pE3" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pF3" class="CheckBoxField" id="s4pF3" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">4</td><td class="br">Copertura</td>
+											<td class="e">
+											<input type="checkbox" name="s4dA4" class="CheckBoxField" id="s4dA4" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dB4" class="CheckBoxField" id="s4dB4" value="1">
+											</td>
+											<td class="e br">
+											<input type="checkbox" name="s4dC4" class="CheckBoxField" id="s4dC4" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dD4" class="CheckBoxField" id="s4dD4" value="1">
+											</td>
+											<td class="w">
+											<input type="checkbox" name="s4dE4" class="CheckBoxField" id="s4dE4" value="1">
+											</td>
+											<td class="w br">
+											<input type="checkbox" name="s4dF4" class="CheckBoxField" id="s4dF4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dG4" class="CheckBoxField" id="s4dG4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dH4" class="CheckBoxField" id="s4dH4" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dI4" class="CheckBoxField" id="s4dI4" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dL4" class="CheckBoxField" id="s4dL4" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pA4" class="CheckBoxField" id="s4pA4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pB4" class="CheckBoxField" id="s4pB4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pC4" class="CheckBoxField" id="s4pC4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pD4" class="CheckBoxField" id="s4pD4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4pE4" class="CheckBoxField" id="s4pE4" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4pF4" class="CheckBoxField" id="s4pF4" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">5</td><td class="br">Tamponature-tramezzi</td>
+											<td class="e">
+											<input type="checkbox" name="s4dA5" class="CheckBoxField" id="s4dA5" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dB5" class="CheckBoxField" id="s4dB5" value="1">
+											</td>
+											<td class="e br">
+											<input type="checkbox" name="s4dC5" class="CheckBoxField" id="s4dC5" value="1">
+											</td>
+											<td class="e">
+											<input type="checkbox" name="s4dD5" class="CheckBoxField" id="s4dD5" value="1">
+											</td>
+											<td class="w">
+											<input type="checkbox" name="s4dE5" class="CheckBoxField" id="s4dE5" value="1">
+											</td>
+											<td class="w br">
+											<input type="checkbox" name="s4dF5" class="CheckBoxField" id="s4dF5" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dG5" class="CheckBoxField" id="s4dG5" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s4dH5" class="CheckBoxField" id="s4dH5" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dI5" class="CheckBoxField" id="s4dI5" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s4dL5" class="CheckBoxField" id="s4dL5" value="1">
+											</td>
+											<td class="br be">
+											<input type="checkbox" name="s4pA5" class="CheckBoxField" id="s4pA5" value="1">
+											</td>
+											<td class="be">
+											<input type="checkbox" name="s4pB5" class="CheckBoxField" id="s4pB5" value="1">
+											</td>
+											<td class="be"></td>
+											<td class="be">
+											<input type="checkbox" name="s4pD5" class="CheckBoxField" id="s4pD5" value="1">
+											</td>
+											<td class="be">
+											<input type="checkbox" name="s4pE5" class="CheckBoxField" id="s4pE5" value="1">
+											</td>
+											<td class="br be">
+											<input type="checkbox" name="s4pF5" class="CheckBoxField" id="s4pF5" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl be">6</td><td class="br be">Danno preesistente</td>
+											<td class="be c">
+											<input type="checkbox" name="s4dA6" class="CheckBoxField" id="s4dA6" value="1">
+											</td>
+											<td class="be c">
+											<input type="checkbox" name="s4dB6" class="CheckBoxField" id="s4dB6" value="1">
+											</td>
+											<td class="be c br">
+											<input type="checkbox" name="s4dC6" class="CheckBoxField" id="s4dC6" value="1">
+											</td>
+											<td class="be e">
+											<input type="checkbox" name="s4dD6" class="CheckBoxField" id="s4dD6" value="1">
+											</td>
+											<td class="be e">
+											<input type="checkbox" name="s4dE6" class="CheckBoxField" id="s4dE6" value="1">
+											</td>
+											<td class="be e br">
+											<input type="checkbox" name="s4dF6" class="CheckBoxField" id="s4dF6" value="1">
+											</td>
+											<td class="be w">
+											<input type="checkbox" name="s4dG6" class="CheckBoxField" id="s4dG6" value="1">
+											</td>
+											<td class="be w">
+											<input type="checkbox" name="s4dH6" class="CheckBoxField" id="s4dH6" value="1">
+											</td>
+											<td class="be br">
+											<input type="checkbox" name="s4dI6" class="CheckBoxField" id="s4dI6" value="1">
+											</td>
+											<td class="be br">
+											<input type="checkbox" name="s4dL6" class="CheckBoxField" id="s4dL6" value="1">
+											</td>
+											<td colspan="6" class="br be"></td>
+										</tr>
+									</tbody>
+								</table>
+								<p>
+									¹ Di ogni livello di danno indicare l'estensione solo se esso è presente.
+									Se l'oggetto indicato nella riga non è danneggiato campire Nullo.
+								</p>
+							</div>
+							<div id="s5" class="sezione">
+								<h2>Sezione 5 - Danni a ELEMENTI NON STRUTTURALI e provvedimenti di pronto intervento eseguiti</h2>
+
+								<table id="s5tbl">
+									<tbody>
+										<tr>
+											<td rowspan="3" colspan="2" class="tltitleb be bb">Tipo di danno</td>
+											<td rowspan="2" class="br be">PRESENZA DANNO</td>
+											<td colspan="6" class="br be">PROVVEDIMENTI DI P.I. ESEGUITI</td>
+										</tr>
+										<tr>
+											<td class="bb be">Nessuno</td>
+											<td class="br be">Rimozione</td>
+											<td class="br be">Puntelli</td>
+											<td class="br be">Riparazione</td>
+											<td class="br be">Divieto di accesso</td>
+											<td class="br be">Transenne e protezione passaggi</td>
+										</tr>
+										<tr>
+											<td class="br">A</td><td>B</td><td>C</td><td>D</td><td>E</td><td>F</td><td class="br">G</td>
+										</tr>
+										<tr>
+											<td class="bl">1</td><td class="br">Distacco intonaci, rivestimenti, controsoffitti…</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensA1" class="CheckBoxField" id="s5ensA1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensB1" class="CheckBoxField" id="s5ensB1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensC1" class="CheckBoxField" id="s5ensC1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensD1" class="CheckBoxField" id="s5ensD1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensE1" class="CheckBoxField" id="s5ensE1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensF1" class="CheckBoxField" id="s5ensF1" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensG1" class="CheckBoxField" id="s5ensG1" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">2</td><td class="br">Caduta tegole, comignoli…</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensA2" class="CheckBoxField" id="s5ensA2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensB2" class="CheckBoxField" id="s5ensB2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensC2" class="CheckBoxField" id="s5ensC2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensD2" class="CheckBoxField" id="s5ensD2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensE2" class="CheckBoxField" id="s5ensE2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensF2" class="CheckBoxField" id="s5ensF2" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensG2" class="CheckBoxField" id="s5ensG2" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">3</td><td class="br">Caduta cornicioni, parapetti…</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensA3" class="CheckBoxField" id="s5ensA3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensB3" class="CheckBoxField" id="s5ensB3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensC3" class="CheckBoxField" id="s5ensC3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensD3" class="CheckBoxField" id="s5ensD3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensE3" class="CheckBoxField" id="s5ensE3" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensF3" class="CheckBoxField" id="s5ensF3" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensG3" class="CheckBoxField" id="s5ensG3" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">4</td><td class="br">Caduta altri oggetti interni o esterni</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensA4" class="CheckBoxField" id="s5ensA4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensB4" class="CheckBoxField" id="s5ensB4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensC4" class="CheckBoxField" id="s5ensC4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensD4" class="CheckBoxField" id="s5ensD4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensE4" class="CheckBoxField" id="s5ensE4" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensF4" class="CheckBoxField" id="s5ensF4" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensG4" class="CheckBoxField" id="s5ensG4" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">5</td><td class="br">Danno alla rete idrica, fognaria o termoidraulica</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensA5" class="CheckBoxField" id="s5ensA5" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensB5" class="CheckBoxField" id="s5ensB5" value="1">
+											</td>
+											<td></td>
+											<td></td>
+											<td>
+											<input type="checkbox" name="s5ensE5" class="CheckBoxField" id="s5ensE5" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensF5" class="CheckBoxField" id="s5ensF5" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensG5" class="CheckBoxField" id="s5ensG5" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">6</td><td class="br">Danno alla rete elettrica o del gas</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensA6" class="CheckBoxField" id="s5ensA6" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensB6" class="CheckBoxField" id="s5ensB6" value="1">
+											</td>
+											<td></td>
+											<td></td>
+											<td>
+											<input type="checkbox" name="s5ensE6" class="CheckBoxField" id="s5ensE6" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s5ensF6" class="CheckBoxField" id="s5ensF6" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s5ensG6" class="CheckBoxField" id="s5ensG6" value="1">
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div id="s6" class="sezione">
+								<h2>Sezione 6 - Pericolo ESTERNO indotto da altre costruzioni e provvedimenti di p.i. eseguiti</h2>
+								<table id="s6tbl">
+									<tbody>
+										<tr>
+											<td colspan="2" rowspan="3" class="bb be tltitleb">Causa potenziale</td>
+											<td colspan="3" class="bb be">PERICOLO SU</td>
+											<td colspan="2" class="bb be">PROVVEDIM. DI P.I. ESEGUTI</td>
+										</tr>
+										<tr>
+											<td>Edificio</td><td>Via d'accesso</td><td class="br">Vie interne</td>
+											<td>Divieto di accesso</td><td class="br">Transenne e protez. passaggi</td>
+										</tr>
+										<tr>
+											<td>A</td><td>B</td><td class="br">C</td><td>D</td><td class="br">E</td>
+										</tr>
+										<tr>
+											<td class="bl">1</td><td class="br">Crolli o cadute da altre costruzioni</td>
+											<td>
+											<input type="checkbox" name="s6extA1" class="CheckBoxField" id="s6extA1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s6extB1" class="CheckBoxField" id="s6extB1" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s6extC1" class="CheckBoxField" id="s6extC1" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s6extD1" class="CheckBoxField" id="s6extD1" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s6extE1" class="CheckBoxField" id="s6extE1" value="1">
+											</td>
+										</tr>
+										<tr>
+											<td class="bl">2</td><td class="br">Rottura reti di distribuzione</td>
+											<td>
+											<input type="checkbox" name="s6extA2" class="CheckBoxField" id="s6extA2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s6extB2" class="CheckBoxField" id="s6extB2" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s6extC2" class="CheckBoxField" id="s6extC2" value="1">
+											</td>
+											<td>
+											<input type="checkbox" name="s6extD2" class="CheckBoxField" id="s6extD2" value="1">
+											</td>
+											<td class="br">
+											<input type="checkbox" name="s6extE2" class="CheckBoxField" id="s6extE2" value="1">
+											</td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div id="s7" class="sezione">
+								<h2>Sezione 7 - Terreno e fondazioni</h2>
+								<table id="terrenofondazioni">
+									<tbody>
+										<tr>
+											<td colspan="4">MORFOLOGIA DEL SITO</td>
+											<td colspan="4">DISSESTI (in atto o temibili):
+											<input type="checkbox" name="s7vi" class="CheckBoxField" id="s7vi" value="1">
+											Versanti incombenti
+											<input type="checkbox" name="s7tf" class="CheckBoxField" id="s7tf" value="1">
+											Terreno di fondazione</td>
+										</tr>
+										<tr>
+											<td class="w">1 <label for="s7morfo_1">
+												<input type="radio" name="s7morfo" class="NullableIntLabeledRadioField" id="s7morfo_1" value="1">
+												Cresta </label></td>
+											<td class="w">2 <label for="s7morfo_2">
+												<input type="radio" name="s7morfo" class="NullableIntLabeledRadioField" id="s7morfo_2" value="2">
+												Pendio forte </label></td>
+											<td>3 <label for="s7morfo_3">
+												<input type="radio" name="s7morfo" class="NullableIntLabeledRadioField" id="s7morfo_3" value="3">
+												Pendio leggero </label></td>
+											<td>4 <label for="s7morfo_4">
+												<input type="radio" name="s7morfo" class="NullableIntLabeledRadioField" id="s7morfo_4" value="4">
+												Pianura </label></td>
+											<td>A <label for="s7diss_1">
+												<input type="radio" name="s7diss" class="NullableIntLabeledRadioField" id="s7diss_1" value="1">
+												Assenti </label></td>
+											<td class="w">B <label for="s7diss_2">
+												<input type="radio" name="s7diss" class="NullableIntLabeledRadioField" id="s7diss_2" value="2">
+												Generati dal sisma </label></td>
+											<td class="w">C <label for="s7diss_3">
+												<input type="radio" name="s7diss" class="NullableIntLabeledRadioField" id="s7diss_3" value="3">
+												Acuiti dal sisma </label></td>
+											<td class="e">D <label for="s7diss_4">
+												<input type="radio" name="s7diss" class="NullableIntLabeledRadioField" id="s7diss_4" value="4">
+												Preesistenti </label></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<div id="s8" class="sezione">
+								<a name="s8"></a>
+								<h2>Sezione 8 - Giudizio di agibilità</h2>
+								<div id="s8table">
+
+									<input type="radio" name="s8agibilita" class="NullableIntRadioField" id="s8agibilita_0" value="0">
+
+									<input type="radio" name="s8agibilita" class="NullableIntRadioField" id="s8agibilita_1" value="1">
+
+									<input type="radio" name="s8agibilita" class="NullableIntRadioField" id="s8agibilita_2" value="2">
+
+									<input type="radio" name="s8agibilita" class="NullableIntRadioField" id="s8agibilita_3" value="3">
+
+									<input type="radio" name="s8agibilita" class="NullableIntRadioField" id="s8agibilita_4" value="4">
+
+									<input type="radio" name="s8agibilita" class="NullableIntRadioField" id="s8agibilita_5" value="5">
+
+									<input type="radio" name="s8riskst" class="NullableIntRadioField" id="s8riskst_0" value="0">
+
+									<input type="radio" name="s8riskst" class="NullableIntRadioField" id="s8riskst_1" value="1">
+
+									<input type="radio" name="s8riskst" class="NullableIntRadioField" id="s8riskst_2" value="2">
+
+									<input type="radio" name="s8risknst" class="NullableIntRadioField" id="s8risknst_0" value="0">
+
+									<input type="radio" name="s8risknst" class="NullableIntRadioField" id="s8risknst_1" value="1">
+
+									<input type="radio" name="s8risknst" class="NullableIntRadioField" id="s8risknst_2" value="2">
+
+									<input type="radio" name="s8riskext" class="NullableIntRadioField" id="s8riskext_0" value="0">
+
+									<input type="radio" name="s8riskext" class="NullableIntRadioField" id="s8riskext_1" value="1">
+
+									<input type="radio" name="s8riskext" class="NullableIntRadioField" id="s8riskext_2" value="2">
+
+									<input type="radio" name="s8riskgeo" class="NullableIntRadioField" id="s8riskgeo_0" value="0">
+
+									<input type="radio" name="s8riskgeo" class="NullableIntRadioField" id="s8riskgeo_1" value="1">
+
+									<input type="radio" name="s8riskgeo" class="NullableIntRadioField" id="s8riskgeo_2" value="2">
+
+								</div>
+								<p>
+									(1) riportare nella colonna argomento della Sez. 9 l'esito e nelle
+									annotazioni le parti di edificio inagibili (esiti B, C) e le cause di
+									rischio esterno (esito F)
+								</p>
+								.
+								<table id="s8accu">
+									<tbody>
+										<tr>
+											<th rowspan="3">Sull'accuratezza della visita</th>
+											<td>1 <label for="s8accuracy_0">
+												<input type="radio" name="s8accuracy" class="NullableIntLabeledRadioField" id="s8accuracy_0" value="0">
+												Solo dall'esterno </label></td>
+											<td>4 <label for="s8accuracy_3">
+												<input type="radio" name="s8accuracy" class="NullableIntLabeledRadioField" id="s8accuracy_3" value="3">
+												Non eseguito per: </label></td>
+											<td>a <label for="s8whynot_0">
+												<input type="radio" name="s8whynot" class="NullableIntLabeledRadioField" id="s8whynot_0" value="0" disabled="">
+												Sopralluogo rifiutato (SR) </label></td>
+											<td>b <label for="s8whynot_1">
+												<input type="radio" name="s8whynot" class="NullableIntLabeledRadioField" id="s8whynot_1" value="1" disabled="">
+												Rudere (RU) </label></td>
+											<td>c <label for="s8whynot_2">
+												<input type="radio" name="s8whynot" class="NullableIntLabeledRadioField" id="s8whynot_2" value="2" disabled="">
+												Demolito (DM) </label></td>
+										</tr>
+										<tr>
+											<td>2 <label for="s8accuracy_1">
+												<input type="radio" name="s8accuracy" class="NullableIntLabeledRadioField" id="s8accuracy_1" value="1">
+												Parziale </label></td>
+											<td></td><td>d <label for="s8whynot_3">
+												<input type="radio" name="s8whynot" class="NullableIntLabeledRadioField" id="s8whynot_3" value="3" disabled="">
+												Proprietario non trovato (NT) </label></td>
+											<td colspan="2">e <label for="s8whynot_4">
+												<input type="radio" name="s8whynot" class="NullableIntLabeledRadioField" id="s8whynot_4" value="4" disabled="">
+												Altro (AL): </label></td>
+										</tr>
+										<tr>
+											<td colspan="2">3 <label for="s8accuracy_2">
+												<input type="radio" name="s8accuracy" class="NullableIntLabeledRadioField" id="s8accuracy_2" value="2">
+												Completa (≥⅔) </label></td>
+											<td colspan="3">
+											<input type="text" id="s8whyother" class="NullableUnicodeField" size="60" name="s8whyother" value="" disabled="">
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<p>
+									Provvedimenti di pronto intervento di rapida realizzazione, limitati (*) o estesi (**)
+								</p>
+								<table id="provvedimenti">
+									<tbody>
+										<tr>
+											<th>*</th><th>**</th><th>Provvedimenti di P.I. suggeriti</th>
+											<th>*</th><th>**</th><th>Provvedimenti di P.I. suggeriti</th>
+										</tr>
+										<tr>
+											<td> 1
+											<input type="radio" name="s8prov1" class="NullableIntRadioField" id="s8prov1_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov1" class="NullableIntRadioField" id="s8prov1_1" value="1">
+											</td><td>Messa in opera di cerchiature o tiranti</td>
+											<td> 7
+											<input type="radio" name="s8prov7" class="NullableIntRadioField" id="s8prov7_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov7" class="NullableIntRadioField" id="s8prov7_1" value="1">
+											</td><td>Rimozione di cornicioni, parapetti, oggetti</td>
+										</tr>
+										<tr>
+											<td> 2
+											<input type="radio" name="s8prov2" class="NullableIntRadioField" id="s8prov2_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov2" class="NullableIntRadioField" id="s8prov2_1" value="1">
+											</td><td>Riparazione danni leggeri alle tamponature o tramezzi</td>
+											<td> 8
+											<input type="radio" name="s8prov8" class="NullableIntRadioField" id="s8prov8_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov8" class="NullableIntRadioField" id="s8prov8_1" value="1">
+											</td><td>Rimozione di altri oggetti interni o esterni</td>
+										</tr>
+										<tr>
+											<td> 3
+											<input type="radio" name="s8prov3" class="NullableIntRadioField" id="s8prov3_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov3" class="NullableIntRadioField" id="s8prov3_1" value="1">
+											</td><td>Riparazione copertura</td>
+											<td> 9
+											<input type="radio" name="s8prov9" class="NullableIntRadioField" id="s8prov9_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov9" class="NullableIntRadioField" id="s8prov9_1" value="1">
+											</td><td>Transennature e protezione passaggi</td>
+										</tr>
+										<tr>
+											<td> 4
+											<input type="radio" name="s8prov4" class="NullableIntRadioField" id="s8prov4_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov4" class="NullableIntRadioField" id="s8prov4_1" value="1">
+											</td><td>Puntellatura di scale</td>
+											<td>10
+											<input type="radio" name="s8prov10" class="NullableIntRadioField" id="s8prov10_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov10" class="NullableIntRadioField" id="s8prov10_1" value="1">
+											</td><td>Riparazioni delle reti degli impianti</td>
+										</tr>
+										<tr>
+											<td> 5
+											<input type="radio" name="s8prov5" class="NullableIntRadioField" id="s8prov5_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov5" class="NullableIntRadioField" id="s8prov5_1" value="1">
+											</td><td>Rimozione di intonaci, rivestimenti, controsoffittature</td>
+											<td>11
+											<input type="radio" name="s8prov11" class="NullableIntRadioField" id="s8prov11_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov11" class="NullableIntRadioField" id="s8prov11_1" value="1">
+											</td><td>
+											<input type="text" id="s8prov11other" class="NullableUnicodeField" size="40" name="s8prov11other" value="" disabled="">
+											</td>
+										</tr>
+										<tr>
+											<td> 6
+											<input type="radio" name="s8prov6" class="NullableIntRadioField" id="s8prov6_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov6" class="NullableIntRadioField" id="s8prov6_1" value="1">
+											</td><td>Rimozione di tegole, comignoli, parapetti</td>
+											<td>12
+											<input type="radio" name="s8prov12" class="NullableIntRadioField" id="s8prov12_0" value="0">
+											</td><td>
+											<input type="radio" name="s8prov12" class="NullableIntRadioField" id="s8prov12_1" value="1">
+											</td><td>
+											<input type="text" id="s8prov12other" class="NullableUnicodeField" size="40" name="s8prov12other" value="" disabled="">
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<p>
+									Unità immobiliari inagibili, famiglie e persone evacuate
+								</p>
+								<table>
+									<tbody>
+										<tr>
+											<td>Unità immobiliari inagibili
+											<input type="text" id="s8inag" class="NullableFloatField" size="2" name="s8inag" value="">
+											</td>
+											<td>Nuclei familiari evacuati
+											<input type="text" id="s8famev" class="NullableFloatField" size="2" name="s8famev" value="">
+											</td>
+											<td>N° persone evacuate
+											<input type="text" id="s8persev" class="NullableFloatField" size="3" name="s8persev" value="">
+											</td>
+										</tr>
+									</tbody>
+								</table>
+								<input type="button" id="s8pu_toggle" value="Compila provvedimenti urgenti">
+								<div id="s8pu_main" style="display: none;">
+									<a name="s8pu"></a>
+									<table id="s8pu_table">
+										<tbody>
+											<tr>
+												<th class="bt bl br be" rowspan="2" colspan="2">Proprietà</th>
+												<th class="bt bl br">Denominazione dell'Edificio</th>
+												<th class="bt br bl">Provvedimenti urgenti</th>
+											</tr>
+											<tr>
+												<td class="br bl le"><p id="s8pu_denom"></p></td>
+												<td class="bl br" rowspan="4">												<textarea rows="7" cols="30" id="s8provurg" class="TextAreaField" name="s8provurg"></textarea></td>
+											</tr>
+											<tr>
+												<td class="bl vertical" rowspan="4"><label for="s8pu_public">
+													<input type="checkbox" id="s8pu_public" disabled="disabled">
+													Pubblica</label></td>
+												<td class="br vertical" rowspan="4"><label for="s8pu_private">
+													<input type="checkbox" id="s8pu_private" disabled="disabled">
+													Privata</label></td>
+												<th class="br bl">Indirizzo</th>
+											</tr>
+											<tr>
+												<td class="br bl"><p id="s8pu_via"></p><p id="s8pu_civico"></p><p id="s8pu_paese"></p></td>
+											</tr>
+											<tr>
+												<th class="br bl">Denominazione d'uso</th>
+											</tr>
+											<tr>
+												<td class="br bl"><p id="s8pu_coduso"></p></td>
+												<td class="br bl">Rif. Scheda: <span id="s8pu_number"></span> del <span id="s8pu_date"></span></td>
+											</tr>
+										</tbody>
+									</table>
+								</div>
+							</div>
+							<div id="s9" class="sezione">
+								<h2>Sezione 9 - Altre osservazioni</h2>
+								<div id="s9obs" class="ObservationsField">
+									<table>
+										<tbody class="subfield_multiline_rows">
+											<tr class="managed">
+												<td>
+												<input type="text" class="input-xlarge obs_topic" placeholder="Argomento">
+												</td><td>												<textarea class="input-xlarge obs_notes" placeholder="Note"></textarea></td><td></td>
+											</tr>
+										</tbody>
+									</table>
+
+									<div class="control-group clearfix">
+										<div class="control-label">
+											&nbsp;
+										</div>
+										<div class="controls">
+											<a class="btn observationsfield_actions_add">Nuovo</a>
+										</div>
+									</div>
+								</div>
+								<table>
+									<tbody>
+										<tr>
+											<td><div id="attachments"></div></td><td><div id="attachment_preview"></div></td>
+										</tr>
+									</tbody>
+								</table>
+							</div>
+							<span py:if="error and not error.error_dict" class="fielderror" py:content="error"> </span>
+						</div>
+
+						<input type="hidden" name="initial-safety" value="{}" id="initial-id_safety">
+						<input type="submit" class="btn btn-warning" id="submit_safety_form_continue" name="submit_safety_form_continue" value="Salva scheda e continua">
+						<input type="submit" class="btn btn-primary" id="submit_safety_form_close" name="submit_safety_form_close" value="Salva scheda e chiudi">
+
+						<div class="clearingdiv">
+
+							<table>
+								<tbody>
+									<tr>
+										<td><h3>Attachments</h3><ul>
+
+										</ul></td>
+									</tr>
+								</tbody>
+							</table>
+
+							<div id="submit_box">
+								<input type="submit" class="btn btn-warning" id="submit_safety_form_continue" name="submit_safety_form_continue" value="Salva scheda e continua">
+								<input type="submit" class="btn btn-primary" id="submit_safety_form_close" name="submit_safety_form_close" value="Salva scheda e chiudi">
+							</div>
+
+							<div class="clearingdiv">
+
+								<div class="alert">
+									Per poter allegare file è necessario prima salvare la scheda.
+								</div>
+
+								<div class="helpcontainer" id="help0" style="display: none;">
+									<h3>NOTE ESPLICATIVE SULLA COMPILAZIONE DELLA SCHEDA AeDES 05/2000</h3>
+
+									<p>
+										La scheda va compilata per un intero edificio intendendo per edificio una unità strutturale “cielo terra”, individuabile per caratteristiche tipologiche e quindi distinguibile dagli edifici adiacenti per tali caratteristiche e anche per differenza di altezza e/o età di costruzione e/o piani sfalsati, etc.
+									</p>
+
+									<p>
+										La scheda è divisa in 9 sezioni. Le informazioni sono generalmente definite annerendo le caselle corrispondenti; in alcune sezioni la presenza di caselle quadrate ( ) indicano la possibilità di multiscelta: in questi casi si possono fornire più indicazioni; le caselle tonde (O) indicano la possibilità di una singola scelta. Dove sono presenti le caselle |__| si deve scrivere in stampatello appoggiando il testo a sinistra ed i numeri a destra.
+									</p>
+									
+								</div>
+								<div class="helpcontainer" id="help1" style="display: none;">
+									<h3>Sezione  1 - Identificazione edificio. </h3>
+
+									<p>
+										Indicare i dati di localizzazione: Provincia, Comune e Frazione.
+									</p>
+
+									<p>
+										IDENTIFICATIVO SCHEDA: Il rilevatore riporta il proprio numero assegnato  dal coordinamento centrale, un numero progressivo di scheda e la data del sopralluogo.
+									</p>
+									<p>
+										IDENTIFICATIVO  EDIFICIO
+									</p>
+									<p>
+										L’organizzazione del rilevamento prevede un Coordinamento Tecnico e la collaborazione dell’ufficio tecnico comunale. Questo ha tra l’altro il compito di assistenza per l’espletamento del lavoro dei rilevatori e per l’individuazione degli edifici. L’edificio in generale non è pre-individuato ed è quindi compito del rilevatore il suo riconoscimento e la sua identificazione  sulla cartografia riportata nello spazio della prima facciata. Il codice identificativo dell’edificio, costituito dall’insieme dei dati della prima riga nello spazio in grigio, viene poi assegnato, in modo univoco, presso il coordinamento comunale dove i rilevatori, dopo la visita comunicano l’esito del sopralluogo. La numerazione degli aggregati e degli edifici deve essere tenuta aggiornata in una cartografia generale presso il coordinamento comunale in modo che i rilevatori possano riferire le visite di sopralluogo, che sono richieste in genere su unità immobiliari, all’edificio che effettivamente le contiene. Per l’identificativo, il n° di carta, i dati Istat e i dati catastali è necessario quindi avvalersi della collaborazione del coordinamento comunale.
+									</p>
+									<p>
+										Posizione edificio: se l’edificio non è isolato su tutti i lati, va indicata la sua posizione all’interno dell’aggregato (Interno, d’estremità, angolo).
+									</p>
+									<p>
+										Denominazione edificio o proprietario: indicare la denominazione se edificio pubblico o il nome del condominio o di uno dei proprietari se privato (es. : Condominio Verde, Rossi Mario).
+									</p>
+									
+								</div>
+
+								<div class="helpcontainer" id="help2" style="display: none;">
+									<h3>Sezione 2 - Descrizione edificio</h3>
+									<p>
+										N° piani totali con interrati: indicare il numero di piani complessivi dell’edificio dallo spiccato di fondazioni incluso quello di sottotetto solo se praticabile. Computare interrati i piani mediamente interrati per più di metà della loro altezza. Altezza media di piano: indicare l’altezza che meglio approssima la media delle altezze di piano presenti. Superficie media di piano: va indicato l’intervallo che comprende la media delle superfici di tutti i piani. Età (2 opzioni): è possibile fornire 2 indicazioni: la prima è sempre l’età di costruzione, la seconda è l’eventuale anno in cui si sono effettuati eventuali interventi sulle strutture. Uso (multiscelta): indicare i tipi di uso compresenti nell’edificio. Utilizzazione: l’indicazione abbandonato si riferisce al caso di non utilizzato in cattive condizioni.
+									</p>
+									
+								</div>
+
+								<div class="helpcontainer" id="help3" style="display: none;">
+									<h3>Sezione 3 - Tipologia ( massimo 2 opzioni) </h3>
+									<p>
+										Per gli edifici in muratura si possono segnalare le due combinazioni: strutture orizzontali e verticali prevalenti o più vulnerabili; ad esempio: volte senza catene  e muratura in pietrame al 1° livello (2B) e solai rigidi (in c.a.)  e muratura  in pietrame  al  2° livello (6B). La muratura è distinta in due tipi in ragione della qualità (materiali, legante, realizzazione) e per ognuno è possibile segnalare anche la presenza di cordoli o catene se sono sufficientemente diffusi; è anche da rilevare l’eventuale presenza di  pilastri isolati, siano essi in c.a., muratura, acciaio o legno e/o la presenza di situazioni miste di muratura e strutture intelaiate. Gli edifici si considerano con strutture intelaiate di c.a. o d’acciaio, se l’intera struttura portante è in c.a. o in acciaio. Situazioni miste (muratura-telai) o rinforzi vanno indicate, con modalità multiscelta, nelle colonne G ed H della parte "muratura".
+									</p>
+									<pre>G1: c.a. (o altre strutture intelaiate) su muratura
+G2: muratura su c.a. (o altre strutture intelaiate)
+G3: Muratura mista a c.a. (o altre strutture intelaiate) in parallelo sugli stessi piani
+H1: Muratura rinforzata con iniezioni o intonaci non armati
+H2: Muratura armata o con intonaci armati
+H3: Muratura con altri o non identificati rinforzi
+									</pre>
+									<p>
+										Per le strutture intelaiate le tamponature sono irregolari quando presentano dissimmetrie in pianta  e/o in elevazione o sono in pratica completamente assenti in un piano in almeno una direzione.
+									</p>
+									
+								</div>
+
+								<div class="helpcontainer" id="help4" style="display: none;">
+									<h3>Sezione 4 - Danni ad ELEMENTI STRUTTURALI  PRINCIPALI ... </h3>
+									<p>
+										I danni da riportare nella sezione 4 sono quelli ‘apparenti’, cioè quelli riscontrabili a vista. Nella tabella ogni riga è riferita ad un tipo di componente l'organismo strutturale, mentre le colonne sono differenziate in modo da consentire di rilevare i livelli di danno presenti sulla componente e le relative estensioni in percentuale rispetto alla sua totalità nell'edificio.
+									</p>
+									<p>
+										La definizione del livello di danno riscontrato è di particolare rilevanza, essa è basata sulla scala macrosismica europea EMS98, integrata con le definizioni puntuali utilizzate nelle schede di rilievo GNDT. In particolare si farà riferimento alla sommaria descrizione riportata di seguito, maggiori dettagli sono riportati nel manuale:
+									</p>
+									<p>
+										D1 danno leggero  è un danno che non cambia in modo significativo la resistenza della struttura e non pregiudica la sicurezza degli occupanti a causa di cadute di elementi non strutturali; il danno è leggero anche se queste ultime possono rapidamente essere scongiurate.
+									</p>
+									<p>
+										D2-D3 danno medio – grave: è un danno che potrebbe anche cambiare in modo significativo la resistenza della struttura senza che venga avvicinato palesemente il limite del crollo parziale di elementi strutturali principali.
+									</p>
+									<p>
+										D4-D5 danno gravissimo: è un danno che modifica in modo evidente la resistenza della struttura portandola vicino al limite del crollo parziale o totale di elementi strutturali principali. Stato descritto da danni superiori ai precedenti, incluso il collasso.
+									</p>
+
+									<p>
+										Provvedimenti di pronto intervento eseguiti: sono quelli che con tempi e mezzi limitati conseguono una eliminazione o riduzione accettabile del rischio; vanno indicati quelli già messi in atto.
+									</p>
+
+									
+								</div>
+
+								<div class="helpcontainer" id="help5" style="display: none;">
+									<h3>Sezione 5 - Danni ad ELEMENTI NON STRUTTURALI... </h3>
+									<p>
+										Per gli elementi non strutturali va indicata la presenza del danno e gli eventuali provvedimenti già in atto, con modalità multiscelta.
+									</p>
+									
+								</div>
+
+								<div class="helpcontainer" id="help6" style="display: none;">
+									<h3>Sezione 6 - Pericolo ESTERNO ed interventi di (p.i.) eseguiti </h3>
+									<p>
+										Indicare i pericoli indotti da costruzioni adiacenti e/o dal contesto e gli eventuali provvedimenti presi, con modalità multiscelta.
+									</p>
+									
+								</div>
+
+								<div class="helpcontainer" id="help7" style="display: none;">
+									<h3>Sezione 7 - Terreno e fondazioni </h3>
+									<p>
+										Va individuata la morfologia del sito ed eventuali dissesti sul terreno e/o sulla fondazione, in atto o temibili.
+									</p>
+
+									
+								</div>
+
+								<div class="helpcontainer" id="help8" style="display: none;">
+									<h3>Sezione 8 - Giudizio di AGIBILITÀ </h3>
+									<p>
+										Il rilevatore stabilisce le condizioni di rischio dell’edificio (tabella valutazione del rischio) sulla base delle informazioni raccolte, dell’ispezione visiva e delle proprie valutazioni, relativamente alle condizioni strutturali (Sezione 3 e 4 - Tipologia e danno), alle condizioni degli elementi non strutturali (Sezione 5), al pericolo derivante dalle altre costruzioni (Sezione 6) e alla situazione geotecnica (Sezione 7);   . L’esito B va indicato quando la riduzione del rischio si può conseguire con il pronto intervento (opere di consistenza limitata, di rapida e facile esecuzione che rendono agibile l’edificio). L’esito D solo in casi particolarmente problematici e soprattutto se si tratta di edifici pubblici la cui inagibilità compromette funzioni importanti.
+									</p>
+									<p>
+										Unità immobiliari inagibili, famiglie e persone evacuate: sono da indicare gli effetti del giudizio di inagibilità, qualora confermato dal Sindaco; vanno pertanto indicate anche le famiglie e persone da evacuare, oltre a quelle che  abbiano già lasciato l’edificio. Provvedimenti di pronto intervento: indicare i provvedimenti necessari per rendere agibile l’edificio e/o per eliminare rischi indotti.
+									</p>
+
+									
+								</div>
+
+								<div class="helpcontainer" id="help9" style="display: none;">
+									<h3>Sezione 9 - Altre osservazioni </h3>
+									<p>
+										Accuratezza della visita:  indicare con quale livello di accuratezza e completezza è stato possibile effettuare il sopralluogo .
+									</p>
+									<p>
+										Sul danno, sui provvedimenti di pronto intervento, l’agibilità o altro: riportare le annotazioni che si ritengono importanti per meglio precisare i vari aspetti del rilevamento. L’eventuale fotografia d’insieme dell’edificio deve essere spillata nel riquadro tratteggiato in chiaro e nel solo angolo in alto a destra.
+									</p>
+
+									
+								</div>
+
+							</div>
+						</div>
+					</form>
+					<!-- CONTENT END -->
+
+					<!-- FOOTER -->
+
+					<hr>
+					<div class="container">
+						<div class="row">
+							<div class="span3">
+								<strong>Link Utili</strong>
+								<ul class="nav nav-tabs nav-stacked">
+									<li>
+										<a target="_new" href="http://www.regione.toscana.it/">Regione Toscana</a>
+									</li>
+									<li>
+										<a target="_new" href="http://web.rete.toscana.it/sgr/webgis/consulta/viewer.jsp">Geoscopio</a>
+									</li>
+									<li>
+										<a target="_new" href="http://sister.agenziaterritorio.it/index.html">Catasto
+										nazionale</a>
+									</li>
+									<li>
+										<a target="_new" href="https://web.e.toscana.it/sigmater/">Catasto
+										regionale</a>
+									</li>
+									<li>
+										<a target="_new" href="http://www.istat.it/popolazione/demo/index.php">Ricerca
+										ISTAT</a>
+									</li>
+									<li>
+										<a target="_new" href="http://servizi.protezionecivile.toscana.it/">Protezione Civile
+										Regionale</a>
+									</li>
+									<li>
+										<a target="_new" href="http://www.protezionecivile.it/">Protezione
+										Civile Nazionale</a>
+									</li>
+								</ul>
+							</div>
+							<div class="span3">
+								<strong><a href="http://www.rete.toscana.it/sett/pta/sismica/index.shtml">Ufficio tecnico del Genio Civile</a></strong>
+								<p>
+									Area Vasta di Firenze, Prato, Pistoia e Arezzo - Coordinamento Regionale Prevenzione Sismica
+								</p>
+								<p>
+									Via San Gallo 34a - 55129 Firenze
+								</p>
+								<p>
+									Tel. <a href="tel:055-4622711">055-4622711</a> - Fax 055-461543
+								</p>
+							</div>
+							<div class="span3">
+								<strong>Contatti:</strong>
+								<ul class="nav nav-tabs nav-stacked">
+									<li>
+										<a href="mailto:nicoletta.pasotti@regione.toscana.it">nicoletta.pasotti@regione.toscana.it</a>
+									</li>
+									<li>
+										<a href="mailto:vania.pellegrineschi@regione.toscana.it">vania.pellegrineschi@regione.toscana.it</a>
+									</li>
+								</ul>
+							</div>
+							<div class="span2">
+								<strong>Realizzato da</strong>
+								<div>
+									<a target="_new" href="http://www.faunalia.it/"> <img src="./GeosismaSchedaAgibilita_files/faunalia.png"> </a>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- FOOTER END -->
+
+				</div>
+			</div>
+		</div><ul class="ui-autocomplete ui-menu ui-widget ui-widget-content ui-corner-all" role="listbox" aria-activedescendant="ui-active-menuitem" style="z-index: 1; top: 0px; left: 0px; display: none;"></ul><ul class="ui-autocomplete ui-menu ui-widget ui-widget-content ui-corner-all" role="listbox" aria-activedescendant="ui-active-menuitem" style="z-index: 1; top: 0px; left: 0px; display: none;"></ul><ul class="ui-autocomplete ui-menu ui-widget ui-widget-content ui-corner-all" role="listbox" aria-activedescendant="ui-active-menuitem" style="z-index: 1; top: 0px; left: 0px; display: none;"></ul><ul class="ui-autocomplete ui-menu ui-widget ui-widget-content ui-corner-all" role="listbox" aria-activedescendant="ui-active-menuitem" style="z-index: 1; top: 0px; left: 0px; display: none;"></ul>
+		<div id="ui-datepicker-div" class="ui-datepicker ui-widget ui-widget-content ui-helper-clearfix ui-corner-all" style="position: absolute; top: 619.5px; left: 1376.5px; z-index: 1; display: none;">
+			<div class="ui-datepicker-header ui-widget-header ui-helper-clearfix ui-corner-all">
+				<a class="ui-datepicker-prev ui-corner-all" onclick="DP_jQuery_1379610966549.datepicker._adjustDate(&#39;#sdate&#39;, -1, &#39;M&#39;);" title="Prev"><span class="ui-icon ui-icon-circle-triangle-w">Prev</span></a><a class="ui-datepicker-next ui-corner-all" onclick="DP_jQuery_1379610966549.datepicker._adjustDate(&#39;#sdate&#39;, +1, &#39;M&#39;);" title="Next"><span class="ui-icon ui-icon-circle-triangle-e">Next</span></a>
+				<div class="ui-datepicker-title">
+					<span class="ui-datepicker-month">September</span>&nbsp;<span class="ui-datepicker-year">2013</span>
+				</div>
+			</div>
+			<table class="ui-datepicker-calendar">
+				<thead>
+					<tr>
+						<th class="ui-datepicker-week-end"><span title="Sunday">Su</span></th><th><span title="Monday">Mo</span></th><th><span title="Tuesday">Tu</span></th><th><span title="Wednesday">We</span></th><th><span title="Thursday">Th</span></th><th><span title="Friday">Fr</span></th><th class="ui-datepicker-week-end"><span title="Saturday">Sa</span></th>
+					</tr>
+				</thead>
+				<tbody>
+					<tr>
+						<td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">1</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">2</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">3</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">4</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">5</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">6</a></td><td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">7</a></td>
+					</tr>
+					<tr>
+						<td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">8</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">9</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">10</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">11</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">12</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">13</a></td><td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">14</a></td>
+					</tr>
+					<tr>
+						<td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">15</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">16</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">17</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">18</a></td><td class=" ui-datepicker-days-cell-over  ui-datepicker-current-day ui-datepicker-today" onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default ui-state-highlight ui-state-active" href="./GeosismaSchedaAgibilita/#">19</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">20</a></td><td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">21</a></td>
+					</tr>
+					<tr>
+						<td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">22</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">23</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">24</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">25</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">26</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">27</a></td><td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">28</a></td>
+					</tr>
+					<tr>
+						<td class=" ui-datepicker-week-end " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">29</a></td><td class=" " onclick="DP_jQuery_1379610966549.datepicker._selectDay(&#39;#sdate&#39;,8,2013, this);return false;"><a class="ui-state-default" href="./GeosismaSchedaAgibilita/#">30</a></td><td class=" ui-datepicker-other-month ui-datepicker-unselectable ui-state-disabled">&nbsp;</td><td class=" ui-datepicker-other-month ui-datepicker-unselectable ui-state-disabled">&nbsp;</td><td class=" ui-datepicker-other-month ui-datepicker-unselectable ui-state-disabled">&nbsp;</td><td class=" ui-datepicker-other-month ui-datepicker-unselectable ui-state-disabled">&nbsp;</td><td class=" ui-datepicker-week-end ui-datepicker-other-month ui-datepicker-unselectable ui-state-disabled">&nbsp;</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</body>
+</html>

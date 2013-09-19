@@ -1,0 +1,280 @@
+h1.safetytitle, h2.safetytitle {
+  text-transform: uppercase;
+  text-align: center;
+  padding-top: 1em;
+  margin-bottom: 0px;
+  clear: both;
+}
+h3.safetytitle {
+  text-align: center;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  font-weight: normal;
+}
+#logori {
+  width: 50px;
+}
+#logopdc {
+  height: 25px;
+}
+#logo {
+  margin-top: 1em;
+  float: left;
+}
+#logo p {
+  margin-top: 0px;
+  margin-bottom: 0px;
+}
+#logo1 {
+  margin-top: 1em;
+  float: right;
+  width: 40%;
+}
+#logo1 p {
+  text-align: right;
+  text-transform: uppercase;
+  font-weight: bold;
+}
+
+div.sezione {
+  border: 1pt solid black;
+}
+#s1box {
+  float: right;
+  width: 50%;
+}
+#s1idsop {
+  border: 1pt solid black;
+}
+#s1ided {
+  border: 1pt solid black;
+}
+#s8table {
+  background: url('./report-giudizio.png') no-repeat scroll left top;
+  width: 742px;
+  height: 262px;
+}
+
+span.partiallabeledradiobuttonlist label {
+  display: block;
+  white-space: nowrap;
+  padding: 0px;
+  margin: 0px;
+}
+span.partiallabeledradiobuttonlist input {
+  vertical-align: middle;
+  margin: 0px;
+  padding: 0px;
+}
+span.partiallabeledradiobuttonlist label span {
+  vertical-align: middle;
+}
+
+th.vertical {
+  -webkit-transform: rotate(-90deg); 
+  -moz-transform: rotate(-90deg);
+}
+th.tall { height: 100px; }
+td.vertical {
+  -webkit-transform: rotate(-90deg); 
+  -moz-transform: rotate(-90deg);
+}
+td.tall { height: 100px; }
+span.error {
+  color: red;
+  font-size: large;
+}
+
+#altrestrutture {
+    width: 100%;
+}
+#terrenofondazioni td {
+    padding: 2px;
+}
+#altrestrutture td, #altrestrutture th, #regolarita td, #regolarita th, #terrenofondazioni td, #provvedimenti td {
+    border: 1pt solid black;
+}
+tr.bordered td {
+    border: 1pt solid #bbb;
+    margin: 0px;
+}
+table#tipologia td.row_n { /* font-size: 1.2em; */ }
+table#tipologia td.rowtitle table td { text-align: left; border: none }
+table#tipologia td.rowtitle .sub { font-size: 80%; }
+table#tipologia { border-collapse: collapse; }
+table#tipologia th { text-align: center; }
+table#tipologia td { text-align: center; }
+table#tipologia td.rowtitle { text-align: left; }
+table#s2desc {
+    border-collapse: collapse;
+    border-bottom: 1pt solid black;
+}
+table#s2desc td { white-space:nowrap; }
+table#s2desc th { text-align: center; }
+table#s2desc .topheader th { border-bottom: 1pt solid black; }
+table#s4d {
+    border-collapse: collapse;
+}
+table#s4d th { text-align: center; }
+table#s4d td { text-align: center; border: 1pt solid #bbb }
+table#s4d td.tltitler { text-align: right; border-bottom: none; }
+table#s4d td.tltitleb { text-align: left; border-top: none; }
+table#s5tbl { border-collapse: collapse; }
+table#s5tbl th { text-align: center; }
+table#s5tbl td { text-align: center; border: 1pt solid #bbb }
+table#s5tbl td.tltitleb { text-align: left; vertical-align: bottom; border-top: none; }
+table#s6tbl { border-collapse: collapse; }
+table#s6tbl th { text-align: center; }
+table#s6tbl td { text-align: center; border: 1pt solid #bbb }
+table#s6tbl td.tltitleb { text-align: left; vertical-align: bottom; border-top: none; }
+table#s8accu td { white-space:nowrap; }
+table#s8pu_table { border-collapse: collapse; }
+table#s8pu_table { text-align: center; border-collapse: collapse; }
+
+table th.bt { border-top: 1pt solid black; }
+table th.bl { border-left: 1pt solid black; }
+table th.br { border-right: 1pt solid black; }
+table th.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table th.dr { border-right: 1pt dashed black; }
+table th.be { border-bottom: 1pt solid black; }
+table td.be { border-bottom: 1pt solid black; }
+table td.bl { border-left: 1pt solid black; }
+table td.br { border-right: 1pt solid black; }
+table td.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table td.dr { border-right: 1pt dashed black; }
+table td.w { background: #ccc; }
+table td.e { background: #999; }
+table td.c { background: #666; }
+table td.let { vertical-align: middle; text-align: center; }
+table td.cen { vertical-align: middle; text-align: center; }
+
+table#s4d th.bt { border-top: 1pt solid black; }
+table#s4d th.bl { border-left: 1pt solid black; }
+table#s4d th.br { border-right: 1pt solid black; }
+table#s4d th.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table#s4d th.dr { border-right: 1pt dashed black; }
+table#s4d th.be { border-bottom: 1pt solid black; }
+table#s4d td.be { border-bottom: 1pt solid black; }
+table#s4d td.bl { border-left: 1pt solid black; }
+table#s4d td.br { border-right: 1pt solid black; }
+table#s4d td.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table#s4d td.dr { border-right: 1pt dashed black; }
+
+table#s5tbl th.bt { border-top: 1pt solid black; }
+table#s5tbl th.bl { border-left: 1pt solid black; }
+table#s5tbl th.br { border-right: 1pt solid black; }
+table#s5tbl th.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table#s5tbl th.dr { border-right: 1pt dashed black; }
+table#s5tbl th.be { border-bottom: 1pt solid black; }
+table#s5tbl td.be { border-bottom: 1pt solid black; }
+table#s5tbl td.bl { border-left: 1pt solid black; }
+table#s5tbl td.br { border-right: 1pt solid black; }
+table#s5tbl td.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table#s5tbl td.dr { border-right: 1pt dashed black; }
+
+table#s6tbl th.bt { border-top: 1pt solid black; }
+table#s6tbl th.bl { border-left: 1pt solid black; }
+table#s6tbl th.br { border-right: 1pt solid black; }
+table#s6tbl th.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table#s6tbl th.dr { border-right: 1pt dashed black; }
+table#s6tbl th.be { border-bottom: 1pt solid black; }
+table#s6tbl td.be { border-bottom: 1pt solid black; }
+table#s6tbl td.bl { border-left: 1pt solid black; }
+table#s6tbl td.br { border-right: 1pt solid black; }
+table#s6tbl td.bb { border-left: 1pt solid black; border-right: 1pt solid black; }
+table#s6tbl td.dr { border-right: 1pt dashed black; }
+
+#s8table { position: relative; }
+#s8agibilita_0 { position: absolute; right: 20px; top: 40px; }
+#s8agibilita_1 { position: absolute; right: 20px; top: 80px; }
+#s8agibilita_2 { position: absolute; right: 20px; top: 115px; }
+#s8agibilita_3 { position: absolute; right: 20px; top: 154px; }
+#s8agibilita_4 { position: absolute; right: 20px; top: 194px; }
+#s8agibilita_5 { position: absolute; right: 20px; top: 232px; }
+#s8riskst_0 { position: absolute; left: 130px; top: 130px; }
+#s8riskst_1 { position: absolute; left: 130px; top: 160px; }
+#s8riskst_2 { position: absolute; left: 130px; top: 190px; }
+#s8risknst_0 { position: absolute; left: 170px; top: 130px; }
+#s8risknst_1 { position: absolute; left: 170px; top: 160px; }
+#s8risknst_2 { position: absolute; left: 170px; top: 190px; }
+#s8riskext_0 { position: absolute; left: 210px; top: 130px; }
+#s8riskext_1 { position: absolute; left: 210px; top: 160px; }
+#s8riskext_2 { position: absolute; left: 210px; top: 190px; }
+#s8riskgeo_0 { position: absolute; left: 250px; top: 130px; }
+#s8riskgeo_1 { position: absolute; left: 250px; top: 160px; }
+#s8riskgeo_2 { position: absolute; left: 250px; top: 190px; }
+
+#s8pu_toggle {
+    font-size: large;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+#map {
+    width: 400px;
+    height: 256px;
+    border: 1px solid #ccc;
+}
+
+#overview {
+    width: 400px;
+    height: 256px;
+    border: 1px solid #ccc;
+}
+
+.gsoverviewElement {
+    padding: 0px;
+}
+
+.gsoverviewExtentRectangle {
+    overflow: hidden;
+/*    background-image: url("img/blank.gif"); */
+    cursor: move;
+    border: 2px dotted yellow;
+}
+
+
+.helpcontainer {
+    background: #fff;
+    position: fixed;
+    top: 0;
+    right: 0px;
+    width: 500px;
+    padding: 20px;
+    border: 4px solid blue;
+    z-index: 32000;
+}
+
+table#recap {
+    width: 100%;
+    margin-top: 1em;
+}
+table#recap td.navinfo {
+    text-align: right;
+    width: 50%;
+}
+table#recap .pagination {
+    text-align: right;
+    float: right;
+}
+table#recap .pagination a, table#recap .pagination span {
+    display: block;
+    float: left;
+    padding: 0.3em 0.5em;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+table#recap .pagination .current.next {
+    margin-right: 0pt;
+}
+
+#submit_box {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    border: 1pt solid black;
+    z-index: 10000;
+    padding: 4px;
+    background: #fff;
+}
