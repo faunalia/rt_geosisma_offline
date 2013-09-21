@@ -11,4 +11,4 @@ tracker=
 homepage=
 repository=
 experimental=True
-icon=icons/icon.png
+icon=
