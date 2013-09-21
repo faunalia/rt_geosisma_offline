@@ -1,5 +1,5 @@
 [general]
-name=Geosisma-prototype
+name=GeosismaPrototype
 qgisMinimumVersion=2.0
 description=Prototype to manage Geosisma forms
 version=version 0.1

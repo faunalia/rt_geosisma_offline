@@ -1,4 +1,4 @@
-Geosisma-prototype
+GeosismaPrototype
 ==================
 
 QGIS plugin using WebView to manage Geosisma forms

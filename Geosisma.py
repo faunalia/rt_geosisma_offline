@@ -142,12 +142,12 @@ class Geosisma:
         self.canvas = iface.mapCanvas()
 
     def initGui(self):
-        self.action = QAction(QIcon(":/plugins/"), "&Geosisma-prototype", self.iface.mainWindow())
+        self.action = QAction(QIcon(":/plugins/"), "&GeosismaPrototype", self.iface.mainWindow())
         QObject.connect(self.action, SIGNAL("activated()"), self.show_graph) 
-        self.iface.addPluginToMenu("Geosisma-prototype", self.action)
+        self.iface.addPluginToMenu("GeosismaPrototype", self.action)
 
     def unload(self):
-        self.iface.removePluginMenu("Geosisma-prototype",self.action)
+        self.iface.removePluginMenu("GeosismaPrototype",self.action)
 
 
     def show_graph(self):
