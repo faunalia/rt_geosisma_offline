@@ -1,0 +1,34 @@
+{
+  "default_format": "application/json",
+  "fields": {
+    "id_istat": {
+      "help_text": "Unicode string data. Ex: \"Hello World\"",
+      "nullable": false,
+      "readonly": false,
+      "type": "string"
+    },
+    "idregione": {
+      "help_text": "Unicode string data. Ex: \"Hello World\"",
+      "nullable": false,
+      "readonly": false,
+      "type": "string"
+    },
+    "sigla": {
+      "help_text": "Unicode string data. Ex: \"Hello World\"",
+      "nullable": false,
+      "readonly": false,
+      "type": "string"
+    },
+    "toponimo": {
+      "help_text": "Unicode string data. Ex: \"Hello World\"",
+      "nullable": false,
+      "readonly": false,
+      "type": "string"
+    }
+  },
+  "filtering": {
+    "id_istat": 1,
+    "sigla": 1,
+    "toponimo": 1
+  }
+}
