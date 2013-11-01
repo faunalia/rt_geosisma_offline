@@ -14,9 +14,6 @@
 
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-    @author Luigi Pirelli
-
 * */
 
 // Call fun(row, col) with row in [firstrow, lastrow] and col in each
@@ -214,12 +211,13 @@ $(function() {
 
     var api_url = '/api/v1/';
     var get_autocomplete = function(name, query, on_result) {
-        console.log("prova log");
+        // set asyncronous ajax call
         var data = $.extend({
             "format": "json",
             "limit": 0,
         }, query);
-        return $.getJSON(api_url + name, data, on_result);
+        console.log(query.toponimo__istartswith)
+        return $.getJSON(offline_autocomplete.get( name, JSON.stringify(data) ), data, on_result);
     };
 
     // Setup autocompletion
@@ -289,7 +287,8 @@ $(function() {
             // so I have to pass through a couple of JOINs.
             // refs #2108 https://labs.truelite.it/issues/2108
             var q = { "limit": 10, "format": "json", "belfiore__comune__id_istat": val.id_istat };
-            $.getJSON(api_url + "catasto2010/", q, function(data) {
+            //$.getJSON(api_url + "catasto2010_1/", q, function(data) {
+            $.getJSON(offline_autocomplete.get( "catasto2010_1/" , JSON.stringify(q) ), q, function(data) {
                 var geoms = $.map(data.objects, function(el) { return el.the_geom });
                 var c = OpenLayers.Geometry.fromWKT(geoms);
                 var bounds = c.getBounds();
@@ -414,7 +413,7 @@ $(function() {
 
         // Piazza al Serchio (LU) foglio=1 belfiore="G582", part 10 to 19 are all good
 
-        $.getJSON(api_url + "catasto2010/", query, function(data) {
+        $.getJSON(offline_autocomplete.get( "catasto2010_2/" , JSON.stringify(query) ), query, function(data) {
             console.log("catasto", data);
             var geoms = $.map(data.objects, function(el) { return el.the_geom });
             if(geoms.length > 0) {

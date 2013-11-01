@@ -23,7 +23,9 @@
 		<script src="./GeosismaSchedaAgibilita_files/OpenLayers.js"></script>
 		<script src="./GeosismaSchedaAgibilita_files/proj4.min.js"></script>
 		<script src="./GeosismaSchedaAgibilita_files/safety_fields.js"></script>
-		<script src="./GeosismaSchedaAgibilita_files/safety.js"></script>
+		<!--script src="./GeosismaSchedaAgibilita_files/safety.js"></script-->
+		<script src="./offline_bridge/SafetyBridgeToQgis.js"></script>
+		<script src="./offline_bridge/QgisToSafetyBridge.js"></script>
 		<script type="text/javascript">
             // needed by proj4
 
@@ -168,6 +170,7 @@
 
 
             $(document).ready(function() {
+            	console.log("caricato")
                 // TODO: this does not seem to work atm
                 $('#content h2').each(function(intIndex1, o) {
                     var i = '<img onClick="toggle_help(' + intIndex1.toString() + ');" src="./GeosismaSchedaAgibilita_files/help.png"/>';
@@ -188,7 +191,11 @@
                         return false;
                     }
                 });
-
+                $("form").bind("submit", function(e) {
+                	var jsonScheda = $("#id_safety").val()
+                	console.log(jsonScheda)
+                	offline_autocomplete.printValue(jsonScheda);
+                });
             });
 
 		</script>
@@ -232,6 +239,7 @@
 
 				<div class="clearingdiv">
 					<form method="POST" action="./GeosismaSchedaAgibilita.html">
+					<!--form method="POST" action="./missions/safety/3"-->
 						<div style="display:none">
 							<input type="hidden" name="csrfmiddlewaretoken" value="LHmOePD1iz3tUAQI3EHmgaTt8DSo0iJn">
 						</div>
@@ -363,19 +371,19 @@
 										<tbody>
 											<tr>
 												<td>Provincia</td><td>
-												<input type="text" id="s1prov" class="NullableUnicodeField ui-autocomplete-input" name="s1prov" value="" autocomplete="off" role="textbox" aria-autocomplete="list" aria-haspopup="true">
+												<input type="text" id="s1prov" class="NullableUnicodeField ui-autocomplete-input" name="s1prov" value="" autocomplete="on" role="textbox" aria-autocomplete="list" aria-haspopup="true">
 												</td>
 											</tr>
 											<tr>
 												<td>Comune</td><td>
-												<input type="text" id="s1com" class="NullableUnicodeField ui-autocomplete-input" name="s1com" value="" autocomplete="off" role="textbox" aria-autocomplete="list" aria-haspopup="true">
+												<input type="text" id="s1com" class="NullableUnicodeField ui-autocomplete-input" name="s1com" value="" autocomplete="on" role="textbox" aria-autocomplete="list" aria-haspopup="true">
 												</td>
 											</tr>
 											<tr>
 												<td>Frazione/Località
 												<br>
 												(denominazione Istat)</td><td>
-												<input type="text" id="s1loc" class="NullableUnicodeField ui-autocomplete-input" name="s1loc" value="" autocomplete="off" role="textbox" aria-autocomplete="list" aria-haspopup="true">
+												<input type="text" id="s1loc" class="NullableUnicodeField ui-autocomplete-input" name="s1loc" value="" autocomplete="on" role="textbox" aria-autocomplete="list" aria-haspopup="true">
 												</td>
 											</tr>
 										</tbody>
