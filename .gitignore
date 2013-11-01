@@ -1,3 +1,6 @@
+# sqlites db
+*.sqlite
+
 # py compilation
 *.pyc
 
