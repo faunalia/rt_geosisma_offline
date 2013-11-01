@@ -115,7 +115,8 @@ class GeosismaOffline:
         self.canvas = iface.mapCanvas()
     
     def initGui(self):
-        self.action = QAction(QIcon(":/plugins/"), "&RT Geosisma Offline", self.iface.mainWindow())
+        #self.action = QAction(QIcon(":/plugins/geosismaoffline/icon.png"), "&RT Geosisma Offline", self.iface.mainWindow())
+        self.action = QAction(QIcon(":/icons/icon.png"), "&RT Geosisma Offline", self.iface.mainWindow())
         QObject.connect(self.action, SIGNAL("activated()"), self.show_graph) 
         self.iface.addPluginToMenu("RT Geosisma Offline", self.action)
         self.iface.addToolBarIcon(self.action)
