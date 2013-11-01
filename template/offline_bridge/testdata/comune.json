@@ -1,0 +1,36 @@
+{
+	"meta": {
+		"limit": 10,
+		"next": null,
+		"offset": 0,
+		"previous": null,
+		"total_count": 6
+	},
+	"objects": [
+		{
+			"id_istat": "051",
+			"provincia": "/api/v1/provincia/037/",
+			"toponimo": "San Benedetto Val di Sambro"
+		}, {
+			"id_istat": "052",
+			"provincia": "/api/v1/provincia/037/",
+			"toponimo": "San Giorgio di Piano"
+		}, {
+			"id_istat": "053",
+			"provincia": "/api/v1/provincia/037/",
+			"toponimo": "San Giovanni in Persiceto"
+		}, {
+			"id_istat": "054",
+			"provincia": "/api/v1/provincia/037/",
+			"toponimo": "San Lazzaro di Savena"
+		}, {
+			"id_istat": "055",
+			"provincia": "/api/v1/provincia/037/",
+			"toponimo": "San Pietro in Casale"
+		}, {
+			"id_istat": "056",
+			"provincia": "/api/v1/provincia/037/",
+			"toponimo": "Sant'Agata Bolognese"
+		}
+	]
+}
