@@ -127,7 +127,7 @@ class GeosismaOffline:
 
     def show_graph(self):
         GeosismaWebForm = 'GeosismaSchedaAgibilita.html'
-        template_path = os.path.dirname(os.path.realpath(__file__))+'/template/'+GeosismaWebForm
+        template_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),'template',GeosismaWebForm)
         # create webview clearing cache
         # js-python connector is insude WebView Class
         self.dlg = GeosismaOfflineDlg()
@@ -135,7 +135,9 @@ class GeosismaOffline:
         #self.web = WebPage()
         # load content
         QWebSettings.clearMemoryCaches()
-        self.dlg.ui.webView.load(QUrl(template_path))
+        url = QUrl.fromLocalFile( template_path ) # necessary to be compatible among different way to refer resources (e.g. windows y linux)
+        self.dlg.ui.webView.load(url)
+        #self.dlg.ui.webView.load(QUrl(template_path))
         self.dlg.show()
 
 

@@ -19,6 +19,7 @@ Created on Oct 7, 2013
 @author: Luigi Pirelli (luipir@gmail.com)
 '''
 
+from PyQt4.QtCore import QUrl
 from qgis.core import *
 import os, inspect
 import collections
@@ -100,7 +101,7 @@ class GeosismaQuery(object):
     #===========================================================================
     
     def getJsonFile(self):
-        return self.resultfile
+        return QUrl.fromLocalFile( self.resultfile ).toString()
 
     def getJson(self):
         with open(self.resultfile) as fp:
