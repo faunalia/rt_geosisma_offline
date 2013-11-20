@@ -194,7 +194,7 @@
                 $("form").bind("submit", function(e) {
                 	var jsonScheda = $("#id_safety").val()
                 	console.log(jsonScheda)
-                	offline_autocomplete.printValue(jsonScheda);
+                	safetyFormBridge.saveSafety(jsonScheda);
                 });
             });
 
@@ -280,7 +280,7 @@
 									<div id="s1idsop">
 										<h3>Identificativo sopralluogo</h3>
 										<p>
-											Squadra <span id="j_team">distruzione del mondo conosciuto 1</span> Scheda n.
+											Squadra <span id="j_team"></span> Scheda n.
 											<input type="text" id="number" class="NullableFloatField" size="3" name="number" value="">
 											<!--input type="button" value="update" id="s1number_update" /-->
 											Data

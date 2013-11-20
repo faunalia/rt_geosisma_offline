@@ -20,10 +20,10 @@
 // letter in cols
 function foreachrc(firstrow, lastrow, cols, fun)
 {
-    var names = cols.split("")
+    var names = cols.split("");
     for (var i = firstrow; i <= lastrow; ++i)
         for (var j = 0; j < names.length; ++j)
-            fun(i, names[j])
+            fun(i, names[j]);
 }
 
 // Return an array with all input elements inside \a main whose ID matches or
@@ -45,38 +45,38 @@ function refresh_attachments()
 {
     $.getJSON("/safety/attachment_list/" + $("#safety_id").val(),
             function(data){
-                var master = $("#attachments")
-                master.empty()
-                var ul = $("<ul>")
+                var master = $("#attachments");
+                master.empty();
+                var ul = $("<ul>");
                 $.each(data.res, function(i, item){
                     if (i == 0)
                     {
-                        master.append("<h2>Attachments</h2>")
-                        master.append(ul)
+                        master.append("<h2>Attachments</h2>");
+                        master.append(ul);
                     }
-                    var li = $("<li>")
+                    var li = $("<li>");
                     var a = $("<a>")
                               .attr("href", "/safety/attachment/"+item.id)
-                              .text(item.name)
+                              .text(item.name);
                     if (item.type.substr(0, 6) == "image/")
                         a.click(function() {
-                            var preview = $("#attachment_preview")
-                            preview.empty()
+                            var preview = $("#attachment_preview");
+                            preview.empty();
                             preview.append($("<img>")
-                                           .attr("src", "/safety/attachment/"+item.id))
-                            return false
-                        })
-                    li.append(a)
-                    li.append(" ")
+                                           .attr("src", "/safety/attachment/"+item.id));
+                            return false;
+                        });
+                    li.append(a);
+                    li.append(" ");
                     li.append($("<a>")
                               .attr("href", "#")
                               .text("[del]")
                               .click(function() {
                                   $.getJSON("/safety/attachment_del/" + $("#safety_id").val() + "/" + item.id,
-                                      function(data) { refresh_attachments() })
-                                  return false
-                              }))
-                    ul.append(li)
+                                      function(data) { refresh_attachments(); });
+                                  return false;
+                              }));
+                    ul.append(li);
                 });
             }
     );
@@ -85,12 +85,12 @@ function refresh_attachments()
 // Pad numbers with trailing digits to be 'count' characters long
 function numpad(val, count)
 {
-    if (val == null || val == "") return null
+    if (val == null || val == "") return null;
 
-    var res = val.toString()
+    var res = val.toString();
     while (res.length < count)
-        res = "0" + res
-    return res
+        res = "0" + res;
+    return res;
 }
 
 function update_safety_number()
@@ -98,8 +98,8 @@ function update_safety_number()
     $.get("/safety/valid_report_number", { safety_id: $("#safety_id").val(), safety_date: $("#date").val() },
             function(data)
             {
-                $("#number").val(data)
-                $("span.footer_number").text(data)
+                $("#number").val(data);
+                $("span.footer_number").text(data);
             }
     );
     return false;
@@ -216,8 +216,8 @@ $(function() {
             "format": "json",
             "limit": 0,
         }, query);
-        console.log(query.toponimo__istartswith)
-        return $.getJSON(offline_autocomplete.get( name, JSON.stringify(data) ), data, on_result);
+        console.log(query.toponimo__istartswith);
+        return $.getJSON(safetyFormBridge.get( name, JSON.stringify(data) ), data, on_result);
     };
 
     // Setup autocompletion
@@ -288,8 +288,8 @@ $(function() {
             // refs #2108 https://labs.truelite.it/issues/2108
             var q = { "limit": 10, "format": "json", "belfiore__comune__id_istat": val.id_istat };
             //$.getJSON(api_url + "catasto2010_1/", q, function(data) {
-            $.getJSON(offline_autocomplete.get( "catasto2010_1/" , JSON.stringify(q) ), q, function(data) {
-                var geoms = $.map(data.objects, function(el) { return el.the_geom });
+            $.getJSON(safetyFormBridge.get( "catasto2010_1/" , JSON.stringify(q) ), q, function(data) {
+                var geoms = $.map(data.objects, function(el) { return el.the_geom; });
                 var c = OpenLayers.Geometry.fromWKT(geoms);
                 var bounds = c.getBounds();
                 map.zoomToExtent(bounds);
@@ -413,9 +413,9 @@ $(function() {
 
         // Piazza al Serchio (LU) foglio=1 belfiore="G582", part 10 to 19 are all good
 
-        $.getJSON(offline_autocomplete.get( "catasto2010_2/" , JSON.stringify(query) ), query, function(data) {
+        $.getJSON(safetyFormBridge.get( "catasto2010_2/" , JSON.stringify(query) ), query, function(data) {
             console.log("catasto", data);
-            var geoms = $.map(data.objects, function(el) { return el.the_geom });
+            var geoms = $.map(data.objects, function(el) { return el.the_geom; });
             if(geoms.length > 0) {
                 var c = OpenLayers.Geometry.fromWKT(geoms[0]);
                 var bounds = c.getBounds();
@@ -428,17 +428,17 @@ $(function() {
 
     $("#s1istatprov").change(function() {
             $("#footer_istat_prov").text(this.value);
-    }).change()
+    }).change();
     $("#s1istatcom").change(function() {
             $("#footer_istat_com").text(this.value);
-    }).change()
+    }).change();
     $("#sdate").change(function() {
             $("#footer_date").text(this.value);
             // TODO: update_safety_number();
-    }).change()
+    }).change();
     $("#number").change(function() {
-            $("span.footer_number").text(this.value)
-    }).change()
+            $("span.footer_number").text(this.value);
+    }).change();
     $("#s1number_update").click(update_safety_number);
 
     // Install form validation hooks
@@ -470,7 +470,7 @@ $(function() {
         s2cerlimit.changed("s2cer"+i);
         console.log(e, "CHECKED!");
     }
-        e.change(function(ev) { s2cerlimit.changed(this.id) });
+        e.change(function(ev) { s2cerlimit.changed(this.id); });
     }
     // Enable/disable fields based on values of other fields
     for (var i = 1; i <= 8; ++i)
@@ -677,11 +677,11 @@ $(function() {
                 vc = data.get("s1vcother");
 
             if (vc == undefined)
-                vc = ""
+                vc = "";
             if (via == undefined)
-                via = ""
+                via = "";
             if (civico == undefined) 
-                civico = ""
+                civico = "";
             return vc + " " + via + " " + civico;
         };
 
@@ -701,7 +701,7 @@ $(function() {
             if(coduso != undefined  && coduso.length > 0) {
                 s8pu_coduso.text("S"+data.get("s1coduso"));
             } else {
-                var coduso_text = ""
+                var coduso_text = "";
                 var descs = new Array();
                 descs[1] = 'Abitativo';
                 descs[2] = 'Produttivo';

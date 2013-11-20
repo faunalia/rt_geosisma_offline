@@ -1,6 +1,12 @@
 # sqlites db
 *.sqlite
 
+# cache
+offlinedata/layers/*png
+offlinedata/layers/*wld
+offlinedata/layers/*vrt
+offlinedata/layers/*ovr
+
 # py compilation
 *.pyc
 

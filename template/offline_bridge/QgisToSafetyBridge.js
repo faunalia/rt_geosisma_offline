@@ -36,16 +36,29 @@ function updateObservations(observations) {
     });
 }
 
-function updateSafety(newvalue) {
-    //console.log(newvalue);
+function updateSafety(teamName, newvalue) {
     if (undefined == newvalue) {
         return;
     }
+    if (undefined == teamName) {
+        return;
+    } 
+
+    // set team name
+    console.log(teamName);
+    $("#j_team").text(teamName);
+    
+    // set safety number disable to avoid change it
+    $("#number").prop("disabled", true);
+    
+    newvalue = sortOnKeys(newvalue);
+    console.log(newvalue);
     // manage first unexisting DOM elements (most of radio buttons)
     // first: because dome text element selection depends on radiobutton value
     // unexisting: due they dinamic/positional id name
     // e.g: s2nfloors_1 instead of only s2nfloors
     $.each(newvalue, function(key, value) {
+        console.log(key+":"+value);
         // skip if key exist
         if ($("#" + key).length) {
             return;
@@ -69,6 +82,11 @@ function updateSafety(newvalue) {
             updateObservations(value);
             return;
         }
+        if (element.is("span")) {
+            console.log(element.is("span"));
+            element.text(value);
+            return;
+        }
         // set value basing on object type
         switch (type) {
             case "text":
@@ -84,6 +102,22 @@ function updateSafety(newvalue) {
                 break;
         }
     });
+}
+
+function sortOnKeys(dict) {
+
+    var sorted = [];
+    for(var key in dict) {
+        sorted[sorted.length] = key;
+    }
+    sorted.sort();
+
+    var tempDict = {};
+    for(var i = 0; i < sorted.length; i++) {
+        tempDict[sorted[i]] = dict[sorted[i]];
+    }
+
+    return tempDict;
 }
 
 // switch (key+"_uused_") {

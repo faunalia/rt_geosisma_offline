@@ -31,7 +31,7 @@ TRANSLATIONS =
 
 PLUGINNAME = rt_geosisma_offline
 
-EXTRAS = incons/icon.png metadata.txt
+EXTRAS = incons/ metadata.txt
 
 UI_SOURCES=$(wildcard *.ui)
 UI_FILES=$(patsubst %.ui,%_ui.py,$(UI_SOURCES))
@@ -62,7 +62,7 @@ deploy: compile doc transcompile
 	cp -vf $(PY_FILES) $(HOME)/.qgis/python/plugins/$(PLUGINNAME)
 	cp -vf $(UI_FILES) $(HOME)/.qgis/python/plugins/$(PLUGINNAME)
 	cp -vf $(RC_FILES) $(HOME)/.qgis/python/plugins/$(PLUGINNAME)
-	cp -vf $(EXTRAS) $(HOME)/.qgis/python/plugins/$(PLUGINNAME)
+	cp -vfr $(EXTRAS) $(HOME)/.qgis/python/plugins/$(PLUGINNAME)
 	cp -vfr i18n $(HOME)/.qgis/python/plugins/$(PLUGINNAME)
 	cp -vfr $(HELP) $(HOME)/.qgis/python/plugins/$(PLUGINNAME)/help
 
@@ -110,7 +110,7 @@ transclean:
 	rm -f i18n/*.qm
 
 clean:
-	rm $(UI_FILES) $(RC_FILES)
+	rm $(UI_FILES) $(RC_FILES) *.pyc
 
 # build documentation with sphinx
 doc: 

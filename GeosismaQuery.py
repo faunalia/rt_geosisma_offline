@@ -41,9 +41,10 @@ DATABASE_PWD = "postgres"
 # SpatiaLite imports
 from pyspatialite import dbapi2 as db
 # SpatiaLite DB settings
-dbsFolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"dbs")))
-DATABASE_OUTNAME = os.path.join(dbsFolder, DATABASE_NAME + ".sqlite")
-print DATABASE_OUTNAME
+from GeosismaWindow import GeosismaWindow as gw
+# dbsFolder = os.path.realpath(os.path.abspath(os.path.join(os.path.split(inspect.getfile( inspect.currentframe() ))[0],"dbs")))
+# DATABASE_OUTNAME = os.path.join(dbsFolder, DATABASE_NAME + ".sqlite")
+# print DATABASE_OUTNAME
 
 class GeosismaQuery(object):
     '''
@@ -55,7 +56,7 @@ class GeosismaQuery(object):
     def __init__(self, fieldList):
         #self.uri.setConnection(DATABASE_HOST, DATABASE_PORT, DATABASE_NAME, DATABASE_USER, DATABASE_PWD)
         #self.connection = psycopg2.connect( self.uri.connectionInfo().encode('utf-8') )
-        self.connection = db.connect(DATABASE_OUTNAME)
+        self.connection = db.connect(gw.instance().GEODATABASE_OUTNAME)
         self.cursor = self.connection.cursor()
         self.fieldList = fieldList
         
@@ -312,3 +313,5 @@ class QueryCatasto2010_2(GeosismaQuery):
 
         self.saveJson()
         self.cursor.close()
+
+    

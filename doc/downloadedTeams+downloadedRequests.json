@@ -1,0 +1,113 @@
+[
+	{
+		"created": "2013-07-18",
+		"date_end": "2013-12-31",
+		"date_start": "2013-07-18",
+		"id": "123",
+		"activity": 1,
+		"name": 2,
+		"event": "/api/v1/event/13/",
+		"requests": [
+			"/api/v1/request/51/", 
+			"/api/v1/request/52/", 
+			"/api/v1/request/53/", 
+			"/api/v1/request/54/", 
+			"/api/v1/request/55/"
+		],
+		"downloadedRequests": {
+			"/api/v1/request/53/": {
+				"event": "/api/v1/event/13/",
+				"s1catpart1": "",
+				"s1prov": "MS",
+				"created": "2013-07-21",
+				"s1civico": "1-2",
+				"number": 4,
+				"reports": [],
+				"s1catfoglio": "",
+				"s1com": "Filattiera",
+				"s1via": "via bassi",
+				"s1name": "alba scura",
+				"id": "53",
+				"s1loc": "Filattiera"
+			},
+			"/api/v1/request/55/": {
+				"event": "/api/v1/event/13/",
+				"s1catpart1": "",
+				"s1prov": "MS",
+				"created": "2013-07-21",
+				"s1civico": "4-6-8-10-12",
+				"number": 6,
+				"reports": [],
+				"s1catfoglio": "",
+				"s1com": "Fivizzano",
+				"s1via": "via roma ",
+				"s1name": "alba rossa",
+				"id": "55",
+				"s1loc": "Fivizzano"
+			},
+			"/api/v1/request/52/": {
+				"event": "/api/v1/event/13/",
+				"s1catpart1": "",
+				"s1prov": "MS",
+				"created": "2013-07-21",
+				"s1civico": "4-6-8-10-12",
+				"number": 3,
+				"reports": [],
+				"s1catfoglio": "",
+				"s1com": "Casola in Lunigiana",
+				"s1via": "via roma",
+				"s1name": "alba bruna",
+				"id": "52",
+				"s1loc": "Codiponte"
+			},
+			"/api/v1/request/54/": {
+				"event": "/api/v1/event/13/",
+				"s1catpart1": "",
+				"s1prov": "MS",
+				"created": "2013-07-21",
+				"s1civico": "6",
+				"number": 5,
+				"reports": [],
+				"s1catfoglio": "",
+				"s1com": "Filattiera",
+				"s1via": "via bassi",
+				"s1name": "alba blu",
+				"id": "54",
+				"s1loc": "Filattiera"
+			},
+			"/api/v1/request/51/": {
+				"event": "/api/v1/event/13/",
+				"s1catpart1": "",
+				"s1prov": "MS",
+				"created": "2013-11-15",
+				"s1civico": "2",
+				"number": 2,
+				"reports": [],
+				"s1catfoglio": "",
+				"s1com": "Casola in Lunigiana",
+				"s1via": "via roma",
+				"s1name": "alba chiara",
+				"id": "51",
+				"s1loc": "Codiponte"
+			}
+		},
+		"safeties": [
+			"/api/v1/safety/536/", 
+			"/api/v1/safety/537/", 
+			"/api/v1/safety/538/", 
+			"/api/v1/safety/539/", 
+			"/api/v1/safety/540/", 
+			"/api/v1/safety/541/", 
+			"/api/v1/safety/542/", 
+			"/api/v1/safety/543/", 
+			"/api/v1/safety/544/", 
+			"/api/v1/safety/545/", 
+			"/api/v1/safety/546/", 
+			"/api/v1/safety/3821/"
+		],
+		"users": [
+			"/api/v1/staff/288/", 
+			"/api/v1/staff/359/"
+		]
+	}
+]

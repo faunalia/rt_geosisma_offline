@@ -1,0 +1,51 @@
+{
+    "meta": {
+        "limit": 5,
+        "next": "/api/v1/safety/?offset=20&limit=20&format=json",
+        "offset": 0,
+        "previous": None,
+        "total_count": 3366
+    },
+    "objects": [
+        {
+            "created": "2013-05-31",
+            "date": "20/03/2013",
+            "id": "389",
+            "number": 3,
+            "resource_uri": "/api/v1/safety/389/",
+            "safety": "{u'sdate': u'20/03/2013', u's1mapright': u'643334.2044114', u'number': 3, u's1com': u'San Marcello Pistoiese', u's1istatcom': u'019', u's0com': u'', u's1mapleft': u'643291.87110092', u's1viacorso': 1, u's1istatloc': u'10010', u's1name': u'Club Juventus', u's0sigla': u'', u's1mapbottom': u'4879570.583229', u's1aggn': u'019103576', u's1prov': u'PT', u's1istatcens': u'002', u's1civico': u'121', u's1catfoglio': u'55', u's1istatreg': u'009', u's1pos': 3, u's1loc': u'San Marcello Pistoiese', u's1catpart1': u'61', u's1istatprov': u'047', u's1maptop': u'4879597.6765478', u's1via': u'Marconi', u's1edn': u'3'}"
+        },
+        {
+            "created": "2013-05-31",
+            "date": "20/03/2013",
+            "id": "390",
+            "number": 1,
+            "resource_uri": "/api/v1/safety/390/",
+            "safety": "{u's3isolpill': 1, u'sdate': u'20/03/2013', u's1mapright': u'643507.12214403', u's3cover': 4, u's8riskst': 0, u'number': 1, u's1via': u'Giacomo Mateotti', u's2uso1': True, u's2prop': 1, u's2uso3': True, u's1istatcom': u'019', u's1istatcens': u'002', u's1mapleft': u'643464.78883355', u's5ensB4': True, u's4dL1': True, u's1viacorso': 4, u's2percuse': 0, u's1name': u'pagliai', u's4dL4': True, u's1civico': u'37', u's2nfloors': 3, u's1mapbottom': u'4879575.1683218', u's1aggn': u'ruspa', u's1prov': u'PT', u's2cer2': True, u's2cer1': True, u's5ensB5': True, u's2floorsfc': 10, u's5ensB6': True, u's5ensB1': True, u's5ensB3': True, u's1catfoglio': u'55', u's1istatprov': u'047', u's1pos': 4, u's4pE1': True, u's4dL2': True, u's4dL3': True, u's8riskgeo': 0, u's5ensB2': True, u's4dL6': True, u's8agibilita': 0, u's4dL5': True, u's1catpart1': u'148', u's7diss': 1, u's1istatreg': u'009', u's8risknst': 0, u's1maptop': u'4879602.2616406', u's2floorh': 2, u's1com': u'San Marcello Pistoiese', u's2uson1': 9, u's2nunder': 0, u's1edn': u'1', u's1istatloc': u'10010', u's2occupiers': 30, u's8riskext': 0, u's1loc': u'San Marcello Pistoiese'}"
+        },
+        {
+            "created": "2013-05-31",
+            "date": "20/03/2013",
+            "id": "391",
+            "number": 2,
+            "resource_uri": "/api/v1/safety/391/",
+            "safety": "{u'sdate': u'20/03/2013', u's1mapright': u'643511.28500141', u's3cover': 4, u's8riskst': 0, u'number': 2, u's1via': u'Giacomo Mateotti', u's2uso1': True, u's2prop': 1, u's2uso3': True, u's1istatcom': u'019', u's0com': u'', u's1istatcens': u'002', u's1mapleft': u'643468.95169093', u's1viacorso': 4, u's2percuse': 0, u's1name': u'Abbigliamento il cucciolo', u's4dL4': True, u's0sigla': u'', u's2nfloors': 4, u's1mapbottom': u'4879586.1631584', u's3tD4': True, u's1aggn': u'019101889', u's1prov': u'PT', u's2cer2': True, u's2floorsfc': 1, u's1catfoglio': u'55', u's1istatprov': u'047', u's1pos': 2, u's4dL2': True, u's4dL3': True, u's8riskgeo': 0, u's4dL1': True, u's4dL6': True, u's8agibilita': 0, u's4dL5': True, u's1catpart1': u'153', u's2occupiers': 15, u's1istatreg': u'009', u's8risknst': 0, u's1maptop': u'4879613.2564772', u's2floorh': 1, u's1com': u'San Marcello Pistoiese', u's2uson1': 4, u's1edn': u'2', u's1istatloc': u'10010', u's7diss': 1, u's8riskext': 0, u's1loc': u'San Marcello Pistoiese'}"
+        },
+        {
+            "created": "2013-05-31",
+            "date": "20/03/2013",
+            "id": "392",
+            "number": 3,
+            "resource_uri": "/api/v1/safety/392/",
+            "safety": "{u's3isolpill': 1, u'sdate': u'20/03/2013', u's1mapright': u'643516.70788322', u's3cover': 3, u's8riskst': 0, u'number': 3, u's1via': u'Giacomo Mateotti', u's2uso1': True, u's2prop': 1, u's2uso3': True, u's1istatcom': u'019', u's0com': u'', u's1istatcens': u'002', u's1mapleft': u'643474.37457274', u's4dL1': True, u's1viacorso': 4, u's2percuse': 0, u's1name': u'Focaccia Snack Bar', u's4dL4': True, u's0sigla': u'', u's5ensB4': True, u's2nfloors': 4, u's1mapbottom': u'4879588.9816296', u's1aggn': u'019101889', u's1prov': u'PT', u's2cer2': True, u's5ensB5': True, u's2floorsfc': 1, u's5ensB6': True, u's5ensB1': True, u's5ensB3': True, u's1catfoglio': u'55', u's1istatprov': u'047', u's4dL2': True, u's4dL3': True, u's8riskgeo': 0, u's5ensB2': True, u's4dL6': True, u's8agibilita': 0, u's4dL5': True, u's3tE4': True, u's1catpart1': u'154', u's7diss': 1, u's1istatreg': u'009', u's8risknst': 0, u's1maptop': u'4879616.0749484', u's2floorh': 2, u's1com': u'San Marcello Pistoiese', u's2uson1': 4, u's1edn': u'3', u's1istatloc': u'10010', u's2occupiers': 10, u's8riskext': 0, u's1loc': u'San Marcello Pistoiese'}"
+        },
+        {
+            "created": "2013-05-31",
+            "date": "20/03/2013",
+            "id": "393",
+            "number": 4,
+            "resource_uri": "/api/v1/safety/393/",
+            "safety": "{u's5ensA1': True, u'sdate': u'20/03/2013', u's2uson4': 1, u's1mapright': u'643538.52995821', u's8riskst': 0, u's8riskgeo': 0, u'number': 4, u's2floorh': 2, u's2prop': 0, u's1istatcom': u'019', u's2uso4': True, u's0com': u'', u's7morfo': 3, u's1istatcens': u'002', u's1mapleft': u'643496.19664773', u's1com': u'San Marcello Pistoiese', u's1viacorso': 1, u's4pA4': True, u's2percuse': 0, u's1name': u'Palazzo Comunale', u's0sigla': u'', u's1civico': u'10', u's2nfloors': 3, u's1mapbottom': u'4879593.6956837', u's3tD4': True, u's1aggn': u'019101889', u's1prov': u'PT', u's2cer2': True, u's2floorsfc': 12, u's5ensB1': True, u's1catfoglio': u'55', u's1istatreg': u'009', u's1pos': 2, u's4pA3': True, u's4pA2': True, u's4pA5': True, u's1coduso': u'36', u's8agibilita': 0, u's1loc': u'San Marcello Pistoiese', u's1catpart1': u'155+', u's1istatprov': u'047', u's8risknst': 0, u's1maptop': u'4879620.7890025', u's1via': u'leopoldo', u's1edn': u'4', u's1istatloc': u'10010', u's4dI1': True, u's2occupiers': 50, u's8riskext': 0}"
+        }
+    ]
+}
