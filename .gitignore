@@ -1,3 +1,6 @@
+# plugin zip
+rt_geosisma_offline.zip
+
 # sqlites db
 *.sqlite
 
@@ -6,6 +9,7 @@ offlinedata/layers/*png
 offlinedata/layers/*wld
 offlinedata/layers/*vrt
 offlinedata/layers/*ovr
+offlinedata/layers/*
 
 # py compilation
 *.pyc
