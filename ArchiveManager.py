@@ -408,7 +408,7 @@ class ArchiveManager(QObject):
         self.checkConnection()
     
         # create query
-        sqlquery = "SELECT * FROM missions_safety "
+        sqlquery = "SELECT *, ST_AsText(the_geom) FROM missions_safety "
         if (indexes is not None) and (len(indexes) > 0):
             sqlquery += "WHERE "
             for index in indexes:
@@ -421,11 +421,22 @@ class ArchiveManager(QObject):
             
             self.cursor.execute(sqlquery)
             columnNames = [descr[0] for descr in self.cursor.description]
+            print columnNames
+            # get index of the_geom and ST_AsText(the_geom)
+            geomIndex = columnNames.index("the_geom")
+            textGeomIndex = columnNames.index("ST_AsText(the_geom)")
+            
+            # modify column to erase binary the_geom and substitude with renamed ST_AsText(st_geom)
+            columnNames[textGeomIndex] = "the_geom" 
+            columnNames.pop(geomIndex)
             
             safeties = []
             for values in self.cursor:
-                safeties.append( dict(zip(columnNames, values)) )
+                listValues = [v for v in values]
+                listValues.pop(geomIndex)
+                safeties.append( dict(zip(columnNames, listValues)) )
             
+            print safeties
             return safeties
             
         except Exception as ex:
@@ -458,11 +469,18 @@ class ArchiveManager(QObject):
         # create query
         sqlquery = "INSERT INTO missions_safety "
         sqlquery += "( "+",".join(safetyOdered.keys()) + " ) VALUES ( "
-        for v in safetyOdered.values():
-            if v is None:
-                sqlquery += "none, "
-            else:
-                sqlquery += "%s, " % adapt(v)
+        for k,v in safetyOdered.items():
+            if v is None and k is not "the_geom":
+                sqlquery += "NULL, "
+                continue
+            if k is "the_geom":
+                if v is None:
+                    sqlquery += "NULL, "
+                else:
+                    sqlquery += "GeomFromText('%s',%d), " % ( v, gw.instance().DEFAULT_SRID )
+                continue
+            sqlquery += "%s, " % adapt(v)
+                
         sqlquery = sqlquery[0:-2] + " );"
         
         QgsLogger.debug(self.tr("Inserisce scheda con la query: %s" % sqlquery), 1 )
@@ -510,12 +528,19 @@ class ArchiveManager(QObject):
         # create query
         sqlquery = "UPDATE missions_safety SET "
         for k,v in safetyOdered.items():
-            if k == "id":
+            if k is "id":
                 continue
-            if v is None:
-                sqlquery += "%s=none, " % k
-            else:
-                sqlquery += '%s=%s, ' % (k,adapt(v))
+            if v is None and k is not "the_geom":
+                sqlquery += "%s=NULL, " % k
+                continue
+            if k is "the_geom":
+                if v is None:
+                    sqlquery += "%s=NULL, " % k
+                else:
+                    sqlquery += "%s=GeomFromText('%s',%d), " % ( k, v, gw.instance().DEFAULT_SRID )
+                continue
+            sqlquery += '%s=%s, ' % (k,adapt(v))
+            
         sqlquery = sqlquery[0:-2] + " "
         sqlquery += "WHERE id=%s" % adapt(safetyOdered["id"])
         
