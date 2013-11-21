@@ -22,16 +22,15 @@ PLUGIN_UPLOAD = $(CURDIR)/plugin_upload.py
 
 # Makefile for a PyQGIS plugin 
 
-# translation
-SOURCES = $(wildcard *.py)
-#TRANSLATIONS = i18n/geosismaofflineexportdb_en.ts
-TRANSLATIONS = 
-
 # global
 
 PLUGINNAME = rt_geosisma_offline
 
-EXTRAS = conf/ doc/ incons/ offlinedata/ schemas/ styles/ template/ AUTHORS.txt LICNECE metadata.txt README.txt
+# translation
+PY_FILES = $(wildcard *.py)
+TRANSLATIONS = i18n/rt_geosisma_offline_en.ts
+
+EXTRAS = conf/ doc/ incons/ offlinedata/ schemas/ styles/ template/ AUTHORS.txt LICENSE metadata.txt README.md
 
 UI_SOURCES=$(wildcard *.ui)
 UI_FILES=$(patsubst %.ui,%_ui.py,$(UI_SOURCES))
@@ -57,14 +56,15 @@ $(UI_FILES): %_ui.py: %.ui
 # The deploy  target only works on unix like operating system where
 # the Python plugin directory is located at:
 # $HOME/.qgis2/python/plugins
-deploy: compile doc transcompile
+#deploy: compile doc transcompile
+deploy: compile doc
 	mkdir -p $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 	cp -vf $(PY_FILES) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 	cp -vf $(UI_FILES) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 	cp -vf $(RC_FILES) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 	cp -vfr $(EXTRAS) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
-	cp -vfr i18n $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
-	cp -vfr $(HELP) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)/help
+#cp -vfr i18n $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
+#cp -vfr $(HELP) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 
 # The dclean target removes compiled python files from plugin directory
 # also delets any .svn entry
