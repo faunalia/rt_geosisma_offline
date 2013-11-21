@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 # -*- coding: utf-8 -*-
 # Copyright (C) 2013 Luigi Pirelli (luipir@gmail.com)
@@ -19,7 +20,7 @@ Created on Oct 7, 2013
 @author: Luigi Pirelli (luipir@gmail.com)
 '''
 
-import traceback, os, json
+import traceback, os, json, time
 from datetime import date
 from psycopg2.extensions import adapt
 
@@ -27,9 +28,11 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtNetwork import *
 
-from rt_omero.Utils import *
+from Utils import *
 # import cache manager
 from DlgWmsLayersManager import DlgWmsLayersManager, WmsLayersBridge
+
+currentPath = os.path.dirname(__file__)
 
 class GeosismaWindow(QDockWidget):
 
@@ -49,6 +52,30 @@ class GeosismaWindow(QDockWidget):
     selectRequestDone = pyqtSignal()
     updatedCurrentSafety = pyqtSignal()
     initNewCurrentSafetyDone = pyqtSignal()
+
+    # nomi tabelle contenenti le geometrie
+    TABLE_GEOM_ORIG = "catasto_2010".lower()
+    TABLE_GEOM_MODIF = "sfeties_geometry".lower()
+
+    # nomi dei layer in TOC
+    LAYER_GEOM_ORIG = "Geometrie Originali"
+    LAYER_GEOM_MODIF = "Geom. per le schede (invar., suddiv., ex-novo)"
+    LAYER_FOTO = "Foto Edifici"
+
+    # stile per i layer delle geometrie
+    STYLE_FOLDER = "styles"
+    STYLE_GEOM_ORIG = "stile_geometrie_originali.qml"
+    STYLE_GEOM_MODIF = "stile_geometrie_modificate.qml"
+    STYLE_FOTO = "stile_fotografie.qml"
+
+    SCALE_IDENTIFY = 5000
+    SCALE_MODIFY = 2000
+
+    # ID dei layer contenenti geometrie e wms
+    VLID_GEOM_ORIG = ''
+    VLID_GEOM_MODIF = ''
+    VLID_FOTO = ''
+    RLID_WMS = {}
 
     # singleton interface
     @classmethod
@@ -75,12 +102,18 @@ class GeosismaWindow(QDockWidget):
             pass
 
         try:
+            print "try to delete"
             if self.safetyDlg is not None:
+                print "try to delete not none"
                 self.safetyDlg.deleteLater()
             self.safetyDlg = None
         except:
             pass
-        GeosismaWindow._instance = None
+        
+        try:
+            GeosismaWindow._instance = None
+        except:
+            pass
     
     def init(self, parent=None, iface=None):
         QDockWidget.__init__(self, parent)
@@ -91,6 +124,7 @@ class GeosismaWindow(QDockWidget):
         self.iface = iface
         self.canvas = self.iface.mapCanvas()
         self.safetyDlg = None
+        self.safetyDlgIsValid = False # flag set up if DockWidget is closed manually
         self.isApriScheda = True
         self.srid = GeosismaWindow.DEFAULT_SRID
 
@@ -99,6 +133,12 @@ class GeosismaWindow(QDockWidget):
         dbsPath = self.settings.value("/rt_geosisma_offline/pathToDbs", "./offlinedata/dbs/")
         self.DATABASE_OUTNAME = os.path.join(dbsPath, GeosismaWindow.GEOSISMA_DBNAME)
         self.GEODATABASE_OUTNAME = os.path.join(dbsPath, GeosismaWindow.GEOSISMA_GEODBNAME)
+        QgsLogger.debug(self.tr("Default dbname: %s" % self.DATABASE_OUTNAME) )
+        QgsLogger.debug(self.tr("Default geodbname: %s" % self.GEODATABASE_OUTNAME) )
+        
+        # get default srid
+        self.DEFAULT_SRID = self.settings.value("/rt_geosisma_offline/defaultSrid", self.DEFAULT_SRID, int )
+        QgsLogger.debug(self.tr("Default srid: %d" % self.DEFAULT_SRID) )
         
         #geosisma api connection data
         self.user = "Luigi.Pirelli"
@@ -115,14 +155,11 @@ class GeosismaWindow(QDockWidget):
         self.currentSafety = None
         self.teams = None
         
-        self.startedYet = False
-        
         MapTool.canvas = self.canvas
 
         self.nuovaPointEmitter = FeatureFinder()
         self.nuovaPointEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
-        #QObject.connect(self.nuovaPointEmitter, SIGNAL("pointEmitted"), self.newEmptySafety)
-        #self.nuovaPointEmitter.pointEmitted.connect(self.newEmptySafety)
+        QObject.connect(self.nuovaPointEmitter, SIGNAL("pointEmitted"), self.creaNuovaGeometria)
 
         self.esistentePointEmitter = FeatureFinder()
         QObject.connect(self.esistentePointEmitter, SIGNAL("pointEmitted"), self.identificaSchedaEsistente)
@@ -142,7 +179,7 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.iface.mapCanvas(), SIGNAL( "mapToolSet(QgsMapTool *)" ), self.toolChanged)
 
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
-        self.connect(self.btnModifyCurrentSafety, SIGNAL("clicked()"), self.openCurrentSafety)
+        self.connect(self.btnModifyCurrentSafety, SIGNAL("clicked()"), self.updateSafetyForm)
         self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
         self.connect(self.btnSelectSafety, SIGNAL("clicked()"), self.selectSafety)
         self.connect(self.btnSelectRequest, SIGNAL("clicked()"), self.selectRequest)
@@ -158,9 +195,11 @@ class GeosismaWindow(QDockWidget):
         self.downloadTeamsDone.connect(self.archiveTeams)
         self.archiveTeamsDone.connect(self.downloadRequests)
         self.downloadRequestsDone.connect( self.archiveRequests )
-        self.initNewCurrentSafetyDone.connect(self.openCurrentSafety)
+        #self.initNewCurrentSafetyDone.connect(self.openCurrentSafety)
+        #self.initNewCurrentSafetyDone.connect(self.updateSafetyForm)
+        self.updatedCurrentSafety.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateArchivedCurrentSafety)
-        self.selectSafetyDone.connect(self.updateSafetyForm)
+        #self.selectSafetyDone.connect(self.updateSafetyForm)
         
         # GUI state based on signals
         self.selectSafetyDone.connect(self.manageGuiStatus)
@@ -261,10 +300,9 @@ class GeosismaWindow(QDockWidget):
         self.setWidget(child)
 
     def exec_(self):
-        firstStart = not self.startedYet
         if not self.startPlugin():
             return False
-
+        
 #         # load test data to test functions
 #         self.settings = QSettings()
 #         dbsPath = self.settings.value("/rt_geosisma_offline/pathToDbs", "./offlinedata/dbs/")
@@ -297,17 +335,56 @@ class GeosismaWindow(QDockWidget):
 #         self.manageGuiStatus()
 #         self.openCurrentSafety()
 #         return
+        self.reloadCrs()
         
         # load all the layers from db
         self.wmsLayersBridge = WmsLayersBridge(self.iface, self.showMessage)
         self.wmsLayersBridge.instance.offlineMode = True
         firstTime = True
         if not DlgWmsLayersManager.loadWmsLayers(firstTime): # static method
-            message = self.tr("Impossibile caricare i layer richiesti dal database selezionato")
+            message = self.tr("Impossibile caricare i layer WMS")
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
-            return False
+            # continue
 
+        self.loadLayerGeomOrig()
+
+        return True
+
+    def reloadCrs(self):
+        #self.srid = self.getSridFromDb()
+        self.srid = self.DEFAULT_SRID
+        srs = QgsCoordinateReferenceSystem( self.srid, QgsCoordinateReferenceSystem.EpsgCrsId )
+        renderer = self.canvas.mapRenderer()
+        self._setRendererCrs(renderer, srs)
+        renderer.setMapUnits( srs.mapUnits() if srs.mapUnits() != QGis.UnknownUnit else QGis.Meters )
+        renderer.setProjectionsEnabled(True)
+
+    def loadLayerGeomOrig(self):
+        # skip if already present
+        layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_ORIG)
+        if len(layers) > 0:
+            return
+        # carica il layer con le geometrie originali
+        if QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG ) == None:
+            GeosismaWindow.VLID_GEOM_ORIG = ''
+
+            uri = QgsDataSourceURI()
+            uri.setDatabase(self.GEODATABASE_OUTNAME)
+            uri.setDataSource('', self.TABLE_GEOM_ORIG, 'the_geom')
+            vl = QgsVectorLayer( uri.uri(), self.LAYER_GEOM_ORIG, "spatialite" )
+            if vl == None or not vl.isValid() or not vl.setReadOnly(True):
+                return False
+
+            # imposta lo stile del layer
+            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_ORIG )
+            #(errorMsg, result) = vl.loadNamedStyle( style_path )
+            #self.iface.legendInterface().refreshLayerSymbology(vl)
+
+            GeosismaWindow.VLID_GEOM_ORIG = self._getLayerId(vl)
+            self._addMapLayer(vl)
+            # set custom property
+            vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_ORIG" )
         return True
 
     def showMessage(self, message, messagetype):
@@ -520,7 +597,8 @@ class GeosismaWindow(QDockWidget):
             #safetyId = dlg.currentSafetyId
             self.currentSafety = dlg.currentSafety
 
-        self.selectSafetyDone.emit()
+        self.updatedCurrentSafety.emit()
+        #self.selectSafetyDone.emit()
         
     def openCurrentSafety(self):
         if self.currentSafety is None:
@@ -536,30 +614,37 @@ class GeosismaWindow(QDockWidget):
                 teamName = team["name"]
         
         # open Safety Form
+        if self.safetyDlg is not None and self.safetyDlgIsValid:
+            self.safetyDlg.deleteLater()
+        self.safetyDlg = None
+        
         from DlgSafetyForm import DlgSafetyForm
         self.safetyDlg = DlgSafetyForm( teamName, self.currentSafety, self.iface, self.iface.mainWindow() )
         self.safetyDlg.currentSafetyModifed.connect(self.updateCurrentSafety)
+        self.safetyDlg.destroyed.connect(self.cleanUpSafetyForm)
         self.safetyDlg.exec_()
+        
+        self.safetyDlgIsValid = True
+
+    def cleanUpSafetyForm(self):
+        print "cleanUpSafetyForm"
+        self.safetyDlgIsValid = False
 
     def updateSafetyForm(self):
-        if self.safetyDlg is None:
-            return;
-        
+        # remove dialog is safety is None
         if self.currentSafety is None:
-            # close current safety dialog
             if self.safetyDlg is not None:
                 self.safetyDlg.deleteLater()
             self.safetyDlg = None
+            return
         
-        else:
-            if self.currentSafety["id"] == self.safetyDlg.currentSafety["id"]:
-                # do nothing, update is managed directly by the webView
-                return
-            
-            # currentSafety is changed during safetyForm was opened on other safety
-            # then close and reopen
-            self.safetyDlg.deleteLater()
-            self.openCurrentSafety()
+        if (self.safetyDlg is not None) and \
+            self.safetyDlgIsValid and \
+            (self.currentSafety["id"] == self.safetyDlg.currentSafety["id"]):
+            # do nothing, update is managed directly by the webView
+            return
+        
+        self.openCurrentSafety()
     
     def updateCurrentSafety(self, safetyDict):
         if safetyDict is None:
@@ -716,8 +801,69 @@ class GeosismaWindow(QDockWidget):
     def toolChanged(self, point=None, button=None):
         pass
     
+    @classmethod
+    def checkActionScale(self, actionName, maxScale):
+        if int(self.instance.canvas.scale()) > maxScale:
+            QMessageBox.warning( self.instance, "Azione non permessa", u"L'azione \"%s\" è ammessa solo dalla scala 1:%d" % (actionName, maxScale) )
+            return False
+        return True
+
     def creaNuovaGeometria(self, point=None, button=None):
-        pass
+        action = self.btnCreaNuovaGeometria.toolTip()
+
+        if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
+            return self.nuovaPointEmitter.startCapture()
+
+        if button != Qt.LeftButton:
+            self.btnSelNuovaScheda.setChecked(False)
+            return
+
+        layerModif = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
+        if layerModif == None:
+            self.btnSelNuovaScheda.setChecked(False)
+            return
+
+        feat = self.nuovaPointEmitter.findAtPoint(layerModif, point)
+        if feat != None:
+            if not self.checkActionSpatialFromFeature( action, feat, True ):
+                return self.nuovaPointEmitter.startCapture()
+
+            # controlla se tale geometria ha qualche scheda associata
+            codice = feat.attributeMap()[0].toString()
+            abbinato = AutomagicallyUpdater.Query( "SELECT ABBINATO_A_SCHEDA FROM GEOMETRIE_RILEVATE_NUOVE_O_MODIFICATE WHERE ID_UV_NEW = ?", [codice] ).getFirstResult() == '1'
+            if abbinato:
+                # NO, c'è già una scheda associata
+                QMessageBox.warning( self, "RT Omero", "La geometria selezionata appartiene ad un edificio gia' esistente" )
+                return self.nuovaPointEmitter.startCapture()
+
+            # OK, non esiste alcuna scheda associata a tale geometria
+            # associa la UV a tale geometria
+            QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+            self.apriScheda(codice)
+            QApplication.restoreOverrideCursor()
+            self.btnSelNuovaScheda.setChecked(False)
+            return
+            
+        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        if layerOrig == None:
+            self.btnSelNuovaScheda.setChecked(False)
+            return
+
+        feat = self.nuovaPointEmitter.findAtPoint(layerOrig, point)        
+        if feat != None:
+            if not self.checkActionSpatialFromFeature( action, feat, False ):
+                return
+
+            uvID = self.copiaGeometria(feat)
+            if uvID == None:
+                return
+
+            self.apriScheda(uvID)
+            QApplication.restoreOverrideCursor()
+            self.btnSelNuovaScheda.setChecked(False)
+            return
+
+        return self.nuovaPointEmitter.startCapture()
     
     def spezzaGeometriaEsistente(self, point=None, button=None):
         pass
@@ -725,3 +871,43 @@ class GeosismaWindow(QDockWidget):
     def identificaFoto(self, point=None, button=None):
         pass
     
+    ###############################################################
+    ###### static methods
+    ###############################################################
+    @classmethod
+    def _getLayerId(self, layer):
+        if hasattr(layer, 'id'):
+            return layer.id()
+        return layer.getLayerID() 
+
+    @classmethod
+    def _getRendererCrs(self, renderer):
+        if hasattr(renderer, 'destinationCrs'):
+            return renderer.destinationCrs()
+        return renderer.destinationSrs()
+
+    @classmethod
+    def _setRendererCrs(self, renderer, crs):
+        if hasattr(renderer, 'setDestinationCrs'):
+            return renderer.setDestinationCrs( crs )
+        return renderer.setDestinationSrs( crs )
+
+    @classmethod
+    def _addMapLayer(self, layer):
+        if hasattr(QgsMapLayerRegistry.instance(), 'addMapLayers'):
+            return QgsMapLayerRegistry.instance().addMapLayers( [layer] )
+        return QgsMapLayerRegistry.instance().addMapLayer(layer)
+
+    @classmethod
+    def _removeMapLayer(self, layer):
+        if hasattr(QgsMapLayerRegistry.instance(), 'removeMapLayers'):
+            return QgsMapLayerRegistry.instance().removeMapLayers( [layer] )
+        return QgsMapLayerRegistry.instance().removeMapLayer(layer)
+
+    @classmethod
+    def _logMessage(self, group, msg):
+        try:
+            QgsMessageLog.logMessage( msg, group )
+        except:
+            pass
+
