@@ -9,8 +9,8 @@
 [general]
 name=RE Geosisma Offline
 qgisMinimumVersion=2.0
-description=Prototype to manage Geosisma forms
-version=version 0.2
+description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
+version=version 0.3
 author=Luigi Pirelli
 email=luipir@gmail.com
 
@@ -19,7 +19,9 @@ email=luipir@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=0.2
+changelog=0.3
+	supporto al download di team e richiest. Supporto al salvataggio, creazione e eliminazione schede
+	0.2
 	Risolto bug nella definizione delle URI per renderlo compatibile con Windows
 	0.1
 	Just started
@@ -27,9 +29,9 @@ changelog=0.2
 # tags are comma separated with spaces allowed
 tags=geosisma, python, javascript, offline, Regione Toscana
 
-tracker=
+tracker=https://github.com/faunalia/rt_geosisma_offline/issues
 homepage=
-repository=
+repository=https://github.com/faunalia/rt_geosisma_offline
 # experimental flag
 experimental=True
 icon=icons/icon.png
