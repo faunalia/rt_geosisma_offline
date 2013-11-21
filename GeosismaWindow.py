@@ -80,6 +80,7 @@ class GeosismaWindow(QDockWidget):
             self.safetyDlg = None
         except:
             pass
+        GeosismaWindow._instance = None
     
     def init(self, parent=None, iface=None):
         QDockWidget.__init__(self, parent)
