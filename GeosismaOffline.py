@@ -63,7 +63,7 @@ class GeosismaOffline:
         # check precondition
         try:
             import pyspatialite
-        except ImportError, e:
+        except ImportError:
             traceback.print_exc()
             QMessageBox.information(self.iface.mainWindow(), "Attenzione", u"Modulo 'pyspatialite' non trovato. Senza di esso non e' possibile eseguire RT Geosisma Offline.".encode() )
             return
