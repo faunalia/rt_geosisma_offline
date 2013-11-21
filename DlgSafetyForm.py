@@ -107,7 +107,7 @@ class DlgSafetyForm(QDockWidget):
         
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setObjectName( "DlgSafetyForm" )
-        self.setWindowTitle( self.tr("Scheda Sopralluogo") )
+        self.setWindowTitle( self.tr("Scheda Sopralluogo n: %d del team: %s" % (self.currentSafety["number"], self.teamName)) )
 
         child = QWidget()
         gridLayout = QGridLayout(child)
