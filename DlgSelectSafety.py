@@ -83,6 +83,8 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		columns['created'] = ( self.tr(u'Creata'), Show )
 		columns['date'] = ( self.tr(u'Aggiornata il'), Show )
 		columns['safety'] = ( self.tr(u'Scheda'), Hide )
+		columns['gid_catasto'] = ( self.tr(u'Id catasto'), Show )
+		columns['the_geom'] = ( self.tr(u'the_geom'), Hide )
 
 		# set table size
 		self.safetyTableWidget.clear()
