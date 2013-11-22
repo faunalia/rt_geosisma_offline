@@ -421,7 +421,6 @@ class ArchiveManager(QObject):
             
             self.cursor.execute(sqlquery)
             columnNames = [descr[0] for descr in self.cursor.description]
-            print columnNames
             # get index of the_geom and ST_AsText(the_geom)
             geomIndex = columnNames.index("the_geom")
             textGeomIndex = columnNames.index("ST_AsText(the_geom)")
@@ -436,7 +435,6 @@ class ArchiveManager(QObject):
                 listValues.pop(geomIndex)
                 safeties.append( dict(zip(columnNames, listValues)) )
             
-            print safeties
             return safeties
             
         except Exception as ex:
