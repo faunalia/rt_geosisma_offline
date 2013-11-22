@@ -53,10 +53,6 @@ class GeosismaWindow(QDockWidget):
     updatedCurrentSafety = pyqtSignal()
     initNewCurrentSafetyDone = pyqtSignal()
 
-    # nomi tabelle contenenti le geometrie
-    TABLE_GEOM_ORIG = "catasto_2010".lower()
-    TABLE_GEOM_MODIF = "sfeties_geometry".lower()
-
     # nomi dei layer in TOC
     LAYER_GEOM_ORIG = "Geometrie Originali"
     LAYER_GEOM_MODIF = "Geom. per le schede (invar., suddiv., ex-novo)"
@@ -70,6 +66,10 @@ class GeosismaWindow(QDockWidget):
 
     SCALE_IDENTIFY = 5000
     SCALE_MODIFY = 2000
+
+    # nomi tabelle contenenti le geometrie
+    TABLE_GEOM_ORIG = "catasto_2010".lower()
+    TABLE_GEOM_MODIF = "missions_safety".lower()
 
     # ID dei layer contenenti geometrie e wms
     VLID_GEOM_ORIG = ''
@@ -348,6 +348,7 @@ class GeosismaWindow(QDockWidget):
             # continue
 
         self.loadLayerGeomOrig()
+        self.loadSafetyGeometries()
 
         return True
 
@@ -364,6 +365,17 @@ class GeosismaWindow(QDockWidget):
         # skip if already present
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_ORIG)
         if len(layers) > 0:
+            # get id of the Geosisma layer
+            valid = False
+            for layer in layers:
+                prop = layer.customProperty( "loadedByGeosismaRTPlugin" )
+                if prop == "VLID_GEOM_ORIG":
+                    valid = True
+                    GeosismaWindow.VLID_GEOM_ORIG = self._getLayerId( layer )
+            if not valid:
+                message = self.tr("Manca il layer %s, ricaricando il plugin verrano caricati automaticamente" % self.LAYER_GEOM_ORIG)
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return
         # carica il layer con le geometrie originali
         if QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG ) == None:
@@ -385,6 +397,44 @@ class GeosismaWindow(QDockWidget):
             self._addMapLayer(vl)
             # set custom property
             vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_ORIG" )
+        return True
+
+    def loadSafetyGeometries(self):
+        # skip if already present
+        layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
+        if len(layers) > 0:
+            # get id of the Geosisma layer
+            valid = False
+            for layer in layers:
+                prop = layer.customProperty( "loadedByGeosismaRTPlugin" )
+                if prop == "VLID_GEOM_MODIF":
+                    valid = True
+                    GeosismaWindow.VLID_GEOM_MODIF = self._getLayerId( layer )
+            if not valid:
+                message = self.tr("Manca il layer %s, ricaricando il plugin verrano caricati automaticamente" % self.LAYER_GEOM_ORIG)
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            return
+        # carica il layer con le geometrie delle safety
+        if QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF ) == None:
+            GeosismaWindow.VLID_GEOM_MODIF = ''
+
+            uri = QgsDataSourceURI()
+            uri.setDatabase(self.DATABASE_OUTNAME)
+            uri.setDataSource('', self.TABLE_GEOM_MODIF, 'the_geom')
+            vl = QgsVectorLayer( uri.uri(), self.LAYER_GEOM_MODIF, "spatialite" )
+            if vl == None or not vl.isValid() or not vl.setReadOnly(True):
+                return False
+
+            # imposta lo stile del layer
+            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_ORIG )
+            #(errorMsg, result) = vl.loadNamedStyle( style_path )
+            #self.iface.legendInterface().refreshLayerSymbology(vl)
+
+            GeosismaWindow.VLID_GEOM_MODIF = self._getLayerId(vl)
+            self._addMapLayer(vl)
+            # set custom property
+            vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_MODIF" )
         return True
 
     def showMessage(self, message, messagetype):
@@ -581,7 +631,29 @@ class GeosismaWindow(QDockWidget):
         self.currentRequest = dlg.currentRequest
         
         self.selectRequestDone.emit()
-     
+    
+    def selectCatastoGeometry(self, catastos):
+        if len(catastos) is 0:
+            return
+        
+        # get only the first record
+        catasto = catastos[0]
+        if len(catastos) is not 1:
+            message = self.tr("Ottenuti %d records. Verrà considerato solo il primo con gid: %d" % (len(catastos), catasto["gid"]))
+            self.showMessage(message, QgsMessageLog.INFO)
+            
+        # now get feature related to the record
+        # probabily bettere use Nathan query lib: http://nathanw.net/2013/07/24/the-little-query-engine-for-pyqgis/
+        QgsLogger.debug(self.tr("Dump del record catasto %s" % json.dumps(catasto)) )
+        
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        exp = QgsExpression("gid = %d" % catasto["gid"])
+        fields = layer.pendingFields()
+        exp.prepare(fields)
+        features = filter(exp.evaluate, layer.getFeatures())
+        layer.setSelectedFeatures( [f.id() for f in features] )
+        self.iface.mapCanvas().zoomToSelected(layer)
+
     def selectSafety(self):
         # get id of the current selected safety
         id = None

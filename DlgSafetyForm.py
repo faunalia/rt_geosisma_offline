@@ -28,6 +28,7 @@ from PyQt4.QtWebKit import QWebView
 from PyQt4.QtWebKit import QWebSettings
 # Geosisma imports
 from GeosismaQuery import *
+from GeosismaWindow import GeosismaWindow as gw
 # import cache manager
 from DlgWmsLayersManager import DlgWmsLayersManager, WmsLayersBridge
 from psycopg2.extensions import adapt
@@ -58,6 +59,14 @@ class SafetyFormBridge(QObject):
         elif ( api == "catasto2010_2/" ):
             return QueryCatasto2010_2(jsonquery).getJsonFile()
 
+    @pyqtSlot(str)
+    def selectCatasto(self, records):
+        # converto string in dict
+        recordsDict = json.loads(records)
+        # discard json strigify meta descriptor
+        catastos = recordsDict["objects"]
+        gw.instance().selectCatastoGeometry( catastos )
+        
     @pyqtSlot(str)
     def saveSafety(self, value):
         #self.jsonvalue = value
