@@ -417,6 +417,7 @@ $(function() {
             console.log("catasto", data);
             var geoms = $.map(data.objects, function(el) { return el.the_geom; });
             if(geoms.length > 0) {
+                safetyFormBridge.selectCatasto(JSON.stringify(data));
                 var c = OpenLayers.Geometry.fromWKT(geoms[0]);
                 var bounds = c.getBounds();
                 map.zoomToExtent(bounds);
