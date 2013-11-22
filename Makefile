@@ -27,10 +27,12 @@ PLUGIN_UPLOAD = $(CURDIR)/plugin_upload.py
 PLUGINNAME = rt_geosisma_offline
 
 # translation
-PY_FILES = $(wildcard *.py)
+SOURCES = $(wildcard *.py)
 TRANSLATIONS = i18n/rt_geosisma_offline_en.ts
 
-EXTRAS = conf/ doc/ incons/ offlinedata/ schemas/ styles/ template/ AUTHORS.txt LICENSE metadata.txt README.md
+EXTRAS = conf/ doc/ incons/ offlinedata/ schemas/ styles/ template/ AUTHORS.txt LICENSE  README.md metadata.txt
+
+PY_FILES = $(wildcard *.py)
 
 UI_SOURCES=$(wildcard *.ui)
 UI_FILES=$(patsubst %.ui,%_ui.py,$(UI_SOURCES))
@@ -62,9 +64,9 @@ deploy: compile doc
 	cp -vf $(PY_FILES) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 	cp -vf $(UI_FILES) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 	cp -vf $(RC_FILES) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
-	cp -vfr $(EXTRAS) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
+#	cp -vfr $(EXTRAS) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
+	cp -vfr $(HELP) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 #cp -vfr i18n $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
-#cp -vfr $(HELP) $(HOME)/.qgis2/python/plugins/$(PLUGINNAME)
 
 # The dclean target removes compiled python files from plugin directory
 # also delets any .svn entry
