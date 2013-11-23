@@ -545,7 +545,8 @@ class ArchiveManager(QObject):
         self.checkConnection()
     
         # create query
-        sqlquery = "SELECT *,ST_AsText(the_geom) FROM missions_safety WHERE gid_catasto LIKE '%_" + gid_catasto + "_%' "
+        str_gid_catasto = "_%d_" % gid_catasto
+        sqlquery = "SELECT *,ST_AsText(the_geom) FROM missions_safety WHERE gid_catasto LIKE '%_" + str_gid_catasto + "_%' "
         sqlquery += "ORDER BY id;"
         
         QgsLogger.debug(self.tr("Recupera le safety legate al poligono catastale con la query: %s" % sqlquery), 1 )
