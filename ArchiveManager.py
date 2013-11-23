@@ -42,7 +42,7 @@ class ArchiveManager(QObject):
         '''
         Singleton interface
         '''
-        if cls._instance is None:
+        if cls._instance == None:
             cls._instance = ArchiveManager()
         return cls._instance
     
@@ -53,7 +53,6 @@ class ArchiveManager(QObject):
     def __init__(self):
         '''
         Constructor
-        @param dbName: absolute path name of the db where to archive all data
         '''
         QObject.__init__(self)
         QObject.connect(self, SIGNAL("destroyed()"), self.cleanUp)
@@ -79,6 +78,9 @@ class ArchiveManager(QObject):
     def checkConnection(self):
         if not self.isOpen():
             self.connect()
+        else:
+            self.close()
+            self.connect()
     
     def isOpen(self):
         try:
@@ -94,24 +96,6 @@ class ArchiveManager(QObject):
         
     def close(self):
         self.conn.close()
-    
-    def loadAllTeamIds(self):
-        '''
-        Method to retieve all available team_id in missions_request e missions_safety
-        @return list of distinct team_id
-        '''
-        self.checkConnection()
-
-        # create query
-        sqlquery = "SELECT DISTINCT team_id FROM (SELECT team_id FROM missions_request UNION SELECT team_id FROM missions_safety);"
-        
-        QgsLogger.debug(self.tr("Recupera i team_id con la query: %s" % sqlquery), 1 )
-        self.cursor.execute(sqlquery)
-        
-        result = []
-        for team_id in self.cursor:
-            result.append(team_id[0])
-        return result
     
     def loadTeams(self):
         '''
@@ -136,42 +120,6 @@ class ArchiveManager(QObject):
             
         except Exception as ex:
             raise(ex)
-    
-    def loadSafetyNumbers(self):
-        '''
-        Method to retieve missions_safety numbers (useful to select the number of a new safety)
-        @return list of numbers
-        '''
-        self.checkConnection()
-
-        # create query
-        sqlquery = "SELECT number FROM missions_safety ORDER BY number;"
-        
-        QgsLogger.debug(self.tr("Recupera la lista dei numeri di scheda con la query: %s" % sqlquery), 1 )
-        self.cursor.execute(sqlquery)
-        
-        result = []
-        for number in self.cursor:
-            result.append(number[0])
-        return result
-    
-    def loadRequestNumbers(self):
-        '''
-        Method to retieve missions_request numbers
-        @return list of numbers
-        '''
-        self.checkConnection()
-
-        # create query
-        sqlquery = "SELECT number, id FROM missions_request ORDER BY number;"
-        
-        QgsLogger.debug(self.tr("Recupera la lista dei numeri di sopralluoghi con la query: %s" % sqlquery), 1 )
-        self.cursor.execute(sqlquery)
-        
-        result = []
-        for number, request_id in self.cursor:
-            result.append( (number, request_id) )
-        return result
     
     def archiveTeam(self, teamDict):
         '''
@@ -351,7 +299,7 @@ class ArchiveManager(QObject):
     
         # create query
         sqlquery = "SELECT * FROM missions_request "
-        if (indexes is not None) and (len(indexes) > 0):
+        if (indexes != None) and (len(indexes) > 0):
             sqlquery += "WHERE "
             for index in indexes:
                 sqlquery += "id='%s' OR " % adapt(index)
@@ -409,7 +357,7 @@ class ArchiveManager(QObject):
     
         # create query
         sqlquery = "SELECT *, ST_AsText(the_geom) FROM missions_safety "
-        if (indexes is not None) and (len(indexes) > 0):
+        if (indexes != None) and (len(indexes) > 0):
             sqlquery += "WHERE "
             for index in indexes:
                 sqlquery += "id='%s' OR " % adapt(index)
@@ -468,11 +416,11 @@ class ArchiveManager(QObject):
         sqlquery = "INSERT INTO missions_safety "
         sqlquery += "( "+",".join(safetyOdered.keys()) + " ) VALUES ( "
         for k,v in safetyOdered.items():
-            if v is None and k is not "the_geom":
+            if v == None and k != "the_geom":
                 sqlquery += "NULL, "
                 continue
-            if k is "the_geom":
-                if v is None:
+            if k == "the_geom":
+                if v == None:
                     sqlquery += "NULL, "
                 else:
                     sqlquery += "GeomFromText('%s',%d), " % ( v, gw.instance().DEFAULT_SRID )
@@ -526,13 +474,13 @@ class ArchiveManager(QObject):
         # create query
         sqlquery = "UPDATE missions_safety SET "
         for k,v in safetyOdered.items():
-            if k is "id":
+            if k == "id":
                 continue
-            if v is None and k is not "the_geom":
+            if v == None and k != "the_geom":
                 sqlquery += "%s=NULL, " % k
                 continue
-            if k is "the_geom":
-                if v is None:
+            if k == "the_geom":
+                if v == None:
                     sqlquery += "%s=NULL, " % k
                 else:
                     sqlquery += "%s=GeomFromText('%s',%d), " % ( k, v, gw.instance().DEFAULT_SRID )
@@ -583,3 +531,98 @@ class ArchiveManager(QObject):
         
         QgsLogger.debug(self.tr("Cancella safety con la query: %s" % sqlquery), 1 )
         self.cursor.execute(sqlquery)
+
+#############################################################################
+# utility queries
+#############################################################################
+
+    def loadSafetiesByCatasto(self, gid_catasto):
+        '''
+        Method to a load safeties from missions_safety related to catasto geometry
+        @param gid_catasto: index of catasto geometry
+        @return safeties: list of dict of the retrieved records
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "SELECT *,ST_AsText(the_geom) FROM missions_safety WHERE gid_catasto LIKE '_%d_' " % gid_catasto
+        sqlquery += "ORDER BY id;"
+        
+        QgsLogger.debug(self.tr("Recupera le safety legate al poligono catastale con la query: %s" % sqlquery), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            columnNames = [descr[0] for descr in self.cursor.description]
+            # get index of the_geom and ST_AsText(the_geom)
+            geomIndex = columnNames.index("the_geom")
+            textGeomIndex = columnNames.index("ST_AsText(the_geom)")
+            
+            # modify column to erase binary the_geom and substitude with renamed ST_AsText(st_geom)
+            columnNames[textGeomIndex] = "the_geom" 
+            columnNames.pop(geomIndex)
+            
+            safeties = []
+            for values in self.cursor:
+                listValues = [v for v in values]
+                listValues.pop(geomIndex)
+                safeties.append( dict(zip(columnNames, listValues)) )
+            
+            return safeties
+            
+        except Exception as ex:
+            raise(ex)
+
+    def loadSafetyNumbers(self):
+        '''
+        Method to retieve missions_safety numbers (useful to select the number of a new safety)
+        @return list of numbers
+        '''
+        self.checkConnection()
+
+        # create query
+        sqlquery = "SELECT number FROM missions_safety ORDER BY number;"
+        
+        QgsLogger.debug(self.tr("Recupera la lista dei numeri di scheda con la query: %s" % sqlquery), 1 )
+        self.cursor.execute(sqlquery)
+        
+        result = []
+        for number in self.cursor:
+            result.append(number[0])
+        return result
+    
+    def loadRequestNumbers(self):
+        '''
+        Method to retieve missions_request numbers
+        @return list of numbers
+        '''
+        self.checkConnection()
+
+        # create query
+        sqlquery = "SELECT number, id FROM missions_request ORDER BY number;"
+        
+        QgsLogger.debug(self.tr("Recupera la lista dei numeri di sopralluoghi con la query: %s" % sqlquery), 1 )
+        self.cursor.execute(sqlquery)
+        
+        result = []
+        for number, request_id in self.cursor:
+            result.append( (number, request_id) )
+        return result
+    
+    def loadAllTeamIds(self):
+        '''
+        Method to retieve all available team_id in missions_request e missions_safety
+        @return list of distinct team_id
+        '''
+        self.checkConnection()
+
+        # create query
+        sqlquery = "SELECT DISTINCT team_id FROM (SELECT team_id FROM missions_request UNION SELECT team_id FROM missions_safety);"
+        
+        QgsLogger.debug(self.tr("Recupera i team_id con la query: %s" % sqlquery), 1 )
+        self.cursor.execute(sqlquery)
+        
+        result = []
+        for team_id in self.cursor:
+            result.append(team_id[0])
+        return result
+    
