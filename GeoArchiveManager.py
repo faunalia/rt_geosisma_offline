@@ -65,9 +65,6 @@ class GeoArchiveManager(QObject):
         self.conn = db.connect(gw.instance().GEODATABASE_OUTNAME)
         self.cursor = self.conn.cursor()
         
-        # status variable
-        self.saveAll = False
-    
     def resetDb(self):
         # connect spatialite db
         if "conn" in locals():
@@ -123,6 +120,70 @@ class GeoArchiveManager(QObject):
             ''' % codiceBelfiore
 
         QgsLogger.debug(self.tr("Recupera i dati legati al codice belfiore: %s" % sqlquery), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            columnNames = [descr[0] for descr in self.cursor.description]
+            safeties = []
+            for values in self.cursor:
+                listValues = [v for v in values]
+                safeties.append( dict(zip(columnNames, listValues)) )
+            
+            return safeties
+            
+        except Exception as ex:
+            raise(ex)
+        
+    def localitaByPoint(self, point):
+        '''
+        Method to a load localita' from istat_loc basing on geometry point
+        @param point: where to find features
+        @return istat_loc: list of dict of the retrieved records
+        '''
+        self.checkConnection()
+
+        sqlquery = '''
+            SELECT
+                *
+            FROM
+                istat_loc
+            WHERE 
+                ST_Contains(the_geom, ST_GeometryFromText('POINT(%s %s)', %s));
+            ''' % ( point.x(), point.y(), gw.instance().GEODBDEFAULT_SRID )
+
+        QgsLogger.debug(self.tr("Recupera localita' con la query: %s" % sqlquery), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            columnNames = [descr[0] for descr in self.cursor.description]
+            safeties = []
+            for values in self.cursor:
+                listValues = [v for v in values]
+                safeties.append( dict(zip(columnNames, listValues)) )
+            
+            return safeties
+            
+        except Exception as ex:
+            raise(ex)
+        
+    def fab_10kByPoint(self, point):
+        '''
+        Method to a load a record from fab_10k basing on geometry point
+        @param point: where to find features
+        @return fab_10k: list of dict of the retrieved records
+        '''
+        self.checkConnection()
+
+        sqlquery = '''
+            SELECT
+                *
+            FROM
+                fab_10k 
+            WHERE 
+                ST_Contains(the_geom, ST_GeometryFromText('POINT(%s %s)', %s));
+            ''' % ( point.x(), point.y(), gw.instance().GEODBDEFAULT_SRID )
+
+        QgsLogger.debug(self.tr("Recupera fab_10k con la query: %s" % sqlquery), 1 )
         try:
             
             self.cursor.execute(sqlquery)

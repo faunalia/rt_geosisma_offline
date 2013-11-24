@@ -20,7 +20,11 @@ Created on Oct 7, 2013
 @author: Luigi Pirelli (luipir@gmail.com)
 '''
 
-import traceback, os, json, time
+import traceback
+import os
+import json # used to dump dicts in strings
+import ast # used to convert string indict because json.loads could fail
+import time
 from datetime import date
 from psycopg2.extensions import adapt
 
@@ -49,6 +53,7 @@ class GeosismaWindow(QDockWidget):
     GEOSISMA_DBNAME = "geosismadb.sqlite"
     GEOSISMA_GEODBNAME = "geosisma_geo.sqlite"
     DEFAULT_SRID = 3003
+    GEODBDEFAULT_SRID = 32632
 
     # nomi dei layer in TOC
     LAYER_GEOM_ORIG = "Geometrie Originali"
@@ -65,7 +70,7 @@ class GeosismaWindow(QDockWidget):
     SCALE_MODIFY = 2000
 
     # nomi tabelle contenenti le geometrie
-    TABLE_GEOM_ORIG = "catasto_2010".lower()
+    TABLE_GEOM_ORIG = "fab_catasto".lower()
     TABLE_GEOM_MODIF = "missions_safety".lower()
 
     # ID dei layer contenenti geometrie e wms
@@ -135,7 +140,8 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug(self.tr("Default geodbname: %s" % self.GEODATABASE_OUTNAME) )
         
         # get default srid
-        self.DEFAULT_SRID = self.settings.value("/rt_geosisma_offline/defaultSrid", self.DEFAULT_SRID, int )
+        self.DEFAULT_SRID = self.settings.value("/rt_geosisma_offline/safetyDbDefaultSrid", self.DEFAULT_SRID, int )
+        self.GEODBDEFAULT_SRID = self.settings.value("/rt_geosisma_offline/geoDbDefaultSrid", self.GEODBDEFAULT_SRID, int )
         QgsLogger.debug(self.tr("Default srid: %d" % self.DEFAULT_SRID) )
         
         #geosisma api connection data
@@ -417,7 +423,7 @@ class GeosismaWindow(QDockWidget):
             uri.setDatabase(self.DATABASE_OUTNAME)
             uri.setDataSource('', self.TABLE_GEOM_MODIF, 'the_geom')
             vl = QgsVectorLayer( uri.uri(), self.LAYER_GEOM_MODIF, "spatialite" )
-            if vl == None or not vl.isValid() or not vl.setReadOnly(True):
+            if vl == None or not vl.isValid():
                 return False
 
             # imposta lo stile del layer
@@ -659,11 +665,8 @@ class GeosismaWindow(QDockWidget):
         # check if result set
         if ret != 0:
             # get selected request
-            #safetyId = dlg.currentSafetyId
             self.currentSafety = dlg.currentSafety
-            #print self.currentSafety
-
-        self.updatedCurrentSafety.emit()
+            self.updatedCurrentSafety.emit()
 
     def openCurrentSafety(self):
         QgsLogger.debug("openCurrentSafety entered",2 )
@@ -812,7 +815,7 @@ class GeosismaWindow(QDockWidget):
         dateIso = currentDate.isoformat()
         dateForForm = currentDate.__format__("%d/%m/%Y")
         
-        safety = "{number:%s, sdate:'%s'}"% (adapt(safety_number), dateForForm)
+        safety = "{'number':%s, 'sdate':'%s'}"% (adapt(safety_number), dateForForm)
         self.currentSafety = {"id":None, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
@@ -991,34 +994,48 @@ class GeosismaWindow(QDockWidget):
         featureDic = dict(zip(fieldNames, feature.attributes()))
         
         tempSafety = self.currentSafety
-        
         # get location data from DB to fill safety
         from GeoArchiveManager import GeoArchiveManager
         safetyLocationDataDict = GeoArchiveManager.instance().locationDataByBelfiore( featureDic["belfiore"] )[0]
         print safetyLocationDataDict
         
         # update safety json with catasto data (foglio and particella)
-        subSafetyDict = json.loads( tempSafety["safety"] )
-        #print "prima", subSafetyDict
+        subSafetyDict = ast.literal_eval( tempSafety["safety"] )
+        
         subSafetyDict["s1prov"] = safetyLocationDataDict["sigla"]
         subSafetyDict["s1com"] = safetyLocationDataDict["toponimo"]
         subSafetyDict["s1istatreg"] = safetyLocationDataDict["id_regione"]
         subSafetyDict["s1istatprov"] = safetyLocationDataDict["id_provincia"]
         subSafetyDict["s1istatcom"] = safetyLocationDataDict["id_comune"]
         subSafetyDict["s1catfoglio"] = featureDic["foglio"]
+        subSafetyDict["s1catalle"] = featureDic["allegato"]
         subSafetyDict["s1catpart1"] = featureDic["codbo"]
-        #print "dopo", subSafetyDict
         
+        # get localita'
+        centroid = feature.geometry().centroid()
+        localitaDict = GeoArchiveManager.instance().localitaByPoint( centroid.asPoint() )
+        if len(localitaDict) > 0:
+            localitaDict = localitaDict[0]
+            subSafetyDict["s1loc"] = localitaDict["denom_loc"]
+            subSafetyDict["s1istatloc"] = localitaDict["cod_loc"]
+        
+        # get aggregato
+        fab_10kDict = GeoArchiveManager.instance().fab_10kByPoint( centroid.asPoint() )
+        if len(fab_10kDict) > 0:
+            fab_10kDict = fab_10kDict[0]
+            subSafetyDict["s1aggn"] = fab_10kDict["identif"]
+        
+        # update temp safety with subSafety
+        tempSafety["safety"] = json.dumps(subSafetyDict)
+
         # convert feature geometry to default SRID
         destCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
         xform = QgsCoordinateTransform(sourceCrs, destCrs)
         
         featureGeometry = feature.geometry()
-        #print "wkt prima", featureGeometry.exportToWkt()
         if featureGeometry.transform(xform):
             QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione della geometria al CRS corrente") )
             return
-        #print "wkt dopo", featureGeometry.exportToWkt()
         
         # fuse current safety polygon with the new feature's one
         print 'tempSafety["the_geom"] -%s-' % tempSafety["the_geom"]
@@ -1030,29 +1047,21 @@ class GeosismaWindow(QDockWidget):
             if len(featureMultiPolygon) == 0:
                 QMessageBox.critical( self, "RT Geosisma", self.tr("La geometria della sceda corrente non e' Multipolygon") )
                 return
-            print "len", len(featureMultiPolygon)
-            print featureGeometry.type()
-            print featureGeometry.isMultipart()
             
             # add polygon of the feature multipolygon in the safety multypolygon
             safetyGeometry = QgsGeometry.fromWkt( tempSafety["the_geom"] )
-            print safetyGeometry.type()
-            print safetyGeometry.isMultipart()
             safetyGeometry = safetyGeometry.combine(featureGeometry)
             
             # update geometry in the safety
             tempSafety["the_geom"] = safetyGeometry.exportToWkt()
         
-        # update safety
+        # record reference to the related cataasto polygons
         if (tempSafety["gid_catasto"] == None) or (tempSafety["gid_catasto"] == ""):
             tempSafety["gid_catasto"] = "_%d_" % featureDic["gid"]
         else:
             tempSafety["gid_catasto"] = "%s_%d_" % (tempSafety["gid_catasto"], featureDic["gid"])
-        tempSafety["the_geom"] = feature.geometry().exportToWkt()
-        tempSafety["safety"] = json.dumps(subSafetyDict)
-        
-        
         print "new gid_catasto",tempSafety["gid_catasto"]
+
         # update safety
         self.currentSafety = tempSafety
         self.updatedCurrentSafety.emit()
