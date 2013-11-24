@@ -694,9 +694,12 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug("openCurrentSafety exit",2 )
 
     def cleanUpSafetyForm(self):
-        QgsLogger.debug("cleanUpSafetyForm entered",2 )
-        self.safetyDlg = None
-        QgsLogger.debug("cleanUpSafetyForm exit",2 )
+        try:
+            QgsLogger.debug("cleanUpSafetyForm entered",2 )
+            self.safetyDlg = None
+            QgsLogger.debug("cleanUpSafetyForm exit",2 )
+        except:
+            pass
 
     def updateSafetyForm(self):
         QgsLogger.debug("updateSafetyForm entered",2 )
