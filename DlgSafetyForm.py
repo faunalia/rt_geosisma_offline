@@ -110,13 +110,12 @@ class DlgSafetyForm(QDockWidget):
         # Python to JS bridge definition and signal connection
         self.safetyFormBridge = SafetyFormBridge(self)
         self.safetyFormBridge.saveSafetyDone.connect(self.notifySafetyModified)
-    
+        
     def setupUi(self):
         from PyQt4 import QtWebKit
         
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setObjectName( "DlgSafetyForm" )
-        self.setWindowTitle( self.tr("Scheda Sopralluogo n: %d del team: %s" % (self.currentSafety["number"], self.teamName)) )
 
         child = QWidget()
         gridLayout = QGridLayout(child)
@@ -141,7 +140,10 @@ class DlgSafetyForm(QDockWidget):
     def closeEvent(self, event):
         #self.saveSettingsDlgSafetyForm()
         QWidget.closeEvent(self, event)
-
+    
+    def update(self):
+        self.webView.reload()
+    
     def initSafetyValues(self):
         
         #self.currentSafety = {"safety": "{u'sdate': u'20/03/2013', u's1mapright': u'643334.2044114', u'number': 3, u's1com': u'San Marcello Pistoiese', u's1istatcom': u'019', u's0com': u'', u's1mapleft': u'643291.87110092', u's1viacorso': 1, u's1istatloc': u'10010', u's1name': u'Club Juventus', u's0sigla': u'', u's1mapbottom': u'4879570.583229', u's1aggn': u'019103576', u's1prov': u'PT', u's1istatcens': u'002', u's1civico': u'121', u's1catfoglio': u'55', u's1istatreg': u'009', u's1pos': 3, u's1loc': u'San Marcello Pistoiese', u's1catpart1': u'61', u's1istatprov': u'047', u's1maptop': u'4879597.6765478', u's1via': u'Marconi', u's1edn': u'3'}"}
@@ -150,6 +152,8 @@ class DlgSafetyForm(QDockWidget):
         if self.currentSafety is None:
             return
         
+        self.setWindowTitle( self.tr("Scheda Sopralluogo n: %d del team: %s" % (self.currentSafety["number"], self.teamName)) )
+
         safety = self.prepareSafetyToJs(self.currentSafety["safety"])
         JsCommand = "updateSafety(%s, %s)" % (adapt(self.teamName), safety)
         QgsLogger.debug(self.tr("Init Safety with JS command: %s" % JsCommand))

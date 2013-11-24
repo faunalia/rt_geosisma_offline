@@ -36,20 +36,19 @@ currentPath = os.path.dirname(__file__)
 
 class GeosismaWindow(QDockWidget):
 
+    # signals
+    downloadTeamsDone = pyqtSignal(bool)
+    archiveTeamsDone = pyqtSignal(bool)
+    downloadRequestsDone = pyqtSignal(bool)
+    selectRequestDone = pyqtSignal()
+    updatedCurrentSafety = pyqtSignal()
+    initNewCurrentSafetyDone = pyqtSignal()
+
     # static global vars
     MESSAGELOG_CLASS = "rt_geosisma_offline"
     GEOSISMA_DBNAME = "geosismadb.sqlite"
     GEOSISMA_GEODBNAME = "geosisma_geo.sqlite"
     DEFAULT_SRID = 3003
-
-    # signals
-    downloadTeamsDone = pyqtSignal(bool)
-    archiveTeamsDone = pyqtSignal(bool)
-    downloadRequestsDone = pyqtSignal(bool)
-    selectSafetyDone = pyqtSignal()
-    selectRequestDone = pyqtSignal()
-    updatedCurrentSafety = pyqtSignal()
-    initNewCurrentSafetyDone = pyqtSignal()
 
     # nomi dei layer in TOC
     LAYER_GEOM_ORIG = "Geometrie Originali"
@@ -124,7 +123,6 @@ class GeosismaWindow(QDockWidget):
         self.iface = iface
         self.canvas = self.iface.mapCanvas()
         self.safetyDlg = None
-        self.safetyDlgIsValid = False # flag set up if DockWidget is closed manually
         self.isApriScheda = True
         self.srid = GeosismaWindow.DEFAULT_SRID
 
@@ -196,14 +194,10 @@ class GeosismaWindow(QDockWidget):
         self.downloadTeamsDone.connect(self.archiveTeams)
         self.archiveTeamsDone.connect(self.downloadRequests)
         self.downloadRequestsDone.connect( self.archiveRequests )
-        #self.initNewCurrentSafetyDone.connect(self.openCurrentSafety)
-        #self.initNewCurrentSafetyDone.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateArchivedCurrentSafety)
-        #self.selectSafetyDone.connect(self.updateSafetyForm)
         
         # GUI state based on signals
-        self.selectSafetyDone.connect(self.manageGuiStatus)
         self.selectRequestDone.connect(self.manageGuiStatus)
         self.updatedCurrentSafety.connect(self.manageGuiStatus)
         
@@ -557,7 +551,6 @@ class GeosismaWindow(QDockWidget):
         
         # get all sopralluoghiRequests
         for index,team in enumerate(self.downloadedTeams):
-            
             # add a dict of dict with all requests to be donwloaded
             # key will be the request api
             self.downloadedTeams[index]["downloadedRequests"] = {}
@@ -671,8 +664,7 @@ class GeosismaWindow(QDockWidget):
             #print self.currentSafety
 
         self.updatedCurrentSafety.emit()
-        #self.selectSafetyDone.emit()
-        
+
     def openCurrentSafety(self):
         QgsLogger.debug("openCurrentSafety entered",2 )
         if self.currentSafety == None:
@@ -687,24 +679,23 @@ class GeosismaWindow(QDockWidget):
             if team["id"] == self.currentSafety["team_id"]:
                 teamName = team["name"]
         
-        # open Safety Form
-        if self.safetyDlg is not None and self.safetyDlgIsValid:
-            #self.safetyDlg.deleteLater()
-            del self.safetyDlg
-        self.safetyDlg = None
+        # update safetyForm is opened
+        if self.safetyDlg is not None:
+            self.updateSafetyForm()
         
-        from DlgSafetyForm import DlgSafetyForm
-        self.safetyDlg = DlgSafetyForm( teamName, self.currentSafety, self.iface, self.iface.mainWindow() )
-        self.safetyDlg.currentSafetyModifed.connect(self.updateCurrentSafety)
-        self.safetyDlg.destroyed.connect(self.cleanUpSafetyForm)
-        self.safetyDlg.exec_()
-        
-        self.safetyDlgIsValid = True
+        else:
+            self.safetyDlg = None
+            from DlgSafetyForm import DlgSafetyForm
+            self.safetyDlg = DlgSafetyForm( teamName, self.currentSafety, self.iface, self.iface.mainWindow() )
+            self.safetyDlg.currentSafetyModifed.connect(self.updateCurrentSafetyFromForm)
+            self.safetyDlg.destroyed.connect(self.cleanUpSafetyForm)
+            self.safetyDlg.exec_()
+            
         QgsLogger.debug("openCurrentSafety exit",2 )
 
     def cleanUpSafetyForm(self):
         QgsLogger.debug("cleanUpSafetyForm entered",2 )
-        self.safetyDlgIsValid = False
+        self.safetyDlg = None
         QgsLogger.debug("cleanUpSafetyForm exit",2 )
 
     def updateSafetyForm(self):
@@ -716,17 +707,17 @@ class GeosismaWindow(QDockWidget):
             self.safetyDlg = None
             return
         
-        if (self.safetyDlg is not None) and \
-            self.safetyDlgIsValid and \
-            (self.currentSafety["id"] == self.safetyDlg.currentSafety["id"]):
-            # do nothing, update is managed directly by the webView
-            #return
-            pass
-        
-        self.openCurrentSafety()
+        if self.safetyDlg is None:
+            # open e new one
+            self.openCurrentSafety()
+        else:
+            # could be managed passing safety in the signal managed by the form
+            self.safetyDlg.currentSafety = self.currentSafety
+            self.safetyDlg.update()
+            
         QgsLogger.debug("updateSafetyForm exit",2 )
     
-    def updateCurrentSafety(self, safetyDict):
+    def updateCurrentSafetyFromForm(self, safetyDict):
         if safetyDict == None:
             return
         self.currentSafety["safety"] = safetyDict["safety"]
