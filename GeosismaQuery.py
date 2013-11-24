@@ -233,9 +233,9 @@ class QueryLocalita(GeosismaQuery):
 
 class QueryCatasto2010_2(GeosismaQuery):
     '''
-    @summary: implements query on table catasto_2010
+    @summary: implements query on table fab_catasto
     '''
-    TABLENAME = "catasto_2010"
+    TABLENAME = "fab_catasto"
     EXTTABLENAME = "codici_belfiore"
 # this is the fileds code for postgis
 #     FIELDS = [
@@ -304,11 +304,11 @@ class QueryCatasto2010_2(GeosismaQuery):
                 sqlquery += field + ", "
         sqlquery = sqlquery[:-2] # trim last ", "
         sqlquery += " FROM "+DATABASE_SCHEMA+self.TABLENAME+", "+DATABASE_SCHEMA+self.EXTTABLENAME
-        sqlquery += " WHERE codici_belfiore.id = catasto_2010.belfiore"
+        sqlquery += " WHERE codici_belfiore.id = fab_catasto.belfiore"
         sqlquery += "   AND LOWER(codici_belfiore.id_provincia) LIKE LOWER('"+queryParams["belfiore__provincia__id_istat"]+"%')"
         sqlquery += "   AND LOWER(codici_belfiore.id_comune) LIKE LOWER('"+queryParams["belfiore__comune__id_istat"]+"%')"
-        sqlquery += "   AND LOWER(catasto_2010.foglio) LIKE LOWER('"+queryParams["foglio"]+"%')"
-        sqlquery += "   AND LOWER(catasto_2010.codbo) LIKE LOWER('"+queryParams["codbo"]+"%')"
+        sqlquery += "   AND LOWER(fab_catasto.foglio) LIKE LOWER('"+queryParams["foglio"]+"%')"
+        sqlquery += "   AND LOWER(fab_catasto.codbo) LIKE LOWER('"+queryParams["codbo"]+"%')"
         self.cursor.execute(sqlquery)
 
         self.saveJson()
