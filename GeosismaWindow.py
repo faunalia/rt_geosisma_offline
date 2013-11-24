@@ -42,8 +42,6 @@ class GeosismaWindow(QDockWidget):
     GEOSISMA_GEODBNAME = "geosisma_geo.sqlite"
     DEFAULT_SRID = 3003
 
-    _instance = None
-    
     # signals
     downloadTeamsDone = pyqtSignal(bool)
     archiveTeamsDone = pyqtSignal(bool)
@@ -77,6 +75,8 @@ class GeosismaWindow(QDockWidget):
     VLID_FOTO = ''
     RLID_WMS = {}
 
+    _instance = None
+    
     # singleton interface
     @classmethod
     def instance(cls, parent=None, iface=None):
@@ -86,7 +86,7 @@ class GeosismaWindow(QDockWidget):
         @param dbName: passed to init() function
         
         '''
-        if cls._instance is None:
+        if cls._instance == None:
             cls._instance = GeosismaWindow()
             cls._instance.init(parent, iface)
         return cls._instance
@@ -159,14 +159,14 @@ class GeosismaWindow(QDockWidget):
 
         self.nuovaPointEmitter = FeatureFinder()
         self.nuovaPointEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
-        QObject.connect(self.nuovaPointEmitter, SIGNAL("pointEmitted"), self.creaNuovaGeometria)
+        QObject.connect(self.nuovaPointEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
 
         self.esistentePointEmitter = FeatureFinder()
         QObject.connect(self.esistentePointEmitter, SIGNAL("pointEmitted"), self.identificaSchedaEsistente)
 
         self.polygonDrawer = PolygonDrawer()
         self.polygonDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
-        QObject.connect(self.polygonDrawer, SIGNAL("geometryEmitted"), self.creaNuovaGeometria)
+        QObject.connect(self.polygonDrawer, SIGNAL("geometryEmitted"), self.linkSafetyGeometry)
 
         self.lineDrawer = LineDrawer()
         self.lineDrawer.registerStatusMsg( u"Click sx per disegnare la linea di taglio, click dx per chiuderla" )
@@ -186,8 +186,9 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.btnDownloadRequests, SIGNAL("clicked()"), self.downloadTeams)
         self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
         
+        self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
+
         self.connect(self.btnSpezzaGeometriaEsistente, SIGNAL("clicked()"), self.spezzaGeometriaEsistente)
-        self.connect(self.btnCreaNuovaGeometria, SIGNAL("clicked()"), self.creaNuovaGeometria)
         self.connect(self.btnRipulisciGeometrie, SIGNAL("clicked()"), self.ripulisciGeometrie)
 #         self.connect(self.btnAbout, SIGNAL("clicked()"), self.about)
         
@@ -271,12 +272,12 @@ class GeosismaWindow(QDockWidget):
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
-        text = u"Crea nuova"
-        self.btnCreaNuovaGeometria = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Crea nuova geometria"
-        self.btnCreaNuovaGeometria.setToolTip( text )
-        self.btnCreaNuovaGeometria.setCheckable(True)
-        gridLayout.addWidget(self.btnCreaNuovaGeometria, 0, 0, 1, 1)
+        text = u"Seleziona"
+        self.btnLinkSafetyGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
+        text = u"Seleziona una particlla da associare alla scheda"
+        self.btnLinkSafetyGeometry.setToolTip( text )
+        self.btnLinkSafetyGeometry.setCheckable(True)
+        gridLayout.addWidget(self.btnLinkSafetyGeometry, 0, 0, 1, 1)
 
         text = u"Suddividi"
         self.btnSpezzaGeometriaEsistente = QPushButton( QIcon(":/icons/spezza_geometria.png"), text, group )
@@ -331,10 +332,9 @@ class GeosismaWindow(QDockWidget):
 #         ArchiveManager.instance().commit()
 #         return
 
-#         self.currentSafety = {u'created': u'2013-11-20', u'number': 6, u'team_id': 123, u'safety': u'{"s1istatprov":"","s1istatcom":"","sdate":"20/11/2013","number":6,"s2floorsfc":"13","s2nfloors":"6","s2cer6":true,"s2uso6":true,"s2uson6":6,"s2percuse":"5","s3tA6":true,"s4dA6":true,"s4dB6":true,"s5ensA6":true,"s5ensB6":true,"s6extE2":true}', u'request_id': 55, u'date': u'2013-11-20', u'id': 6}
-#         self.manageGuiStatus()
-#         self.openCurrentSafety()
-#         return
+        self.currentSafety = {u'created': u'2013-11-21', u'gid_catasto': None, u'number': 2, u'team_id': 123, u'safety': u'{"s1istatprov":"045","s1istatcom":"004","sdate":"21/11/2013","number":2,"s1catfoglio":"24","s1com":"Casola in Lunigiana","s1istatcens":"001","s1istatloc":"10003","s1istatreg":"009","s1loc":"Casola in Lunigiana","s1prov":"MS","s1catpart1":"966"}', u'request_id': 51, u'date': u'2013-11-21', u'the_geom': None, u'id': 2}
+        self.updatedCurrentSafety.emit()
+#        return
         self.reloadCrs()
         
         # load all the layers from db
@@ -633,12 +633,12 @@ class GeosismaWindow(QDockWidget):
         self.selectRequestDone.emit()
     
     def selectCatastoGeometry(self, catastos):
-        if len(catastos) is 0:
+        if len(catastos) == 0:
             return
         
         # get only the first record
         catasto = catastos[0]
-        if len(catastos) is not 1:
+        if len(catastos) != 1:
             message = self.tr("Ottenuti %d records. Verrà considerato solo il primo con gid: %d" % (len(catastos), catasto["gid"]))
             self.showMessage(message, QgsMessageLog.INFO)
             
@@ -668,17 +668,19 @@ class GeosismaWindow(QDockWidget):
             # get selected request
             #safetyId = dlg.currentSafetyId
             self.currentSafety = dlg.currentSafety
+            #print self.currentSafety
 
         self.updatedCurrentSafety.emit()
         #self.selectSafetyDone.emit()
         
     def openCurrentSafety(self):
-        if self.currentSafety is None:
+        QgsLogger.debug("openCurrentSafety entered",2 )
+        if self.currentSafety == None:
             return
         
         # get teamName
         from ArchiveManager import ArchiveManager # import here to avoid circular import
-        if self.teams is None:
+        if self.teams == None:
             self.teams = ArchiveManager.instance().loadTeams()
         teamName = ""
         for team in self.teams:
@@ -687,7 +689,8 @@ class GeosismaWindow(QDockWidget):
         
         # open Safety Form
         if self.safetyDlg is not None and self.safetyDlgIsValid:
-            self.safetyDlg.deleteLater()
+            #self.safetyDlg.deleteLater()
+            del self.safetyDlg
         self.safetyDlg = None
         
         from DlgSafetyForm import DlgSafetyForm
@@ -697,14 +700,17 @@ class GeosismaWindow(QDockWidget):
         self.safetyDlg.exec_()
         
         self.safetyDlgIsValid = True
+        QgsLogger.debug("openCurrentSafety exit",2 )
 
     def cleanUpSafetyForm(self):
-        print "cleanUpSafetyForm"
+        QgsLogger.debug("cleanUpSafetyForm entered",2 )
         self.safetyDlgIsValid = False
+        QgsLogger.debug("cleanUpSafetyForm exit",2 )
 
     def updateSafetyForm(self):
-        # remove dialog is safety is None
-        if self.currentSafety is None:
+        QgsLogger.debug("updateSafetyForm entered",2 )
+        # remove dialog is safety == None
+        if self.currentSafety == None:
             if self.safetyDlg is not None:
                 self.safetyDlg.deleteLater()
             self.safetyDlg = None
@@ -714,18 +720,21 @@ class GeosismaWindow(QDockWidget):
             self.safetyDlgIsValid and \
             (self.currentSafety["id"] == self.safetyDlg.currentSafety["id"]):
             # do nothing, update is managed directly by the webView
-            return
+            #return
+            pass
         
         self.openCurrentSafety()
+        QgsLogger.debug("updateSafetyForm exit",2 )
     
     def updateCurrentSafety(self, safetyDict):
-        if safetyDict is None:
+        if safetyDict == None:
             return
         self.currentSafety["safety"] = safetyDict["safety"]
         self.updatedCurrentSafety.emit()
     
     def updateArchivedCurrentSafety(self):
-        if self.currentSafety is None:
+        QgsLogger.debug("updateArchivedCurrentSafety entered",2 )
+        if self.currentSafety == None:
             return
         
         QgsLogger.debug(self.tr("Dump di safety %s" % json.dumps( self.currentSafety )) )
@@ -735,7 +744,7 @@ class GeosismaWindow(QDockWidget):
             ArchiveManager.instance().archiveSafety(self.currentSafety["request_id"], self.currentSafety["team_id"], self.currentSafety, overwrite)
             ArchiveManager.instance().commit()
             # if it's a new record get new id to update currentSafety
-            if self.currentSafety["id"] is None:
+            if self.currentSafety["id"] == None:
                 lastId = ArchiveManager.instance().getLastRowId()
                 if lastId != self.currentSafety["id"]:
                     self.currentSafety["id"] = lastId
@@ -753,8 +762,11 @@ class GeosismaWindow(QDockWidget):
         finally:
             ArchiveManager.instance().close() # to avoid locking
 
+        QgsLogger.debug("updateArchivedCurrentSafety exit",2 )
+
     def archiveSafety(self):
-        if self.currentSafety is None:
+        QgsLogger.debug("archiveSafety entered",2 )
+        if self.currentSafety == None:
             return
         
         QgsLogger.debug(self.tr("Dump di safety %s" % json.dumps( self.currentSafety )) )
@@ -773,7 +785,10 @@ class GeosismaWindow(QDockWidget):
         finally:
             ArchiveManager.instance().close() # to avoid locking
         
+        QgsLogger.debug("archiveSafety exit",2 )
+
     def initNewCurrentSafety(self):
+        QgsLogger.debug("initNewCurrentSafety entered",2 )
         
         request_id = None
         team_id = None
@@ -804,12 +819,14 @@ class GeosismaWindow(QDockWidget):
         dateForForm = currentDate.__format__("%d/%m/%Y")
         
         safety = "{number:%s, sdate:'%s'}"% (adapt(safety_number), dateForForm)
-        self.currentSafety = {"id":None, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso}
+        self.currentSafety = {"id":None, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
         self.initNewCurrentSafetyDone.emit()
+        QgsLogger.debug("initNewCurrentSafety exit",2 )
     
     def deleteCurrentSafety(self):
+        QgsLogger.debug("deleteCurrentSafety entered",2 )
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Warning)
         msgBox.setText(self.tr("Sicuro di cancellare la scheda %s ?" % self.currentSafety["number"]))
@@ -841,8 +858,10 @@ class GeosismaWindow(QDockWidget):
         finally:
             ArchiveManager.instance().close() # to avoid locking
 
+        QgsLogger.debug("deleteCurrentSafety exit",2 )
+
     def manageGuiStatus(self):
-        if self.currentSafety is None:
+        if self.currentSafety == None:
             self.btnDeleteCurrentSafety.setEnabled(False)
             self.btnModifyCurrentSafety.setEnabled(False)
             self.btnSelectSafety.setText("Seleziona Scheda [%s]" % "--")
@@ -851,7 +870,7 @@ class GeosismaWindow(QDockWidget):
             self.btnModifyCurrentSafety.setEnabled(True)
             self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["number"])
         
-        if self.currentRequest is None:
+        if self.currentRequest == None:
             self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % "--")
         else:
             self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % self.currentRequest["id"])
@@ -874,54 +893,81 @@ class GeosismaWindow(QDockWidget):
         pass
     
     @classmethod
-    def checkActionScale(self, actionName, maxScale):
-        if int(self.instance.canvas.scale()) > maxScale:
-            QMessageBox.warning( self.instance, "Azione non permessa", u"L'azione \"%s\" è ammessa solo dalla scala 1:%d" % (actionName, maxScale) )
+    def checkActionScale(cls, actionName, maxScale):
+        if int(cls.instance().canvas.scale()) > maxScale:
+            QMessageBox.warning( cls.instance(), "Azione non permessa", u"L'azione \"%s\" è ammessa solo dalla scala 1:%d" % (actionName, maxScale) )
             return False
         return True
 
-    def creaNuovaGeometria(self, point=None, button=None):
-        action = self.btnCreaNuovaGeometria.toolTip()
-
+    def linkSafetyGeometry(self, point=None, button=None):
+        if self.currentSafety == None:
+            self.btnLinkSafetyGeometry.setChecked(False)
+            return
+        
+        action = self.btnLinkSafetyGeometry.toolTip()
         if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
             return self.nuovaPointEmitter.startCapture()
 
         if button != Qt.LeftButton:
-            self.btnSelNuovaScheda.setChecked(False)
+            self.btnLinkSafetyGeometry.setChecked(False)
             return
 
-        layerModif = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
-        if layerModif == None:
-            self.btnSelNuovaScheda.setChecked(False)
+        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        if layerOrig == None:
+            self.btnLinkSafetyGeometry.setChecked(False)
             return
 
-        feat = self.nuovaPointEmitter.findAtPoint(layerModif, point)
+        feat = self.nuovaPointEmitter.findAtPoint(layerOrig, point)
         if feat != None:
-            if not self.checkActionSpatialFromFeature( action, feat, True ):
-                return self.nuovaPointEmitter.startCapture()
+            from ArchiveManager import ArchiveManager
+            #if not self.checkActionSpatialFromFeature( action, feat, True ):
+            #    return self.nuovaPointEmitter.startCapture()
 
             # controlla se tale geometria ha qualche scheda associata
-            codice = feat.attributeMap()[0].toString()
-            abbinato = AutomagicallyUpdater.Query( "SELECT ABBINATO_A_SCHEDA FROM GEOMETRIE_RILEVATE_NUOVE_O_MODIFICATE WHERE ID_UV_NEW = ?", [codice] ).getFirstResult() == '1'
-            if abbinato:
+            gidIndex = feat.fieldNameIndex("gid")
+            gid = feat.attributes()[gidIndex]
+            features = ArchiveManager.instance().loadSafetiesByCatasto(gid)
+            print "len(features) by catasto", len(features)
+            if len(features) == 1:
+                feature = features[0]
+                # check if related safety is the same of th ecurrent safety => probabily need 
+                # to overwrite safety geometry modification
+                if feature["id"] == self.currentSafety["id"]:
+                    msgBox = QMessageBox()
+                    msgBox.setIcon(QMessageBox.Warning)
+                    msgBox.setText("RT Geosisma")
+                    msgBox.setInformativeText(self.tr("Vuoi resettare la geometria della scheda: %s ?" % feature["number"]))
+                    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+                    msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
+                    msgBox.setButtonText(QMessageBox.Cancel, self.tr("No: seleziono un'altro plogigono"))
+                    ret = msgBox.exec_()
+                    if ret == QMessageBox.Cancel:
+                        # continue on another geometry
+                        return self.nuovaPointEmitter.startCapture()
+                
+            if len(features) > 1:
                 # NO, c'è già una scheda associata
-                QMessageBox.warning( self, "RT Omero", "La geometria selezionata appartiene ad un edificio gia' esistente" )
+                QMessageBox.critical( self, "RT Geosisma", self.tr("Anomalia! Esistono più schede associate al poligono! Seleziona un'altro poligono") )
                 return self.nuovaPointEmitter.startCapture()
 
-            # OK, non esiste alcuna scheda associata a tale geometria
-            # associa la UV a tale geometria
             QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
-            self.apriScheda(codice)
+            # OK, non esiste alcuna scheda associata a tale geometria
+            # associa il poligono alla safety
+            crs = layerOrig.dataProvider().crs()
+            
+            self.updateCurrentSafetyWithCatasto(crs, feat)
+            
+            #self.apriScheda(gid)
             QApplication.restoreOverrideCursor()
-            self.btnSelNuovaScheda.setChecked(False)
+            self.btnLinkSafetyGeometry.setChecked(False)
             return
             
         layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
         if layerOrig == None:
-            self.btnSelNuovaScheda.setChecked(False)
+            self.btnLinkSafetyGeometry.setChecked(False)
             return
 
-        feat = self.nuovaPointEmitter.findAtPoint(layerOrig, point)        
+        feat = self.nuovaPointEmitter.findAtPoint(layerOrig, point)
         if feat != None:
             if not self.checkActionSpatialFromFeature( action, feat, False ):
                 return
@@ -932,11 +978,91 @@ class GeosismaWindow(QDockWidget):
 
             self.apriScheda(uvID)
             QApplication.restoreOverrideCursor()
-            self.btnSelNuovaScheda.setChecked(False)
+            self.btnLinkSafetyGeometry.setChecked(False)
             return
 
         return self.nuovaPointEmitter.startCapture()
     
+    def updateCurrentSafetyWithCatasto(self, sourceCrs, feature):
+        '''
+        Method update CurrentSafety with element related to current original feature (from catasto)
+        @param crs: QgsCoordinateReferenceSystem of the feature geometry
+        @param feature: QgsFeature of the original catasto layer
+        @signal currentSafetyModified
+        '''
+        if self.currentSafety == None:
+            return
+        
+        fieldNames = [field.name() for field in feature.fields()]
+        featureDic = dict(zip(fieldNames, feature.attributes()))
+        
+        tempSafety = self.currentSafety
+        
+        # get location data from DB to fill safety
+        from GeoArchiveManager import GeoArchiveManager
+        safetyLocationDataDict = GeoArchiveManager.instance().locationDataByBelfiore( featureDic["belfiore"] )[0]
+        print safetyLocationDataDict
+        
+        # update safety json with catasto data (foglio and particella)
+        subSafetyDict = json.loads( tempSafety["safety"] )
+        #print "prima", subSafetyDict
+        subSafetyDict["s1prov"] = safetyLocationDataDict["sigla"]
+        subSafetyDict["s1com"] = safetyLocationDataDict["toponimo"]
+        subSafetyDict["s1istatreg"] = safetyLocationDataDict["id_regione"]
+        subSafetyDict["s1istatprov"] = safetyLocationDataDict["id_provincia"]
+        subSafetyDict["s1istatcom"] = safetyLocationDataDict["id_comune"]
+        subSafetyDict["s1catfoglio"] = featureDic["foglio"]
+        subSafetyDict["s1catpart1"] = featureDic["codbo"]
+        #print "dopo", subSafetyDict
+        
+        # convert feature geometry to default SRID
+        destCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        xform = QgsCoordinateTransform(sourceCrs, destCrs)
+        
+        featureGeometry = feature.geometry()
+        #print "wkt prima", featureGeometry.exportToWkt()
+        if featureGeometry.transform(xform):
+            QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione della geometria al CRS corrente") )
+            return
+        #print "wkt dopo", featureGeometry.exportToWkt()
+        
+        # fuse current safety polygon with the new feature's one
+        print 'tempSafety["the_geom"] -%s-' % tempSafety["the_geom"]
+        if (tempSafety["the_geom"] == None) or (tempSafety["the_geom"] == ""):
+            tempSafety["the_geom"] = featureGeometry.exportToWkt()
+        else:
+            # create geometry from current safety geometry
+            featureMultiPolygon = featureGeometry.asMultiPolygon()
+            if len(featureMultiPolygon) == 0:
+                QMessageBox.critical( self, "RT Geosisma", self.tr("La geometria della sceda corrente non e' Multipolygon") )
+                return
+            print "len", len(featureMultiPolygon)
+            print featureGeometry.type()
+            print featureGeometry.isMultipart()
+            
+            # add polygon of the feature multipolygon in the safety multypolygon
+            safetyGeometry = QgsGeometry.fromWkt( tempSafety["the_geom"] )
+            print safetyGeometry.type()
+            print safetyGeometry.isMultipart()
+            safetyGeometry = safetyGeometry.combine(featureGeometry)
+            
+            # update geometry in the safety
+            tempSafety["the_geom"] = safetyGeometry.exportToWkt()
+        
+        # update safety
+        if (tempSafety["gid_catasto"] == None) or (tempSafety["gid_catasto"] == ""):
+            tempSafety["gid_catasto"] = "_%d_" % featureDic["gid"]
+        else:
+            tempSafety["gid_catasto"] = "%s_%d_" % (tempSafety["gid_catasto"], featureDic["gid"])
+        tempSafety["the_geom"] = feature.geometry().exportToWkt()
+        tempSafety["safety"] = json.dumps(subSafetyDict)
+        
+        
+        print "new gid_catasto",tempSafety["gid_catasto"]
+        # update safety
+        self.currentSafety = tempSafety
+        self.updatedCurrentSafety.emit()
+        
     def spezzaGeometriaEsistente(self, point=None, button=None):
         pass
     
