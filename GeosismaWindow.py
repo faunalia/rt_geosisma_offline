@@ -65,6 +65,7 @@ class GeosismaWindow(QDockWidget):
     STYLE_FOLDER = "styles"
     STYLE_GEOM_ORIG = "stile_geometrie_originali.qml"
     STYLE_GEOM_MODIF = "stile_geometrie_modificate.qml"
+    STYLE_GEOM_FAB10K = "stile_geometrie_aggregati.qml"
     STYLE_FOTO = "stile_fotografie.qml"
 
     SCALE_IDENTIFY = 5000
@@ -393,9 +394,13 @@ class GeosismaWindow(QDockWidget):
                 return False
 
             # imposta lo stile del layer
-            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_ORIG )
-            #(errorMsg, result) = vl.loadNamedStyle( style_path )
-            #self.iface.legendInterface().refreshLayerSymbology(vl)
+            style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_ORIG )
+            errorMsg, success= vl.loadNamedStyle( style_path )
+            if not success:
+                message = self.tr("Non posso caricare lo stile %s - %s: %s" % (GeosismaWindow.STYLE_GEOM_ORIG, errorMsg, style_path) )
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            self.iface.legendInterface().refreshLayerSymbology(vl)
 
             GeosismaWindow.VLID_GEOM_ORIG = self._getLayerId(vl)
             self._addMapLayer(vl)
@@ -431,9 +436,13 @@ class GeosismaWindow(QDockWidget):
                 return False
 
             # imposta lo stile del layer
-            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_MODIF )
-            #(errorMsg, result) = vl.loadNamedStyle( style_path )
-            #self.iface.legendInterface().refreshLayerSymbology(vl)
+            style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_MODIF )
+            errorMsg, success= vl.loadNamedStyle( style_path )
+            if not success:
+                message = self.tr("Non posso caricare lo stile %s - %s: %s" % (GeosismaWindow.STYLE_GEOM_MODIF, errorMsg, style_path) )
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            self.iface.legendInterface().refreshLayerSymbology(vl)
 
             GeosismaWindow.VLID_GEOM_MODIF = self._getLayerId(vl)
             self._addMapLayer(vl)
@@ -469,9 +478,13 @@ class GeosismaWindow(QDockWidget):
                 return False
 
             # imposta lo stile del layer
-            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_FAB10K )
-            #(errorMsg, result) = vl.loadNamedStyle( style_path )
-            #self.iface.legendInterface().refreshLayerSymbology(vl)
+            style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_FAB10K )
+            errorMsg, success= vl.loadNamedStyle( style_path )
+            if not success:
+                message = self.tr("Non posso caricare lo stile %s - %s: %s" % (GeosismaWindow.STYLE_GEOM_FAB10K, errorMsg, style_path) )
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            self.iface.legendInterface().refreshLayerSymbology(vl)
 
             GeosismaWindow.VLID_GEOM_FAB10K = self._getLayerId(vl)
             self._addMapLayer(vl)
