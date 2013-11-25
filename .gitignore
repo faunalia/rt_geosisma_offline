@@ -1,3 +1,9 @@
+# rc compilation
+*_rc.py
+
+# compiled ui
+*_ui.py
+
 # plugin zip
 rt_geosisma_offline.zip
 
