@@ -66,6 +66,7 @@ class GeoArchiveManager(QObject):
         self.cursor = self.conn.cursor()
         
     def resetDb(self):
+        return
         # connect spatialite db
         if "conn" in locals():
             if (self.isOpen()):
@@ -73,6 +74,7 @@ class GeoArchiveManager(QObject):
         self.connect()
     
     def checkConnection(self):
+        return
         if not self.isOpen():
             self.connect()
     
@@ -89,6 +91,7 @@ class GeoArchiveManager(QObject):
         self.close()
         
     def close(self):
+        return
         self.conn.close()
     
 #############################################################################
