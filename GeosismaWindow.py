@@ -57,7 +57,8 @@ class GeosismaWindow(QDockWidget):
 
     # nomi dei layer in TOC
     LAYER_GEOM_ORIG = "Geometrie Originali"
-    LAYER_GEOM_MODIF = "Geom. per le schede (invar., suddiv., ex-novo)"
+    LAYER_GEOM_MODIF = "Geometrie Schede"
+    LAYER_GEOM_FAB10K = "Codici Aggregati"
     LAYER_FOTO = "Foto Edifici"
 
     # stile per i layer delle geometrie
@@ -72,10 +73,12 @@ class GeosismaWindow(QDockWidget):
     # nomi tabelle contenenti le geometrie
     TABLE_GEOM_ORIG = "fab_catasto".lower()
     TABLE_GEOM_MODIF = "missions_safety".lower()
+    TABLE_GEOM_FAB10K = "fab_10k".lower()
 
     # ID dei layer contenenti geometrie e wms
     VLID_GEOM_ORIG = ''
     VLID_GEOM_MODIF = ''
+    VLID_GEOM_FAB10K = ''
     VLID_FOTO = ''
     RLID_WMS = {}
 
@@ -348,6 +351,7 @@ class GeosismaWindow(QDockWidget):
             # continue
 
         self.loadLayerGeomOrig()
+        self.loadFab10kGeometries()
         self.loadSafetyGeometries()
 
         return True
@@ -373,7 +377,7 @@ class GeosismaWindow(QDockWidget):
                     valid = True
                     GeosismaWindow.VLID_GEOM_ORIG = self._getLayerId( layer )
             if not valid:
-                message = self.tr("Manca il layer %s, ricaricando il plugin verrano caricati automaticamente" % self.LAYER_GEOM_ORIG)
+                message = self.tr("Manca il layer %s, ricaricando il plugin verrà caricato automaticamente" % self.LAYER_GEOM_ORIG)
                 self.showMessage(message, QgsMessageLog.CRITICAL)
                 QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return
@@ -411,7 +415,7 @@ class GeosismaWindow(QDockWidget):
                     valid = True
                     GeosismaWindow.VLID_GEOM_MODIF = self._getLayerId( layer )
             if not valid:
-                message = self.tr("Manca il layer %s, ricaricando il plugin verrano caricati automaticamente" % self.LAYER_GEOM_ORIG)
+                message = self.tr("Manca il layer %s, ricaricando il plugin verrà caricato automaticamente" % self.LAYER_GEOM_MODIF)
                 self.showMessage(message, QgsMessageLog.CRITICAL)
                 QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return
@@ -427,7 +431,7 @@ class GeosismaWindow(QDockWidget):
                 return False
 
             # imposta lo stile del layer
-            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_ORIG )
+            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_MODIF )
             #(errorMsg, result) = vl.loadNamedStyle( style_path )
             #self.iface.legendInterface().refreshLayerSymbology(vl)
 
@@ -435,6 +439,44 @@ class GeosismaWindow(QDockWidget):
             self._addMapLayer(vl)
             # set custom property
             vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_MODIF" )
+        return True
+
+    def loadFab10kGeometries(self):
+        # skip if already present
+        layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_FAB10K)
+        if len(layers) > 0:
+            # get id of the Geosisma layer
+            valid = False
+            for layer in layers:
+                prop = layer.customProperty( "loadedByGeosismaRTPlugin" )
+                if prop == "VLID_GEOM_FAB10K":
+                    valid = True
+                    GeosismaWindow.VLID_GEOM_FAB10K = self._getLayerId( layer )
+            if not valid:
+                message = self.tr("Manca il layer %s, ricaricando il plugin verrà caricato automaticamente" % self.LAYER_GEOM_FAB10K)
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            return
+        # carica il layer con le geometrie delle safety
+        if QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K ) == None:
+            GeosismaWindow.VLID_GEOM_FAB10K = ''
+
+            uri = QgsDataSourceURI()
+            uri.setDatabase(self.GEODATABASE_OUTNAME)
+            uri.setDataSource('', self.TABLE_GEOM_FAB10K, 'the_geom')
+            vl = QgsVectorLayer( uri.uri(), self.LAYER_GEOM_FAB10K, "spatialite" )
+            if vl == None or not vl.isValid():
+                return False
+
+            # imposta lo stile del layer
+            #style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_FAB10K )
+            #(errorMsg, result) = vl.loadNamedStyle( style_path )
+            #self.iface.legendInterface().refreshLayerSymbology(vl)
+
+            GeosismaWindow.VLID_GEOM_FAB10K = self._getLayerId(vl)
+            self._addMapLayer(vl)
+            # set custom property
+            vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_FAB10K" )
         return True
 
     def showMessage(self, message, messagetype):
