@@ -1,286 +1,150 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis version="1.7.0-Wroclaw" minimumScale="0" maximumScale="1e+08" hasScaleBasedVisibilityFlag="0">
-  <transparencyLevelInt>255</transparencyLevelInt>
-  <renderer-v2 type="RuleRenderer">
-    <rules>
-      <rule scalemaxdenom="10000000" description="" filter="ABBINATO_A_SCHEDA = '1'" symbol="0" scalemindenom="25000" label="1:25k - oltre : con scheda"/>
-      <rule scalemaxdenom="10000000" description="" filter="ABBINATO_A_SCHEDA = '0'" symbol="1" scalemindenom="25000" label="1:25k - oltre : senza scheda"/>
-      <rule scalemaxdenom="25000" description="" filter="ABBINATO_A_SCHEDA = '1' AND ZZ_STATO_GEOMETRIAID = '1'" symbol="2" scalemindenom="2000" label="1:2k - 1:25k : invariate con scheda"/>
-      <rule scalemaxdenom="25000" description="" filter="ABBINATO_A_SCHEDA = '1' AND ZZ_STATO_GEOMETRIAID = '2'" symbol="3" scalemindenom="2000" label="1:2k - 1:25k : modif. con scheda"/>
-      <rule scalemaxdenom="25000" description="" filter="ABBINATO_A_SCHEDA = '1' AND ZZ_STATO_GEOMETRIAID = '9'" symbol="4" scalemindenom="2000" label="1:2k - 1:25k : nuove con scheda"/>
-      <rule scalemaxdenom="25000" description="" filter="ABBINATO_A_SCHEDA = '0' AND ZZ_STATO_GEOMETRIAID = '1'" symbol="5" scalemindenom="2000" label="1:2k - 1:25k : invariate senza scheda"/>
-      <rule scalemaxdenom="25000" description="" filter="ABBINATO_A_SCHEDA = '0' AND ZZ_STATO_GEOMETRIAID = '2'" symbol="6" scalemindenom="2000" label="1:2k - 1:25k : modif. senza scheda"/>
-      <rule scalemaxdenom="25000" description="" filter="ABBINATO_A_SCHEDA = '0' AND ZZ_STATO_GEOMETRIAID = '9'" symbol="7" scalemindenom="2000" label="1:2k - 1:25k : nuove senza scheda"/>
-      <rule scalemaxdenom="2000" description="" filter="ABBINATO_A_SCHEDA = '1' AND ZZ_STATO_GEOMETRIAID = '1'" symbol="8" scalemindenom="1" label="1:1 - 1:2k : invariate con scheda"/>
-      <rule scalemaxdenom="2000" description="" filter="ABBINATO_A_SCHEDA = '1' AND ZZ_STATO_GEOMETRIAID = '2'" symbol="9" scalemindenom="1" label="1:1 - 1:2k : modif. con scheda"/>
-      <rule scalemaxdenom="2000" description="" filter="ABBINATO_A_SCHEDA = '1' AND ZZ_STATO_GEOMETRIAID = '9'" symbol="10" scalemindenom="1" label="1:1 - 1:2k - nuove con scheda"/>
-      <rule scalemaxdenom="2000" description="" filter="ABBINATO_A_SCHEDA = '0' AND ZZ_STATO_GEOMETRIAID = '1'" symbol="11" scalemindenom="1" label="1:1 - 1:2k : invariate senza scheda"/>
-      <rule scalemaxdenom="2000" description="" filter="ABBINATO_A_SCHEDA = '0' AND ZZ_STATO_GEOMETRIAID = '2'" symbol="12" scalemindenom="1" label="1:1 - 1:2k : modif. senza scheda"/>
-      <rule scalemaxdenom="2000" description="" filter="ABBINATO_A_SCHEDA = '0' AND ZZ_STATO_GEOMETRIAID = '9'" symbol="13" scalemindenom="1" label="1:1 - 1:2k : nuove senza scheda"/>
-    </rules>
+<qgis version="2.1.0-Master" minimumScale="-4.65661e-10" maximumScale="1e+08" minLabelScale="0" maxLabelScale="1e+08" hasScaleBasedVisibilityFlag="0" scaleBasedLabelVisibilityFlag="0">
+  <renderer-v2 symbollevels="0" type="singleSymbol">
     <symbols>
-      <symbol outputUnit="MM" alpha="1" type="fill" name="0">
-        <layer pass="0" class="CentroidFill" locked="0"/>
-      </symbol>
-      <symbol outputUnit="MM" alpha="1" type="fill" name="1">
-        <layer pass="0" class="CentroidFill" locked="0"/>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4" type="fill" name="10">
+      <symbol alpha="1" type="fill" name="0">
         <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="170,85,0,102"/>
-          <prop k="color_border" v="134,0,0,102"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="solid"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.52"/>
-        </layer>
-        <layer pass="0" class="MarkerLine" locked="0">
-          <prop k="interval" v="3"/>
-          <prop k="offset" v="0"/>
-          <prop k="placement" v="vertex"/>
-          <prop k="rotate" v="1"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4980392156862745" type="fill" name="11">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="85,170,0,127"/>
-          <prop k="color_border" v="0,170,0,127"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="diagonal_x"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.26"/>
-        </layer>
-        <layer pass="0" class="MarkerLine" locked="0">
-          <prop k="interval" v="3"/>
-          <prop k="offset" v="0"/>
-          <prop k="placement" v="vertex"/>
-          <prop k="rotate" v="1"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4980392156862745" type="fill" name="12">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="170,85,255,127"/>
-          <prop k="color_border" v="123,61,184,127"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="diagonal_x"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.26"/>
-        </layer>
-        <layer pass="0" class="MarkerLine" locked="0">
-          <prop k="interval" v="3"/>
-          <prop k="offset" v="0"/>
-          <prop k="placement" v="vertex"/>
-          <prop k="rotate" v="1"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4980392156862745" type="fill" name="13">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="170,85,0,127"/>
-          <prop k="color_border" v="134,0,0,127"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="diagonal_x"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.52"/>
-        </layer>
-        <layer pass="0" class="MarkerLine" locked="0">
-          <prop k="interval" v="3"/>
-          <prop k="offset" v="0"/>
-          <prop k="placement" v="vertex"/>
-          <prop k="rotate" v="1"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="1" type="fill" name="2">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="85,170,0,255"/>
-          <prop k="color_border" v="0,170,0,255"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="solid"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.4"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="1" type="fill" name="3">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="170,85,255,255"/>
-          <prop k="color_border" v="123,61,184,255"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="solid"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.4"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="1" type="fill" name="4">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="170,85,0,255"/>
-          <prop k="color_border" v="134,0,0,255"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="solid"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.4"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4941176470588236" type="fill" name="5">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="85,170,0,126"/>
-          <prop k="color_border" v="0,170,0,126"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="diagonal_x"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.4"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4941176470588236" type="fill" name="6">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="123,61,184,126"/>
-          <prop k="color_border" v="0,0,0,126"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="diagonal_x"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.26"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4941176470588236" type="fill" name="7">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="170,85,0,126"/>
-          <prop k="color_border" v="134,0,0,126"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="diagonal_x"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.26"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.3921568627450981" type="fill" name="8">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="85,170,0,100"/>
-          <prop k="color_border" v="0,170,0,100"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="solid"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.26"/>
-        </layer>
-        <layer pass="1" class="MarkerLine" locked="0">
-          <prop k="interval" v="3"/>
-          <prop k="offset" v="0"/>
-          <prop k="placement" v="vertex"/>
-          <prop k="rotate" v="1"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4" type="fill" name="9">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="170,85,255,102"/>
-          <prop k="color_border" v="123,61,184,102"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="style" v="solid"/>
-          <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.26"/>
-        </layer>
-        <layer pass="0" class="MarkerLine" locked="0">
-          <prop k="interval" v="3"/>
-          <prop k="offset" v="0"/>
-          <prop k="placement" v="vertex"/>
-          <prop k="rotate" v="1"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="1" type="fill" name="default">
-        <layer pass="0" class="SimpleFill" locked="0">
-          <prop k="color" v="59,69,212,255"/>
+          <prop k="border_width_unit" v="MM"/>
+          <prop k="color" v="255,255,0,255"/>
           <prop k="color_border" v="0,0,0,255"/>
           <prop k="offset" v="0,0"/>
-          <prop k="style" v="solid"/>
+          <prop k="offset_unit" v="MM"/>
+          <prop k="style" v="dense3"/>
           <prop k="style_border" v="solid"/>
           <prop k="width_border" v="0.26"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="1" type="marker" name="@0@0">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="170,85,127,255"/>
-          <prop k="color_border" v="170,85,127,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4" type="marker" name="@10@1">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="134,0,0,255"/>
-          <prop k="color_border" v="134,0,0,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4980392156862745" type="marker" name="@11@1">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="0,170,0,255"/>
-          <prop k="color_border" v="0,170,0,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4980392156862745" type="marker" name="@12@1">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="123,61,184,255"/>
-          <prop k="color_border" v="123,61,184,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4980392156862745" type="marker" name="@13@1">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="134,0,0,255"/>
-          <prop k="color_border" v="134,0,0,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="1" type="marker" name="@1@0">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="255,162,2,255"/>
-          <prop k="color_border" v="255,85,0,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.3921568627450981" type="marker" name="@8@1">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="0,170,0,255"/>
-          <prop k="color_border" v="0,170,0,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
-        </layer>
-      </symbol>
-      <symbol outputUnit="MM" alpha="0.4" type="marker" name="@9@1">
-        <layer pass="0" class="SimpleMarker" locked="0">
-          <prop k="angle" v="0"/>
-          <prop k="color" v="123,61,184,255"/>
-          <prop k="color_border" v="123,61,184,255"/>
-          <prop k="name" v="circle"/>
-          <prop k="offset" v="0,0"/>
-          <prop k="size" v="2"/>
         </layer>
       </symbol>
     </symbols>
+    <rotation field=""/>
+    <sizescale field="" scalemethod="area"/>
   </renderer-v2>
   <customproperties>
-    <property key="loadedByOmeroRTPlugin" value="VLID_GEOM_MODIF"/>
+    <property key="labeling" value="pal"/>
+    <property key="labeling/addDirectionSymbol" value="false"/>
+    <property key="labeling/angleOffset" value="0"/>
+    <property key="labeling/blendMode" value="0"/>
+    <property key="labeling/bufferBlendMode" value="0"/>
+    <property key="labeling/bufferColorA" value="255"/>
+    <property key="labeling/bufferColorB" value="255"/>
+    <property key="labeling/bufferColorG" value="255"/>
+    <property key="labeling/bufferColorR" value="255"/>
+    <property key="labeling/bufferDraw" value="false"/>
+    <property key="labeling/bufferJoinStyle" value="64"/>
+    <property key="labeling/bufferNoFill" value="false"/>
+    <property key="labeling/bufferSize" value="1"/>
+    <property key="labeling/bufferSizeInMapUnits" value="false"/>
+    <property key="labeling/bufferTransp" value="0"/>
+    <property key="labeling/centroidWhole" value="false"/>
+    <property key="labeling/decimals" value="3"/>
+    <property key="labeling/displayAll" value="false"/>
+    <property key="labeling/dist" value="1"/>
+    <property key="labeling/distInMapUnits" value="false"/>
+    <property key="labeling/enabled" value="true"/>
+    <property key="labeling/fieldName" value="concat('Scheda: ', number)"/>
+    <property key="labeling/fontBold" value="true"/>
+    <property key="labeling/fontCapitals" value="0"/>
+    <property key="labeling/fontFamily" value="Cantarell"/>
+    <property key="labeling/fontItalic" value="false"/>
+    <property key="labeling/fontLetterSpacing" value="0"/>
+    <property key="labeling/fontLimitPixelSize" value="false"/>
+    <property key="labeling/fontMaxPixelSize" value="10000"/>
+    <property key="labeling/fontMinPixelSize" value="3"/>
+    <property key="labeling/fontSize" value="11"/>
+    <property key="labeling/fontSizeInMapUnits" value="false"/>
+    <property key="labeling/fontStrikeout" value="false"/>
+    <property key="labeling/fontUnderline" value="false"/>
+    <property key="labeling/fontWeight" value="75"/>
+    <property key="labeling/fontWordSpacing" value="0"/>
+    <property key="labeling/formatNumbers" value="false"/>
+    <property key="labeling/isExpression" value="true"/>
+    <property key="labeling/labelOffsetInMapUnits" value="true"/>
+    <property key="labeling/labelPerPart" value="false"/>
+    <property key="labeling/leftDirectionSymbol" value="&lt;"/>
+    <property key="labeling/limitNumLabels" value="false"/>
+    <property key="labeling/maxCurvedCharAngleIn" value="20"/>
+    <property key="labeling/maxCurvedCharAngleOut" value="-20"/>
+    <property key="labeling/maxNumLabels" value="2000"/>
+    <property key="labeling/mergeLines" value="false"/>
+    <property key="labeling/minFeatureSize" value="0"/>
+    <property key="labeling/multilineAlign" value="0"/>
+    <property key="labeling/multilineHeight" value="1"/>
+    <property key="labeling/namedStyle" value="Bold"/>
+    <property key="labeling/obstacle" value="true"/>
+    <property key="labeling/placeDirectionSymbol" value="0"/>
+    <property key="labeling/placement" value="2"/>
+    <property key="labeling/placementFlags" value="10"/>
+    <property key="labeling/plussign" value="false"/>
+    <property key="labeling/preserveRotation" value="true"/>
+    <property key="labeling/previewBkgrdColor" value="#ffffff"/>
+    <property key="labeling/priority" value="5"/>
+    <property key="labeling/quadOffset" value="4"/>
+    <property key="labeling/reverseDirectionSymbol" value="false"/>
+    <property key="labeling/rightDirectionSymbol" value=">"/>
+    <property key="labeling/scaleMax" value="500"/>
+    <property key="labeling/scaleMin" value="1"/>
+    <property key="labeling/scaleVisibility" value="true"/>
+    <property key="labeling/shadowBlendMode" value="6"/>
+    <property key="labeling/shadowColorB" value="0"/>
+    <property key="labeling/shadowColorG" value="0"/>
+    <property key="labeling/shadowColorR" value="0"/>
+    <property key="labeling/shadowDraw" value="false"/>
+    <property key="labeling/shadowOffsetAngle" value="135"/>
+    <property key="labeling/shadowOffsetDist" value="1"/>
+    <property key="labeling/shadowOffsetGlobal" value="true"/>
+    <property key="labeling/shadowOffsetUnits" value="1"/>
+    <property key="labeling/shadowRadius" value="1.5"/>
+    <property key="labeling/shadowRadiusAlphaOnly" value="false"/>
+    <property key="labeling/shadowRadiusUnits" value="1"/>
+    <property key="labeling/shadowScale" value="100"/>
+    <property key="labeling/shadowTransparency" value="30"/>
+    <property key="labeling/shadowUnder" value="0"/>
+    <property key="labeling/shapeBlendMode" value="0"/>
+    <property key="labeling/shapeBorderColorA" value="255"/>
+    <property key="labeling/shapeBorderColorB" value="128"/>
+    <property key="labeling/shapeBorderColorG" value="128"/>
+    <property key="labeling/shapeBorderColorR" value="128"/>
+    <property key="labeling/shapeBorderWidth" value="0"/>
+    <property key="labeling/shapeBorderWidthUnits" value="1"/>
+    <property key="labeling/shapeDraw" value="false"/>
+    <property key="labeling/shapeFillColorA" value="255"/>
+    <property key="labeling/shapeFillColorB" value="255"/>
+    <property key="labeling/shapeFillColorG" value="255"/>
+    <property key="labeling/shapeFillColorR" value="255"/>
+    <property key="labeling/shapeJoinStyle" value="64"/>
+    <property key="labeling/shapeOffsetUnits" value="1"/>
+    <property key="labeling/shapeOffsetX" value="0"/>
+    <property key="labeling/shapeOffsetY" value="0"/>
+    <property key="labeling/shapeRadiiUnits" value="1"/>
+    <property key="labeling/shapeRadiiX" value="0"/>
+    <property key="labeling/shapeRadiiY" value="0"/>
+    <property key="labeling/shapeRotation" value="0"/>
+    <property key="labeling/shapeRotationType" value="0"/>
+    <property key="labeling/shapeSVGFile" value=""/>
+    <property key="labeling/shapeSizeType" value="0"/>
+    <property key="labeling/shapeSizeUnits" value="1"/>
+    <property key="labeling/shapeSizeX" value="0"/>
+    <property key="labeling/shapeSizeY" value="0"/>
+    <property key="labeling/shapeTransparency" value="0"/>
+    <property key="labeling/shapeType" value="0"/>
+    <property key="labeling/textColorA" value="255"/>
+    <property key="labeling/textColorB" value="0"/>
+    <property key="labeling/textColorG" value="0"/>
+    <property key="labeling/textColorR" value="0"/>
+    <property key="labeling/textTransp" value="0"/>
+    <property key="labeling/upsidedownLabels" value="0"/>
+    <property key="labeling/wrapChar" value=""/>
+    <property key="labeling/xOffset" value="0"/>
+    <property key="labeling/yOffset" value="0"/>
+    <property key="loadedByGeosismaRTPlugin" value="VLID_GEOM_MODIF"/>
   </customproperties>
-  <displayfield>ID_UV_NEW</displayfield>
+  <blendMode>0</blendMode>
+  <featureBlendMode>0</featureBlendMode>
+  <layerTransparency>0</layerTransparency>
+  <displayfield>id</displayfield>
   <label>0</label>
   <labelattributes>
-    <label fieldname="" text="Etichetta"/>
-    <family fieldname="" name="MS Shell Dlg 2"/>
+    <label fieldname="" text="Label"/>
+    <family fieldname="" name="Cantarell"/>
     <size fieldname="" units="pt" value="12"/>
     <bold fieldname="" on="0"/>
     <italic fieldname="" on="0"/>
@@ -299,14 +163,21 @@
     <selectedonly on=""/>
   </labelattributes>
   <edittypes>
-    <edittype type="0" name="ABBINATO_A_SCHEDA"/>
-    <edittype type="0" name="GEOMETRIE_UNITA_VOLUMETRICHE_ORIGINALI_DI_PARTENZACODICE"/>
-    <edittype type="0" name="ID_UV_NEW"/>
-    <edittype type="0" name="NOTA"/>
-    <edittype type="0" name="ZZ_STATO_GEOMETRIAID"/>
+    <edittype labelontop="0" editable="1" type="0" name="created"/>
+    <edittype labelontop="0" editable="1" type="0" name="date"/>
+    <edittype labelontop="0" editable="1" type="0" name="gid_catasto"/>
+    <edittype labelontop="0" editable="1" type="0" name="id"/>
+    <edittype labelontop="0" editable="1" type="0" name="number"/>
+    <edittype labelontop="0" editable="1" type="0" name="request_id"/>
+    <edittype labelontop="0" editable="1" type="0" name="safety"/>
+    <edittype labelontop="0" editable="1" type="0" name="team_id"/>
   </edittypes>
   <editform></editform>
   <editforminit></editforminit>
+  <featformsuppress>0</featformsuppress>
   <annotationform></annotationform>
+  <editorlayout>generatedlayout</editorlayout>
+  <excludeAttributesWMS/>
+  <excludeAttributesWFS/>
   <attributeactions/>
 </qgis>

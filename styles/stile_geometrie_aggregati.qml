@@ -1,17 +1,17 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis version="2.1.0-Master" minimumScale="-4.65661e-10" maximumScale="1e+08" minLabelScale="0" maxLabelScale="1e+08" hasScaleBasedVisibilityFlag="0" scaleBasedLabelVisibilityFlag="0">
+<qgis version="2.1.0-Master" minimumScale="-4.65661e-10" maximumScale="3000" minLabelScale="0" maxLabelScale="1e+08" hasScaleBasedVisibilityFlag="1" scaleBasedLabelVisibilityFlag="0">
   <renderer-v2 symbollevels="0" type="singleSymbol">
     <symbols>
       <symbol alpha="1" type="fill" name="0">
         <layer pass="0" class="SimpleFill" locked="0">
           <prop k="border_width_unit" v="MM"/>
-          <prop k="color" v="170,170,255,255"/>
-          <prop k="color_border" v="0,0,0,255"/>
+          <prop k="color" v="125,73,137,255"/>
+          <prop k="color_border" v="255,0,0,255"/>
           <prop k="offset" v="0,0"/>
           <prop k="offset_unit" v="MM"/>
-          <prop k="style" v="solid"/>
+          <prop k="style" v="no"/>
           <prop k="style_border" v="solid"/>
-          <prop k="width_border" v="0.26"/>
+          <prop k="width_border" v="0.5"/>
         </layer>
       </symbol>
     </symbols>
@@ -40,16 +40,16 @@
     <property key="labeling/dist" value="0"/>
     <property key="labeling/distInMapUnits" value="false"/>
     <property key="labeling/enabled" value="true"/>
-    <property key="labeling/fieldName" value="codbo"/>
+    <property key="labeling/fieldName" value="identif"/>
     <property key="labeling/fontBold" value="true"/>
     <property key="labeling/fontCapitals" value="0"/>
-    <property key="labeling/fontFamily" value="FreeMono"/>
-    <property key="labeling/fontItalic" value="true"/>
+    <property key="labeling/fontFamily" value="Cantarell"/>
+    <property key="labeling/fontItalic" value="false"/>
     <property key="labeling/fontLetterSpacing" value="0"/>
     <property key="labeling/fontLimitPixelSize" value="false"/>
     <property key="labeling/fontMaxPixelSize" value="10000"/>
     <property key="labeling/fontMinPixelSize" value="3"/>
-    <property key="labeling/fontSize" value="9"/>
+    <property key="labeling/fontSize" value="8"/>
     <property key="labeling/fontSizeInMapUnits" value="false"/>
     <property key="labeling/fontStrikeout" value="false"/>
     <property key="labeling/fontUnderline" value="false"/>
@@ -68,7 +68,7 @@
     <property key="labeling/minFeatureSize" value="0"/>
     <property key="labeling/multilineAlign" value="0"/>
     <property key="labeling/multilineHeight" value="1"/>
-    <property key="labeling/namedStyle" value="Bold Oblique"/>
+    <property key="labeling/namedStyle" value="Bold"/>
     <property key="labeling/obstacle" value="true"/>
     <property key="labeling/placeDirectionSymbol" value="0"/>
     <property key="labeling/placement" value="1"/>
@@ -80,7 +80,7 @@
     <property key="labeling/quadOffset" value="4"/>
     <property key="labeling/reverseDirectionSymbol" value="false"/>
     <property key="labeling/rightDirectionSymbol" value=">"/>
-    <property key="labeling/scaleMax" value="500"/>
+    <property key="labeling/scaleMax" value="1500"/>
     <property key="labeling/scaleMin" value="1"/>
     <property key="labeling/scaleVisibility" value="true"/>
     <property key="labeling/shadowBlendMode" value="6"/>
@@ -129,7 +129,7 @@
     <property key="labeling/textColorA" value="255"/>
     <property key="labeling/textColorB" value="0"/>
     <property key="labeling/textColorG" value="0"/>
-    <property key="labeling/textColorR" value="0"/>
+    <property key="labeling/textColorR" value="255"/>
     <property key="labeling/textTransp" value="0"/>
     <property key="labeling/upsidedownLabels" value="0"/>
     <property key="labeling/wrapChar" value=""/>
@@ -162,25 +162,24 @@
     <selectedonly on=""/>
   </labelattributes>
   <edittypes>
-    <edittype labelontop="0" editable="1" type="0" name="allegato"/>
-    <edittype labelontop="0" editable="1" type="0" name="ang"/>
-    <edittype labelontop="0" editable="1" type="0" name="belfiore"/>
-    <edittype labelontop="0" editable="1" type="0" name="codbo"/>
-    <edittype labelontop="0" editable="1" type="0" name="dim"/>
-    <edittype labelontop="0" editable="1" type="0" name="esterconf"/>
-    <edittype labelontop="0" editable="1" type="0" name="fog_ann"/>
+    <edittype labelontop="0" editable="1" type="0" name="area"/>
+    <edittype labelontop="0" editable="1" type="0" name="area_1"/>
+    <edittype labelontop="0" editable="1" type="0" name="cod_com"/>
+    <edittype labelontop="0" editable="1" type="0" name="codice"/>
+    <edittype labelontop="0" editable="1" type="0" name="codistat91"/>
+    <edittype labelontop="0" editable="1" type="0" name="comune_"/>
+    <edittype labelontop="0" editable="1" type="0" name="comune_id"/>
+    <edittype labelontop="0" editable="1" type="0" name="fid_1"/>
+    <edittype labelontop="0" editable="1" type="0" name="fid_2"/>
     <edittype labelontop="0" editable="1" type="0" name="foglio"/>
     <edittype labelontop="0" editable="1" type="0" name="gid"/>
-    <edittype labelontop="0" editable="1" type="0" name="orig"/>
-    <edittype labelontop="0" editable="1" type="0" name="pintx"/>
-    <edittype labelontop="0" editable="1" type="0" name="pinty"/>
-    <edittype labelontop="0" editable="1" type="0" name="posx"/>
-    <edittype labelontop="0" editable="1" type="0" name="posy"/>
-    <edittype labelontop="0" editable="1" type="0" name="sup"/>
-    <edittype labelontop="0" editable="1" type="0" name="sviluppo"/>
-    <edittype labelontop="0" editable="1" type="0" name="tipo"/>
-    <edittype labelontop="0" editable="1" type="0" name="valenza"/>
-    <edittype labelontop="0" editable="1" type="0" name="zona_cens"/>
+    <edittype labelontop="0" editable="1" type="0" name="identif"/>
+    <edittype labelontop="0" editable="1" type="0" name="nomemai"/>
+    <edittype labelontop="0" editable="1" type="0" name="nomemin"/>
+    <edittype labelontop="0" editable="1" type="0" name="perimeter"/>
+    <edittype labelontop="0" editable="1" type="0" name="provincia"/>
+    <edittype labelontop="0" editable="1" type="0" name="record"/>
+    <edittype labelontop="0" editable="1" type="0" name="topon"/>
   </edittypes>
   <editform></editform>
   <editforminit></editforminit>
