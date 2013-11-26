@@ -272,7 +272,6 @@ class QueryCatasto2010_2(GeosismaQuery):
         "fog_ann",
         "foglio",
         "gid",
-        "label",
         "orig",
         "pintx",
         "pinty",
