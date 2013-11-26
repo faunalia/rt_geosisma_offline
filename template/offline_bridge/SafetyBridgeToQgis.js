@@ -292,7 +292,7 @@ $(function() {
                 var geoms = $.map(data.objects, function(el) { return el.the_geom; });
                 var c = OpenLayers.Geometry.fromWKT(geoms);
                 var bounds = c.getBounds();
-                map.zoomToExtent(bounds);
+                //map.zoomToExtent(bounds);
             });
         },
     });
@@ -324,7 +324,7 @@ $(function() {
             sf_set("#s1istatcens", val.sez2001.substring(val.sez2001.length-3));
             var geom = OpenLayers.Geometry.fromWKT(val.the_geom);
             var bounds = geom.getBounds();
-            map.zoomToExtent(bounds);
+            //map.zoomToExtent(bounds);
         },
     });
 
@@ -420,7 +420,7 @@ $(function() {
                 safetyFormBridge.selectCatasto(JSON.stringify(data));
                 var c = OpenLayers.Geometry.fromWKT(geoms[0]);
                 var bounds = c.getBounds();
-                map.zoomToExtent(bounds);
+                //map.zoomToExtent(bounds);
             } else {
                 alert("Dato foglio/particella non rilevato in archivio");
             }
