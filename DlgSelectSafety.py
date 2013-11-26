@@ -45,16 +45,21 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		
 		self.currentSafetyId = currentSafetyId
 		self.currentSafety = {}
+		self.buttonSelected = None
 		
 		self.setAttribute(Qt.WA_DeleteOnClose)
 		self.setupUi(self)
 		self.buttonBox.button(QDialogButtonBox.Close).setText(self.tr("Ignora"))
+		self.buttonBox.button(QDialogButtonBox.Save).setText(self.tr("Upload"))
+		self.buttonBox.button(QDialogButtonBox.SaveAll).setText(self.tr("Upload tutte"))
 
 		self.loadTeamsDone.connect(self.updateButtonsState)
 		self.loadTeamsDone.connect(self.loadTable)
 		self.safetyTableWidget.itemSelectionChanged.connect(self.updateButtonsState)
 		self.loadTableDone.connect(self.selectCurrentSafety)
 		self.buttonBox.button(QDialogButtonBox.Ok).clicked.connect(self.setCurrentSafetyId)
+		self.buttonBox.button(QDialogButtonBox.Save).clicked.connect(self.setCurrentSafetyId)
+		self.buttonBox.clicked.connect(self.setCurrentClicked)
 		
 		self.loadSafeties()
 		self.loadTeams()
@@ -83,6 +88,7 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		columns['created'] = ( self.tr(u'Creata'), Show )
 		columns['date'] = ( self.tr(u'Aggiornata il'), Show )
 		columns['safety'] = ( self.tr(u'Scheda'), Hide )
+		columns['uploaded'] = ( self.tr(u'Uploaded'), Show )
 		columns['gid_catasto'] = ( self.tr(u'Id catasto'), Show )
 		columns['the_geom'] = ( self.tr(u'the_geom'), Hide )
 
@@ -111,7 +117,12 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 				if columnKey == "id":
 					item.setData(Qt.UserRole, record)
 				
+				# unable if already uploaded
+				if record["uploaded"]:
+					item.setFlags(Qt.NoItemFlags)
+
 				self.safetyTableWidget.setItem(row, column, item )
+			
 				
 		# column to be shown
 		for index, key in enumerate(columns):
@@ -151,3 +162,13 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 			enabled = False
 			
 		self.buttonBox.button(QDialogButtonBox.Ok).setEnabled(enabled)
+
+	def setCurrentClicked(self, button):
+		if (button is self.buttonBox.button(QDialogButtonBox.Ok)):
+			self.buttonSelected = "Ok"
+		if (button is self.buttonBox.button(QDialogButtonBox.Save)):
+			self.buttonSelected = "Save"
+		if (button is self.buttonBox.button(QDialogButtonBox.SaveAll)):
+			self.buttonSelected = "SaveAll"
+		if (button is self.buttonBox.button(QDialogButtonBox.Cancel)):
+			self.buttonSelected = "Cancel"

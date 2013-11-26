@@ -44,6 +44,7 @@ class GeosismaWindow(QDockWidget):
     downloadTeamsDone = pyqtSignal(bool)
     archiveTeamsDone = pyqtSignal(bool)
     downloadRequestsDone = pyqtSignal(bool)
+    uploadSafetiesDone = pyqtSignal(bool)
     selectRequestDone = pyqtSignal()
     updatedCurrentSafety = pyqtSignal()
     initNewCurrentSafetyDone = pyqtSignal()
@@ -161,6 +162,7 @@ class GeosismaWindow(QDockWidget):
         self.downloadedTeams = []
         self.downloadedRequests = []
         self.currentSafety = None
+        self.safeties = []
         self.teams = None
         
         MapTool.canvas = self.canvas
@@ -718,10 +720,29 @@ class GeosismaWindow(QDockWidget):
         dlg = DlgSelectSafety(id)
         ret = dlg.exec_()
         # check if result set
+        print ret
+        print dlg.buttonSelected
         if ret != 0:
-            # get selected request
-            self.currentSafety = dlg.currentSafety
-            self.updatedCurrentSafety.emit()
+            if (dlg.buttonSelected == "Ok"):
+                # get selected request
+                self.currentSafety = dlg.currentSafety
+                self.updatedCurrentSafety.emit()
+                
+            elif (dlg.buttonSelected == "Save"): # Means Upload current safety
+                # get selected request
+                self.currentSafety = dlg.currentSafety
+                self.updatedCurrentSafety.emit()
+                
+                # now upload currentSafety
+                ret = self.uploadSafeties([self.currentSafety])
+                if ret == 0:
+                    pass
+    
+            elif (dlg.buttonSelected == "SaveAll"): # means upload all safeties
+                self.safeties = dlg.records
+                ret = self.uploadSafeties(self.safeties)
+                if ret == 0:
+                    pass
 
     def openCurrentSafety(self):
         QgsLogger.debug("openCurrentSafety entered",2 )
@@ -871,7 +892,7 @@ class GeosismaWindow(QDockWidget):
         dateForForm = currentDate.__format__("%d/%m/%Y")
         
         safety = "{'number':%s, 'sdate':'%s'}"% (adapt(safety_number), dateForForm)
-        self.currentSafety = {"id":None, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
+        self.currentSafety = {"id":None, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "uploaded":0, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
         self.initNewCurrentSafetyDone.emit()
@@ -972,12 +993,16 @@ class GeosismaWindow(QDockWidget):
         feat = self.nuovaPointEmitter.findAtPoint(layerOrig, point)
         if feat != None:
             from ArchiveManager import ArchiveManager
+
+            # already get => unselect if
+            gidIndex = feat.fieldNameIndex("gid")
+            gid = feat.attributes()[gidIndex]
+            layerOrig.deselect(gid)
+            
             #if not self.checkActionSpatialFromFeature( action, feat, True ):
             #    return self.nuovaPointEmitter.startCapture()
 
             # controlla se tale geometria ha qualche scheda associata
-            gidIndex = feat.fieldNameIndex("gid")
-            gid = feat.attributes()[gidIndex]
             features = ArchiveManager.instance().loadSafetiesByCatasto(gid)
             if len(features) == 1:
                 feature = features[0]
@@ -1008,7 +1033,7 @@ class GeosismaWindow(QDockWidget):
             
             self.updateCurrentSafetyWithCatasto(crs, feat, point)
             
-            #self.apriScheda(gid)
+            self.canvas.redraw()
             QApplication.restoreOverrideCursor()
             self.btnLinkSafetyGeometry.setChecked(False)
             
@@ -1169,7 +1194,35 @@ class GeosismaWindow(QDockWidget):
         # update safety
         self.currentSafety = tempSafety
         self.updatedCurrentSafety.emit()
+    
+    def uploadSafeties(self, safeties):
+        from UploadManager import UploadManager
+        self.uploadSafetyDlg = UploadManager()
+        self.uploadSafetyDlg.initSafeties(safeties)
+        self.uploadSafetyDlg.done.connect( self.manageEndUploadSafetiesDlg )
+        self.uploadSafetyDlg.message.connect(self.showMessage)
+        self.uploadSafetyDlg.exec_()
+
+    def manageEndUploadSafetiesDlg(self, success):
+        self.uploadSafetyDlg.hide()
+
+        QApplication.restoreOverrideCursor()
+        if not success:
+            message = self.tr("Fallito l'Upload delle schede. Controlla il Log")
+            self.showMessage(message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        else:
+            message = self.tr("Fatto l'upload di ????????????????")
+            self.showMessage(message, QgsMessageLog.INFO)
+            QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+
+        # notify end of download
+        self.uploadSafetiesDone.emit(success)
         
+        if self.uploadSafetyDlg:
+            self.uploadSafetyDlg.deleteLater()
+        self.uploadSafetyDlg = None
+
     def spezzaGeometriaEsistente(self, point=None, button=None):
         pass
     
