@@ -407,7 +407,7 @@ class GeosismaWindow(QDockWidget):
             # set custom property
             vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_ORIG" )
         return True
-
+    
     def loadSafetyGeometries(self):
         # skip if already present
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
@@ -701,6 +701,7 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug(self.tr("Dump del record catasto %s" % json.dumps(catasto)) )
         
         layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        layer.removeSelection()
         exp = QgsExpression("gid = %d" % catasto["gid"])
         fields = layer.pendingFields()
         exp.prepare(fields)
@@ -944,7 +945,6 @@ class GeosismaWindow(QDockWidget):
         else:
             self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % self.currentRequest["id"])
         
-
             
     def ripulisciGeometrie(self, point=None, button=None):
         pass
@@ -1029,7 +1029,7 @@ class GeosismaWindow(QDockWidget):
             
             self.updateCurrentSafetyWithCatasto(crs, feat, point)
             
-            self.canvas.redraw()
+            self.canvas.refresh()
             QApplication.restoreOverrideCursor()
             self.btnLinkSafetyGeometry.setChecked(False)
             
