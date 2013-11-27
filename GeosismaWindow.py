@@ -718,8 +718,6 @@ class GeosismaWindow(QDockWidget):
         dlg = DlgSelectSafety(id)
         ret = dlg.exec_()
         # check if result set
-        print ret
-        print dlg.buttonSelected
         if ret != 0:
             if (dlg.buttonSelected == "Ok"):
                 # get selected request
