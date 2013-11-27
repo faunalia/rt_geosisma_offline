@@ -69,7 +69,6 @@ class ArchiveManager(QObject):
         self.saveAll = False
     
     def resetDb(self):
-        return
         # connect spatialite db
         if "conn" in locals():
             if (self.isOpen()):
@@ -77,7 +76,6 @@ class ArchiveManager(QObject):
         self.connect()
     
     def checkConnection(self):
-        return
         if not self.isOpen():
             self.connect()
         else:
@@ -98,7 +96,6 @@ class ArchiveManager(QObject):
         self.close()
         
     def close(self):
-        return
         self.conn.close()
     
     def loadTeams(self):
