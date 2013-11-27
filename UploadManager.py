@@ -48,6 +48,10 @@ class UploadManager(DlgWaiting):
             self.setRange( 0, 0 )
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
+            settings = QSettings()
+            teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
+            requestUrl = settings.value("/rt_geosisma_offline/requestUrl", "/api/v1/request/")
+
             # upload safeties
             for safety in self.safeties:
                 self.setWindowTitle( self.tr("Upload della scheda n: %d" % safety["number"]) )
@@ -56,6 +60,12 @@ class UploadManager(DlgWaiting):
                 gids = safety.pop("gid_catasto")
                 id = safety.pop("id")
                 uploaded = safety.pop("uploaded")
+                
+                # prepare safety to send
+                safety["team"] = teamUrl + "/" + safety["team_id"] + "/"
+                if "request_id" in safety:
+                    safety["request"] = requestUrl + "/" + safety["request_id"] + "/"
+                
                 # upload
                 self.uploadSafety(safety)
             
