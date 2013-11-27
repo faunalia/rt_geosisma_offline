@@ -111,9 +111,7 @@ class GeosismaWindow(QDockWidget):
             pass
 
         try:
-            print "try to delete"
             if self.safetyDlg is not None:
-                print "try to delete not none"
                 self.safetyDlg.deleteLater()
             self.safetyDlg = None
         except:
