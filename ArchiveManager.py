@@ -87,7 +87,6 @@ class ArchiveManager(QObject):
             self.conn.execute("SELECT 1 FROM missions_request LIMIT 1;")
             return True
         except db.ProgrammingError as dbe:
-            raise(dbe)
             return False
     
     def commit(self):
