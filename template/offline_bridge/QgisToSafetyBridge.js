@@ -53,12 +53,35 @@ function updateSafety(teamName, newvalue) {
     
     newvalue = sortOnKeys(newvalue);
     console.log(newvalue);
+    
+    // manage first main values usefult to triggher events
+    // they need to be set in an specific order to allow
+    // correct trigghering
+    prioritizedKyes = [
+        "s1istatprov",
+        "s1istatcom",
+        "s1istatloc",
+        "s1istatcens",
+        "s1catfoglio",
+        "s1catpart1"
+    ];
+    prioritizedKyes.forEach(function(key) {
+        console.log(key+":"+newvalue[key]);
+        if (key in newvalue) {
+            $("#"+key).val(newvalue[key]);
+            $("#"+key).trigger("change");
+        };
+    });
+    
     // manage first unexisting DOM elements (most of radio buttons)
     // first: because dome text element selection depends on radiobutton value
     // unexisting: due they dinamic/positional id name
     // e.g: s2nfloors_1 instead of only s2nfloors
     $.each(newvalue, function(key, value) {
-        console.log(key+":"+value);
+        // skip keys already set
+        if (prioritizedKyes.indexOf(key) != -1) {
+            return;
+        }
         // skip if key exist
         if ($("#" + key).length) {
             return;
