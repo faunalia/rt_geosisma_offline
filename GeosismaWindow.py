@@ -868,11 +868,13 @@ class GeosismaWindow(QDockWidget):
         
         request_id = None
         team_id = None
-        if self.currentSafety is not None:
-            request_id = self.currentSafety["request_id"]
-            team_id = self.currentSafety["team_id"]
-        elif self.currentRequest is not None:
+        
+        if self.currentRequest is not None:
             request_id = self.currentRequest["id"]
+        if self.currentSafety is not None:
+            team_id = self.currentSafety["team_id"]
+            if self.currentRequest is None:
+                request_id = self.currentSafety["request_id"]
         
         from DlgSelectRequestTeamAndNumber import DlgSelectRequestTeamAndNumber
         dlg = DlgSelectRequestTeamAndNumber(request_id, team_id)
