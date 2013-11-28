@@ -896,7 +896,17 @@ class GeosismaWindow(QDockWidget):
         dateIso = currentDate.isoformat()
         dateForForm = currentDate.__format__("%d/%m/%Y")
         
-        safety = "{'number':%s, 'sdate':'%s'}"% (adapt(safety_number), dateForForm)
+        subSafety = {}
+        strNumber = "%s" % adapt(safety_number)
+        subSafety["number"] = strNumber
+        subSafety["sdate"] = '%s' % dateForForm
+        if self.currentRequest is not None:
+            keys = ["s1prov", "s1com", "s1loc", "s1via", "s1civico", "s1catfoglio", "s1catpart1"]
+            for k in keys:
+                if self.currentRequest[k] != "":
+                    subSafety[k] = '%s' % str(self.currentRequest[k])
+
+        safety = "%s" % json.dumps(subSafety)
         self.currentSafety = {"id":None, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "uploaded":0, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
