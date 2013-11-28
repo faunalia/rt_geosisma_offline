@@ -28,7 +28,7 @@ class DownloadTeams(DlgWaiting):
             self.reset()
             
             self.setWindowTitle( self.tr("Scarica i Sopralluoghi associati ai Team") )
-            self.setRange( 0, 3 )
+            self.setRange( 0, 0 )
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             # create db
