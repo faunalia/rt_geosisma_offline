@@ -565,6 +565,8 @@ class GeosismaWindow(QDockWidget):
         self.downloadTeamsDlg.exec_()
     
     def manageEndDownloadTeamsDlg(self, success):
+        if self.downloadTeamsDlg is None:
+            return
         self.downloadTeamsDlg.hide()
 
         QApplication.restoreOverrideCursor()
@@ -629,6 +631,8 @@ class GeosismaWindow(QDockWidget):
         self.downloadRequestsDlg.exec_()
         
     def manageEndDownloadRequestsDlg(self, success):
+        if self.downloadRequestsDlg is None:
+            return
         self.downloadRequestsDlg.hide()
 
         QApplication.restoreOverrideCursor()
