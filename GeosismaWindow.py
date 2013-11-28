@@ -206,6 +206,7 @@ class GeosismaWindow(QDockWidget):
         self.downloadRequestsDone.connect( self.archiveRequests )
         self.updatedCurrentSafety.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateArchivedCurrentSafety)
+        self.updatedCurrentSafety.connect(self.repaintSafetyGeometryLayer)
         
         # GUI state based on signals
         self.selectRequestDone.connect(self.manageGuiStatus)
@@ -524,11 +525,17 @@ class GeosismaWindow(QDockWidget):
         from ArchiveManager import ArchiveManager
         ArchiveManager.instance().cleanUp()
         
+        # remove layer of safety geometrys and reload it
+        self._removeMapLayer(self.VLID_GEOM_MODIF)
+        
         # now reset db
         from ResetDB import ResetDB
         self.resetDbDlg = ResetDB()
         self.resetDbDlg.resetDone.connect( self.manageEndResetDbDlg )
         self.resetDbDlg.exec_()
+        
+        # reload safety geometrys layer
+        self.loadSafetyGeometries()
         
         # reset some important globals
         self.requests = []
@@ -843,6 +850,12 @@ class GeosismaWindow(QDockWidget):
             ArchiveManager.instance().close() # to avoid locking
 
         QgsLogger.debug("updateArchivedCurrentSafety exit",2 )
+
+    def repaintSafetyGeometryLayer(self):
+        print "repaintSafetyGeometryLayer"
+        vl = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
+        if vl is not None:
+            vl.triggerRepaint()
 
     def archiveSafety(self):
         QgsLogger.debug("archiveSafety entered",2 )
