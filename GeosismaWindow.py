@@ -590,10 +590,11 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug(self.tr("Dump di Teams e Requests scaricate: %s" % json.dumps( self.downloadedTeams )) )
         try:
             from ArchiveManager import ArchiveManager # import here to avoid circular import
+            ArchiveManager.instance().saveAll = False
             for team in self.downloadedTeams:
                 ArchiveManager.instance().archiveTeam(team)
+                ArchiveManager.instance().commit()
 
-            ArchiveManager.instance().commit()
             self.archiveTeamsDone.emit(success)
             
         except Exception:
@@ -654,6 +655,7 @@ class GeosismaWindow(QDockWidget):
         #QgsLogger.debug(self.tr("Dump di Teams e Requests scaricate: %s" % json.dumps( self.downloadedTeams )), 2 )
         try:
             from ArchiveManager import ArchiveManager # import here to avoid circular import
+            ArchiveManager.instance().saveAll = False
             for team in self.downloadedTeams:
                 # get event_id and team_id from meta
                 team_id = team["id"]
@@ -661,8 +663,8 @@ class GeosismaWindow(QDockWidget):
         
                 for request in team["downloadedRequests"].values():
                     ArchiveManager.instance().archiveRequest(team_id, request)
+                    ArchiveManager.instance().commit()
 
-            ArchiveManager.instance().commit()
             
         except Exception:
             traceback.print_exc()
@@ -721,6 +723,10 @@ class GeosismaWindow(QDockWidget):
         # check if result set
         if ret != 0:
             if (dlg.buttonSelected == "Ok"):
+                # deselect all safety geometries
+                layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+                layer.removeSelection()
+                
                 # get selected request
                 self.currentSafety = dlg.currentSafety
                 self.updatedCurrentSafety.emit()
