@@ -146,7 +146,6 @@ class DownloadTeams(DlgWaiting):
                     
                     request = QNetworkRequest()
                     url = QUrl(self.baseApiUrl + nextUrl)
-                    url.addQueryItem("format", "json")
                     request.setUrl(url)
                     
                     self.manager.get(request)
