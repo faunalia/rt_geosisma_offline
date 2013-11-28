@@ -93,6 +93,8 @@ class DownloadTeams(DlgWaiting):
             if not ok: # MEANS PRESED CANCEL
                 gw.instance().authenticationRetryCounter = 0
                 reply.abort()
+                message = self.tr("Mancata autenticazione")
+                self.message.emit(message, QgsMessageLog.WARNING)
                 self.done.emit(False)
                 return
         # do authentication
