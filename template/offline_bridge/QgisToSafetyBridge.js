@@ -68,6 +68,7 @@ function updateSafety(teamName, newvalue) {
     prioritizedKyes.forEach(function(key) {
         console.log(key+":"+newvalue[key]);
         if (key in newvalue) {
+            $("#"+key).prop("disabled", false);
             $("#"+key).val(newvalue[key]);
             $("#"+key).trigger("change");
         };
