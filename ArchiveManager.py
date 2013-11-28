@@ -61,13 +61,13 @@ class ArchiveManager(QObject):
         self.cursor = None
         self.connect()
     
+        # status variable
+        self.saveAll = False
+    
     def connect(self):
         self.conn = db.connect(gw.instance().DATABASE_OUTNAME)
         self.cursor = self.conn.cursor()
         
-        # status variable
-        self.saveAll = False
-    
     def resetDb(self):
         # connect spatialite db
         if "conn" in locals():
