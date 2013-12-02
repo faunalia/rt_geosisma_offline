@@ -26,6 +26,8 @@ Toscana - S.I.T.A. (http://www.regione.toscana.it/territorio/cartografia/index.h
  ***************************************************************************/
 """
 import re
+import os
+import inspect
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtNetwork import *
@@ -655,9 +657,15 @@ class WmsLayersBridge:
 	def getPathToCache(self):
 		settings = QSettings()
 		cachepath = settings.value( "/rt_geosisma_offline/pathToCache", "./offlinedata/layers" )
+		# remove last "/"
 		if len(cachepath) > 0:
 			if cachepath[-1] == "/":
 				cachepath = cachepath[:-1]
+		
+		# convert in absolute path if it's not => path is relative to the path of plugin
+		if not os.path.isabs(cachepath):
+			currentpath = os.path.dirname(os.path.abspath(inspect.getfile( inspect.currentframe() )))
+			cachepath = os.path.join(currentpath, cachepath)
 		return cachepath
 	
 	
