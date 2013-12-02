@@ -148,8 +148,8 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug(self.tr("Default srid: %d" % self.DEFAULT_SRID) )
         
         #geosisma api connection data
-        self.user = "Luigi.Pirelli"
-        self.pwd = "luigipirelli"
+        self.user = None
+        self.pwd = None
         self.autenthicated = True
         self.maxAuthenticationError = 5
         self.authenticationRetryCounter = 0
