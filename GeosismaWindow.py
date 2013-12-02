@@ -337,8 +337,8 @@ class GeosismaWindow(QDockWidget):
 #         ArchiveManager.instance().commit()
 #         return
 
-        self.currentSafety = {u'created': u'2013-11-21', u'gid_catasto': None, u'number': 2, u'team_id': 123, u'safety': u'{"s1istatprov":"045","s1istatcom":"004","sdate":"21/11/2013","number":2,"s1catfoglio":"24","s1com":"Casola in Lunigiana","s1istatcens":"001","s1istatloc":"10003","s1istatreg":"009","s1loc":"Casola in Lunigiana","s1prov":"MS","s1catpart1":"966"}', u'request_id': 51, u'date': u'2013-11-21', u'the_geom': None, u'id': 2}
-        self.updatedCurrentSafety.emit()
+#         self.currentSafety = {u'created': u'2013-11-21', u'gid_catasto': None, u'number': 2, u'team_id': 123, u'safety': u'{"s1istatprov":"045","s1istatcom":"004","sdate":"21/11/2013","number":2,"s1catfoglio":"24","s1com":"Casola in Lunigiana","s1istatcens":"001","s1istatloc":"10003","s1istatreg":"009","s1loc":"Casola in Lunigiana","s1prov":"MS","s1catpart1":"966"}', u'request_id': 51, u'date': u'2013-11-21', u'the_geom': None, u'id': 2}
+#         self.updatedCurrentSafety.emit()
 #        return
         self.reloadCrs()
         
