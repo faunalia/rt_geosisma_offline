@@ -150,7 +150,7 @@ class GeosismaWindow(QDockWidget):
         #geosisma api connection data
         self.user = None
         self.pwd = None
-        self.autenthicated = True
+        self.autenthicated = False
         self.maxAuthenticationError = 5
         self.authenticationRetryCounter = 0
         
