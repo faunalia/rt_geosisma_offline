@@ -641,26 +641,26 @@ class WmsLayersBridge:
 	@classmethod
 	def getSridFromConf(self):
 		settings = QSettings()
-		srid = settings.value( "/rt_geosisma_preparacache/defaultSrid", 3003 )
+		srid = settings.value( "/rt_geosisma_offline/safetyDbDefaultSrid", 3003 )
 		return int( srid )
 	
 	
 	@classmethod
 	def setPathToCache(self, cachepath):
 		settings = QSettings()
-		return settings.setValue( "/rt_geosisma_preparacache/pathToCache", cachepath )
+		return settings.setValue( "/rt_geosisma_offline/pathToCache", cachepath )
 	
 	
 	@classmethod
 	def getPathToCache(self):
 		settings = QSettings()
-		return settings.value( "/rt_geosisma_preparacache/pathToCache", "" )
+		return settings.value( "/rt_geosisma_offline/pathToCache", "./offlinedata/layers" )
 	
 	
 	@classmethod
 	def getWMSRepositoryUrl(self):
 		settings = QSettings()
-		return settings.value( "/rt_geosisma_preparacache/wmsRepositoryURL", "http://www502.regione.toscana.it/geoscopio/documenti/omero/zz_wms.zip" )
+		return settings.value( "/rt_geosisma_offline/wmsRepositoryURL", "https://dl.dropboxusercontent.com/u/12837459/zz_wms.zip" )
 	
 	
 	@classmethod
@@ -687,7 +687,7 @@ class WmsLayersBridge:
 	@classmethod
 	def setCachedExternalWms(self, value):
 		settings = QSettings()
-		settings.setValue( "/rt_geosisma_preparacache/cachedExternalWms", value )
+		settings.setValue( "/rt_geosisma_offline/cachedExternalWms", value )
 	
 	
 	@classmethod
