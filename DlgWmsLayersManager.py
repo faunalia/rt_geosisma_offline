@@ -654,7 +654,11 @@ class WmsLayersBridge:
 	@classmethod
 	def getPathToCache(self):
 		settings = QSettings()
-		return settings.value( "/rt_geosisma_offline/pathToCache", "./offlinedata/layers" )
+		cachepath = settings.value( "/rt_geosisma_offline/pathToCache", "./offlinedata/layers" )
+		if len(cachepath) > 0:
+			if cachepath[-1] == "/":
+				cachepath = cachepath[:-1]
+		return cachepath
 	
 	
 	@classmethod
