@@ -25,6 +25,7 @@ import os
 import json # used to dump dicts in strings
 import ast # used to convert string indict because json.loads could fail
 import time
+import inspect
 from datetime import date
 from psycopg2.extensions import adapt
 
@@ -137,6 +138,9 @@ class GeosismaWindow(QDockWidget):
         # get bds path
         self.settings = QSettings()
         dbsPath = self.settings.value("/rt_geosisma_offline/pathToDbs", "./offlinedata/dbs/")
+        if not os.path.isabs(dbsPath):
+            currentpath = os.path.dirname(os.path.abspath(inspect.getfile( inspect.currentframe() )))
+            dbsPath = os.path.join(currentpath, dbsPath)
         self.DATABASE_OUTNAME = os.path.join(dbsPath, GeosismaWindow.GEOSISMA_DBNAME)
         self.GEODATABASE_OUTNAME = os.path.join(dbsPath, GeosismaWindow.GEOSISMA_GEODBNAME)
         QgsLogger.debug(self.tr("Default dbname: %s" % self.DATABASE_OUTNAME) )
