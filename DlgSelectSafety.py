@@ -81,8 +81,8 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		Hide = True
 		Show = False
 		columns = OrderedDict()
-		columns['id'] = ( self.tr(u'Id Univoco'), Hide )
-		columns['number'] = ( self.tr(u'Number'), Show )
+		columns['id'] = ( self.tr(u'Id Univoco'), Show )
+		columns['number'] = ( self.tr(u'Numbero'), Show )
 		columns['request_id'] = ( self.tr(u'Richiesta Sopralluogo'), Show )
 		columns['name'] = ( self.tr(u'Team'), Show )
 		columns['created'] = ( self.tr(u'Creata'), Show )
