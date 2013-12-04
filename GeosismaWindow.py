@@ -977,7 +977,7 @@ class GeosismaWindow(QDockWidget):
         else:
             self.btnDeleteCurrentSafety.setEnabled(True)
             self.btnModifyCurrentSafety.setEnabled(True)
-            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["number"])
+            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["id"])
         
         if self.currentRequest == None:
             self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % "--")
