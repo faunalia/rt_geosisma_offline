@@ -124,9 +124,9 @@ function fill_fields_from_map(e)
                 // Set the fields in the safety report page
                 $.each(catasto_values, function(i, elem) {
                     //console.log(i, elem);
-            var nel = $("#"+elem.id);
-            nel.val(elem.value);
-            nel.change();
+		    var nel = $("#"+elem.id);
+		    nel.val(elem.value);
+		    nel.change();
                 });
             },
             complete: function() {
@@ -211,7 +211,6 @@ $(function() {
 
     var api_url = '/api/v1/';
     var get_autocomplete = function(name, query, on_result) {
-        // set asyncronous ajax call
         var data = $.extend({
             "format": "json",
             "limit": 0,
@@ -466,12 +465,12 @@ $(function() {
     });
 
     for (var i = 1; i <= 8; ++i) {
-    var e = $("#s2cer"+i);
-    if(e.attr('checked')) {
-        s2cerlimit.changed("s2cer"+i);
-        console.log(e, "CHECKED!");
-    }
-        e.change(function(ev) { s2cerlimit.changed(this.id); });
+	var e = $("#s2cer"+i);
+	if(e.attr('checked')) {
+	    s2cerlimit.changed("s2cer"+i);
+	    console.log(e, "CHECKED!");
+	}
+        e.change(function(ev) { s2cerlimit.changed(this.id) });
     }
     // Enable/disable fields based on values of other fields
     for (var i = 1; i <= 8; ++i)
@@ -491,12 +490,23 @@ $(function() {
     // muratura is disabled
     (function() {
         var slaves = [];
-        foreachrc(1, 6, "BCDE", function (row, col) {
+        foreachrc(1, 6, "ABCDE", function (row, col) {
             slaves.push($("#s3t" + col + row).data("poly_subfield"));
         });
-
         safety.jsonfield("value_trigger", function(data) {
-            return data["s3as1"] || data["s3as2"] || data["s3as3"];
+	    var have_G = data['s3tG1'] || data['s3tG2'] || data['s3tG3'];
+	    var have_other = data['s3as1'] || data['s3as2'] || data['s3as3'];
+
+	    if(have_other) {
+		if(have_G) {
+		    return false;
+		} else {
+		    return true;
+		}
+	    } else {
+		return false;
+	    }
+
         }, function(val, data) {
             $.each(slaves, function(idx, el) { el.disable("altrestrutture", val); });
         });
@@ -512,27 +522,30 @@ $(function() {
         // Constraint: when A1 is selected, the rest is unselected and disabled
         safety.jsonfield("disable_when_true", "s3tA1", a1slaves);
 
+
+
+	// The 2 following constraints has been discovered that are unuseful, refer to #385 on geosisma's bts.
         // Constraint: when Non identificate is selected in a column, the
         // rest of the column is disabled
-        $.each("BCDE".split(""), function(idx, el) {
-            var slaves = [];
-            for (var i = 2; i <= 6; ++i)
-                slaves.push($("#s3t" + el + i));
+        //$.each("BCDE".split(""), function(idx, el) {
+         //   var slaves = [];
+         //   for (var i = 2; i <= 6; ++i)
+         //       slaves.push($("#s3t" + el + i));
 
-            safety.jsonfield("disable_when_true", "s3t" + el + "1", slaves);
-        });
+          //  safety.jsonfield("disable_when_true", "s3t" + el + "1", slaves);
+        //});
 
         // Constraint: when Non identificate is selected in a row, the
         // rest of the row is disabled
-        for (var i = 2; i <= 6; ++i)
-        {
-            var slaves = [];
-            $.each("BCDE".split(""), function(idx, el) {
-                slaves.push($("#s3t" + el + i));
-            });
+        //for (var i = 2; i <= 6; ++i)
+        //{
+        //    var slaves = [];
+        //    $.each("BCDE".split(""), function(idx, el) {
+        //        slaves.push($("#s3t" + el + i));
+        //    });
 
-            safety.jsonfield("disable_when_true", "s3tA" + i, slaves);
-        }
+         //   safety.jsonfield("disable_when_true", "s3tA" + i, slaves);
+       // }
 
         // Constraint: no more than 2 strutture checkboxes can be selected
         safety.jsonfield("value_trigger", function(data) {
@@ -570,36 +583,115 @@ $(function() {
     for (var i = 1; i <= 5; ++i)
         safety.jsonfield("disable_when_true", "s4pA" + i, sub_elements($("#s4d"), new RegExp("^s4p[B-F]"+i)));
 
+    
     // Constraint: the sum of selected items in a row must not exceed 3/3
     for (var row = 1; row <= 6; ++row)
     {
         // Value of each element
         //var values = [ 2.25, 1.25, 0.25, 2.25, 2.15, 0.25, 2.25, 1.25, 0.25 ];
-    var values = [ 3,2,1,3,2,1,3,2,1];
+	//var values = [ 3,2,1,3,2,1,3,2,1];
+
+        var values = [ 6, 4, 2, 6, 4, 2, 6, 4, 2];
 
         (function(row) {
-        // List the elements
-        var items = sub_elements($("#s4d"), new RegExp("^s4d[A-I]" + row));
+            // List the elements
+            var items = sub_elements($("#s4d"), new RegExp("^s4d[A-I]" + row));
+	    
+            safety.jsonfield("value_trigger", function(data) {
+		// Count the total value for this row
+		var count = 0;
+		$.each("ABCDEFGHI".split(""), function(idx, col) {
+                    if (data["s4d" + col + row])
+			count += values[idx];
+		});
+		return count;
+            }, function(count, data) {
+		// Disable all the fields that would make the row have more than 3,
+		// and enable all others
+		$.each(items, function(idx, el) {
+                    var ps = el.data("poly_subfield");
+                    if (!ps.get() && count + values[idx] > 10)
+			ps.disable("enforce_max3_3", true);
+                    else
+			ps.disable("enforce_max3_3", false);
+		});
+            });
+	    // test
+	    var s4d4d5items = sub_elements($("#s4d"), new RegExp("^s4d[A-C]" + row));
+	    var s4d3d2items = sub_elements($("#s4d"), new RegExp("^s4d[D-F]" + row));
+	    var s4d1items = sub_elements($("#s4d"), new RegExp("^s4d[G-I]" + row));
+	    
+            safety.jsonfield("value_trigger", function(data) {
+		var count = 0;
+		$.each("ABC".split(""), function(idx, col) {
+		    if (data["s4d" + col + row]) ++count;
+		})
+		return count >= 1;
+            }, function(val, data) {
+		if (val)
+		{
+                    // disable all the unchecked ones
+                    $.each(s4d4d5items, function(idx, el) {
+			var ps = el.data("poly_subfield");
+			if (!ps.get())
+                            ps.disable("enforce_max1", true);
+                    });
+		} else {
+                    // enable all of them
+                    $.each(s4d4d5items, function(idx, el) {
+			el.data("poly_subfield").disable("enforce_max1", false);
+                    });
+		}
+            });
 
-        safety.jsonfield("value_trigger", function(data) {
-            // Count the total value for this row
-            var count = 0;
-            $.each("ABCDEFGHI".split(""), function(idx, col) {
-                if (data["s4d" + col + row])
-                    count += values[idx];
+            safety.jsonfield("value_trigger", function(data) {
+		var count = 0;
+		$.each("DEF".split(""), function(idx, col) {
+		    if (data["s4d" + col + row]) ++count;
+		})
+		return count >= 1;
+            }, function(val, data) {
+		if (val)
+		{
+                    // disable all the unchecked ones
+                    $.each(s4d3d2items, function(idx, el) {
+			var ps = el.data("poly_subfield");
+			if (!ps.get())
+                            ps.disable("enforce_max1", true);
+                    });
+		} else {
+                    // enable all of them
+                    $.each(s4d3d2items, function(idx, el) {
+			el.data("poly_subfield").disable("enforce_max1", false);
+                    });
+		}
             });
-            return count;
-        }, function(count, data) {
-            // Disable all the fields that would make the row have more than 3,
-            // and enable all others
-            $.each(items, function(idx, el) {
-                var ps = el.data("poly_subfield");
-                if (!ps.get() && count + values[idx] > 5)
-                    ps.disable("enforce_max3_3", true);
-                else
-                    ps.disable("enforce_max3_3", false);
+
+            safety.jsonfield("value_trigger", function(data) {
+		var count = 0;
+		$.each("GHI".split(""), function(idx, col) {
+		    if (data["s4d" + col + row]) ++count;
+		})
+		return count >= 1;
+            }, function(val, data) {
+		if (val)
+		{
+                    // disable all the unchecked ones
+                    $.each(s4d1items, function(idx, el) {
+			var ps = el.data("poly_subfield");
+			if (!ps.get())
+                            ps.disable("enforce_max1", true);
+                    });
+		} else {
+                    // enable all of them
+                    $.each(s4d1items, function(idx, el) {
+			el.data("poly_subfield").disable("enforce_max1", false);
+                    });
+		}
             });
-        });
+
+	    // //test
+	    
         })(row);
     }
 
