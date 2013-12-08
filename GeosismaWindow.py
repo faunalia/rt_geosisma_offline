@@ -1239,6 +1239,8 @@ class GeosismaWindow(QDockWidget):
         self.uploadSafetyDlg.exec_()
 
     def manageEndUploadSafetiesDlg(self, success):
+        if self.uploadSafetyDlg is None:
+            return
         self.uploadSafetyDlg.hide()
 
         QApplication.restoreOverrideCursor()
