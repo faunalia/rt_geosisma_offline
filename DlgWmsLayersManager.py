@@ -469,7 +469,7 @@ class DlgWmsLayersManager(DlgWaiting):
 					import json
 					cachedinfo = json.load(f)
 			except (IOError, ImportError, ValueError) as e:
-				WmsLayersBridge.setWindowTitle("RT Geosisma", u"Impossibile recuperare la lista dei layer WMS dal file %s.\n%s" % ( wmslistfn, unicode(e)) )
+				WmsLayersBridge.instance.showMessage(u"Impossibile recuperare la lista dei layer WMS dal file %s.\n%s" % ( wmslistfn, unicode(e)), QgsMessageLog.WARNING )
 
 			for linfo in cachedinfo:
 				# check whether retrieve or not the layer
@@ -489,15 +489,15 @@ class DlgWmsLayersManager(DlgWaiting):
 				def downloadFinished(reply, evloop, done):
 					ok = True
 					if reply.error() != QNetworkReply.NoError:
-						WmsLayersBridge.showMessage("RT Geosisma", u"Impossibile recuperare la lista dei layer WMS dal server.\n" +
-								u"Error code: %s" % reply.error() )
+						WmsLayersBridge.instance.showMessage(u"Impossibile recuperare la lista dei layer WMS dal server.\n" +
+								u"Error code: %s" % reply.error(), QgsMessageLog.CRITICAL )
 						ok = False
 					else:
 						status = reply.attribute( QNetworkRequest.HttpStatusCodeAttribute )
 						if status is not None and status > 400:
 							phrase = reply.attribute( QNetworkRequest.HttpReasonPhraseAttribute )
-							WmsLayersBridge.showMessage("RT Geosisma", u"Impossibile recuperare la lista dei layer WMS dal server.\n" +
-									u"Status: %s\nReason phrase: %s" % (status, phrase ) )
+							WmsLayersBridge.instance.showMessage(u"Impossibile recuperare la lista dei layer WMS dal server.\n" +
+									u"Status: %s\nReason phrase: %s" % (status, phrase ), QgsMessageLog.CRITICAL )
 							ok = False
 					
 					done[0] = ok
@@ -585,11 +585,11 @@ class DlgWmsLayersManager(DlgWaiting):
 
 					except (IOError, zipfile.BadZipfile) as e:
 						# unable to open the zip file
-						WmsLayersBridge.showMessage("RT Geosisma", u"Impossibile recuperare la lista dei layer WMS dal server.\n%s" % unicode(e) )
+						WmsLayersBridge.instance.showMessage(u"Impossibile recuperare la lista dei layer WMS dal server.\n%s" % unicode(e), QgsMessageLog.CRITICAL )
 				
 		if len(layersinfo) <= 0:
 			# unable to retrieve the list
-			QgsMessageLog.logMessage(u"Nessun layer da aggiungere" , "RT Geosisma", QgsMessageLog.INFO)
+			WmsLayersBridge.instance.showMessage(u"Nessun layer da aggiungere", QgsMessageLog.INFO )
 			
 		return layersinfo
 
