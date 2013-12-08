@@ -20,7 +20,7 @@ email=luipir@gmail.com
 
 # Uncomment the following line and add your changelog entries:
 changelog=0.4
-	bug fixing
+	bug fixing + primi test di upload delle schede + aliged to safety.js
 	0.3
 	supporto al download di team e richiest. Supporto al salvataggio, creazione e eliminazione schede
 	0.2
