@@ -283,7 +283,7 @@ class GeosismaWindow(QDockWidget):
 
         text = u"Associa particella"
         self.btnLinkSafetyGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Seleziona una particlla da associare alla scheda"
+        text = u"Seleziona una particella da associare alla scheda"
         self.btnLinkSafetyGeometry.setToolTip( text )
         self.btnLinkSafetyGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnLinkSafetyGeometry, 0, 0, 1, 1)
