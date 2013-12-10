@@ -277,7 +277,7 @@ class GeosismaWindow(QDockWidget):
         gridLayout.addWidget(self.btnReset, 3, 2, 1, 1)
 
 
-        group = QGroupBox( "Geometrie", child )
+        group = QGroupBox( "Geometrie e allegati", child )
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
@@ -287,6 +287,13 @@ class GeosismaWindow(QDockWidget):
         self.btnLinkSafetyGeometry.setToolTip( text )
         self.btnLinkSafetyGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnLinkSafetyGeometry, 0, 0, 1, 1)
+
+        text = u"Gestisci allegati"
+        self.btnManageAttachments = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
+        text = u"Aggiuinta e rimozione degli allegate alla sceda corrente"
+        self.btnManageAttachments.setToolTip( text )
+        self.btnManageAttachments.setCheckable(True)
+        gridLayout.addWidget(self.btnManageAttachments, 1, 0, 1, 1)
 
 #         text = u"Suddividi"
 #         self.btnSpezzaGeometriaEsistente = QPushButton( QIcon(":/icons/spezza_geometria.png"), text, group )
