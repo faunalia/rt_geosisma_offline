@@ -10,7 +10,7 @@
 name=RE Geosisma Offline
 qgisMinimumVersion=2.0
 description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
-version=version 0.4
+version=version 0.5
 author=Luigi Pirelli
 email=luipir@gmail.com
 
@@ -19,7 +19,9 @@ email=luipir@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=0.4
+changelog=0.5
+	Sostituita classe QT per una QGIS per far uso della conf proxy di qgis
+	0.4
 	bug fixing + primi test di upload delle schede + aliged to safety.js
 	0.3
 	supporto al download di team e richiest. Supporto al salvataggio, creazione e eliminazione schede
