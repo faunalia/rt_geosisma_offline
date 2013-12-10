@@ -19,16 +19,22 @@ class DownloadTeams(DlgWaiting):
     def __init__(self, parent=None):
         DlgWaiting.__init__(self, parent)
         self.singleFinished = True
-        
         #self.setWindowModality(Qt.ApplicationModal)
-        
+    
+    def __del__(self):
+        try:
+            self.manager.finished.disconnect(self.replyFinished)
+            self.manager.authenticationRequired.disconnect(self.authenticationRequired)
+        except Exception:
+            pass
+    
     def run(self):
         try:
             # init progress bar
             self.reset()
+            self.setRange( 0, 0 )
             
             self.setWindowTitle( self.tr("Scarica i Sopralluoghi associati ai Team") )
-            self.setRange( 0, 0 )
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             # create db
@@ -58,8 +64,17 @@ class DownloadTeams(DlgWaiting):
         teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
         self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
 
-        self.manager = QNetworkAccessManager(self);
-        
+        self.manager = QgsNetworkAccessManager.instance()
+        # clean listeners to avoid overlap 
+        try:
+            self.manager.authenticationRequired.disconnect()
+        except:
+            pass
+        try:
+            self.manager.finished.disconnect()
+        except:
+            pass
+        # add new listeners
         self.manager.finished.connect(self.replyFinished)
         self.manager.authenticationRequired.connect(self.authenticationRequired)
 
@@ -73,9 +88,10 @@ class DownloadTeams(DlgWaiting):
         self.manager.get(request)
 
         self.singleFinished = False
-        self.onProgress()
 
     def authenticationRequired(self, reply, authenticator ):
+        if self is None:
+            return
         # check if reached mas retry
         gw.instance().authenticationRetryCounter += 1
         if (gw.instance().authenticationRetryCounter % gw.instance().maxAuthenticationError) == 0:
@@ -102,6 +118,8 @@ class DownloadTeams(DlgWaiting):
         authenticator.setPassword(gw.instance().pwd)
 
     def replyFinished(self, reply):
+        if self is None:
+            return
         
         # need auth
         if reply.error() == QNetworkReply.AuthenticationRequiredError:
@@ -116,8 +134,6 @@ class DownloadTeams(DlgWaiting):
             self.message.emit(message, QgsMessageLog.WARNING)
             self.done.emit(False)
             return
-        
-        self.onProgress()
         
         # well authenticated :)
         gw.instance().autenthicated = True
@@ -154,4 +170,7 @@ class DownloadTeams(DlgWaiting):
                     return
         
         # successfully end
+        self.manager.finished.disconnect(self.replyFinished)
+        self.manager.authenticationRequired.disconnect(self.authenticationRequired)
+        
         self.done.emit(True)

@@ -24,8 +24,29 @@ class DownloadRequests(DlgWaiting):
         
         self.jsonRequests = None
         
+        self.manager = QgsNetworkAccessManager.instance()
+        # clean listeners to avoid overlap 
+        try:
+            self.manager.authenticationRequired.disconnect()
+        except:
+            pass
+        try:
+            self.manager.finished.disconnect()
+        except:
+            pass
+        # add new listeners
+        self.manager.finished.connect(self.replyFinished)
+        self.manager.authenticationRequired.connect(self.authenticationRequired)
+
         #self.setWindowModality(Qt.ApplicationModal)
-        
+    
+    def __del__(self):
+        try:
+            self.manager.finished.disconnect(self.replyFinished)
+            self.manager.authenticationRequired.disconnect(self.authenticationRequired)
+        except Exception:
+            pass
+    
     def run(self):
         try:
             #self.requestsApi = gw.instance().downloadedRequestsApi
@@ -101,10 +122,6 @@ class DownloadRequests(DlgWaiting):
         settings = QSettings()
         self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
 
-        self.manager = QNetworkAccessManager(self);
-        self.manager.finished.connect(self.replyFinished)
-        self.manager.authenticationRequired.connect(self.authenticationRequired)
-
         # for each request api
         message = self.tr("Download Richiesta %s" % requestApi)
         self.message.emit(message, QgsMessageLog.INFO)
@@ -121,6 +138,8 @@ class DownloadRequests(DlgWaiting):
         self.singleFinished = False
 
     def authenticationRequired(self, reply, authenticator ):
+        if self is None:
+            return
         # check if reached mas retry
         gw.instance().authenticationRetryCounter += 1
         if (gw.instance().authenticationRetryCounter % gw.instance().maxAuthenticationError) == 0:
@@ -147,6 +166,8 @@ class DownloadRequests(DlgWaiting):
         authenticator.setPassword(gw.instance().pwd)
 
     def replyFinished(self, reply):
+        if self is None:
+            return
         
         # need auth
         if reply.error() == QNetworkReply.AuthenticationRequiredError:

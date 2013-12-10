@@ -23,6 +23,7 @@ import json
 import time
 import os
 from qgis.core import QgsLogger, QgsMessageLog, QgsCredentials
+from qgis.core import QgsNetworkAccessManager
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtNetwork import *
@@ -46,7 +47,17 @@ class UploadManager(DlgWaiting):
         self.saved_id = None
         self.saved_number = None
         self.saved_sopralluoghi = None
-        self.manager = QNetworkAccessManager(self);
+        self.manager = QgsNetworkAccessManager.instance();
+        # clean listeners to avoid overlap 
+        try:
+            self.manager.authenticationRequired.disconnect()
+        except:
+            pass
+        try:
+            self.manager.finished.disconnect()
+        except:
+            pass
+        # add new listeners
         self.manager.authenticationRequired.connect(self.authenticationRequired)
         # get connection conf
         settings = QSettings()
