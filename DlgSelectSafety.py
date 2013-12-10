@@ -81,8 +81,9 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		Hide = True
 		Show = False
 		columns = OrderedDict()
-		columns['id'] = ( self.tr(u'Id Univoco'), Show )
-		columns['number'] = ( self.tr(u'Numbero'), Show )
+		columns['local_id'] = ( self.tr(u'Id locale'), Show )
+		columns['id'] = ( self.tr(u'Id remoto'), Show )
+		columns['number'] = ( self.tr(u'Numero'), Show )
 		columns['request_id'] = ( self.tr(u'Richiesta Sopralluogo'), Show )
 		columns['name'] = ( self.tr(u'Team'), Show )
 		columns['created'] = ( self.tr(u'Creata'), Show )
@@ -113,8 +114,8 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 						if team["id"] == record["team_id"]:
 							item = QTableWidgetItem( str(team["name"]) )
 				
-				# add record in the first "id" colum
-				if columnKey == "id":
+				# add record in the first "local_id" colum
+				if column == 0:
 					item.setData(Qt.UserRole, record)
 				
 				# unable if already uploaded

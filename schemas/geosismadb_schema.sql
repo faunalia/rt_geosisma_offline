@@ -5,7 +5,7 @@ CREATE TABLE "missions_attachment" (
     "attached_file" varchar(100),
     "attached_when" datetime NOT NULL,
     "attached_by_id" integer NOT NULL REFERENCES "organization_staff" ("id"),
-    "safety_id" integer NOT NULL REFERENCES "missions_safety" ("id")
+    "safety_id" integer NOT NULL REFERENCES "missions_safety" ("local_id")
 );
 
 CREATE TABLE "missions_request" (
@@ -25,7 +25,8 @@ CREATE TABLE "missions_request" (
 );
 
 CREATE TABLE "missions_safety" (
-    "id" integer NOT NULL PRIMARY KEY,
+    "local_id" integer NOT NULL PRIMARY KEY,
+    "id" integer NOT NULL,
     "created" date NOT NULL,
     "request_id" integer,
     "safety" text NOT NULL,

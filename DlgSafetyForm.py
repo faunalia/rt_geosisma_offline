@@ -152,7 +152,7 @@ class DlgSafetyForm(QDockWidget):
         if self.currentSafety is None:
             return
         
-        self.setWindowTitle( self.tr("Scheda Sopralluogo id: %d del team: %s - Numero provvisorio della scheda: %d" % (self.currentSafety["id"], self.teamName, self.currentSafety["number"])) )
+        self.setWindowTitle( self.tr("Scheda Sopralluogo id locale: %d del team: %s - Numero provvisorio della scheda: %d" % (self.currentSafety["local_id"], self.teamName, self.currentSafety["number"])) )
 
         safety = self.prepareSafetyToJs(self.currentSafety["safety"])
         JsCommand = "updateSafety(%s, %s)" % (adapt(self.teamName), safety)
@@ -178,6 +178,7 @@ class DlgSafetyForm(QDockWidget):
         self.webView.page().mainFrame().addToJavaScriptWindowObject("safetyFormBridge", self.safetyFormBridge)
 
     def notifySafetyModified(self):
+        print "notifySafetyModified in form dialog", self.currentSafety
         self.currentSafetyModifed.emit(self.currentSafety)
 
     def exec_(self):

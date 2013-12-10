@@ -406,11 +406,12 @@ class ArchiveManager(QObject):
         # preare dictionary to be used for DB
         safetyOdered = self.prepareSafetyDict(request_id, team_id, safetyDict)
 
-        # if "id" = None => is a pure insertion of a new record
+        # if "local_id" = None => is a pure insertion of a new record
         # control this in the original not ordered or prepared safety dictionary
         # but modify orderedDict
-        if safetyDict["id"] == None :
-            del safetyOdered["id"]
+        if safetyDict["local_id"] == None :
+            del safetyOdered["local_id"]
+            safetyOdered["id"] = -1
         
         # create query
         sqlquery = "INSERT INTO missions_safety "
@@ -436,7 +437,7 @@ class ArchiveManager(QObject):
             
         except db.IntegrityError:
             
-            message = self.tr("Scheda %s gia' presente nel db" % safetyOdered["id"])
+            message = self.tr("Scheda %s gia' presente nel db" % safetyOdered["local_id"])
             gw.instance().showMessage(message, QgsMessageLog.WARNING)
 
             if not overwrite:
@@ -444,7 +445,7 @@ class ArchiveManager(QObject):
                 if not self.saveAll:
                     msgBox = QMessageBox()
                     msgBox.setIcon(QMessageBox.Warning)
-                    msgBox.setText(self.tr("Scheda %s gia' presente!" % safetyOdered["id"]))
+                    msgBox.setText(self.tr("Scheda %s gia' presente!" % safetyOdered["local_id"]))
                     msgBox.setInformativeText(self.tr("Aggiornare il record duplicato?"))
                     msgBox.setStandardButtons(QMessageBox.YesAll | QMessageBox.Yes | QMessageBox.Cancel)
                     msgBox.setButtonText(QMessageBox.YesAll, self.tr("Aggiorna tutti"))
@@ -474,7 +475,7 @@ class ArchiveManager(QObject):
         # create query
         sqlquery = "UPDATE missions_safety SET "
         for k,v in safetyOdered.items():
-            if k == "id":
+            if k == "local_id":
                 continue
             if v == None and k != "the_geom":
                 sqlquery += "%s=NULL, " % k
@@ -488,7 +489,7 @@ class ArchiveManager(QObject):
             sqlquery += '%s=%s, ' % (k,adapt(v))
             
         sqlquery = sqlquery[0:-2] + " "
-        sqlquery += "WHERE id=%s" % adapt(safetyOdered["id"])
+        sqlquery += "WHERE local_id=%s" % adapt(safetyOdered["local_id"])
         
         QgsLogger.debug(self.tr("Aggiorna safety con la query: %s" % sqlquery), 1 )
         try:
@@ -527,7 +528,7 @@ class ArchiveManager(QObject):
         self.checkConnection()
 
         # create query
-        sqlquery = "DELETE FROM missions_safety WHERE id=%s;" % int(safetyId)
+        sqlquery = "DELETE FROM missions_safety WHERE local_id=%s;" % int(safetyId)
         
         QgsLogger.debug(self.tr("Cancella safety con la query: %s" % sqlquery), 1 )
         self.cursor.execute(sqlquery)

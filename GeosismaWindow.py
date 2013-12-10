@@ -715,12 +715,12 @@ class GeosismaWindow(QDockWidget):
 
     def selectSafety(self):
         # get id of the current selected safety
-        id = None
+        local_id = None
         if self.currentSafety is not None:
-            id = self.currentSafety["id"]
+            local_id = self.currentSafety["local_id"]
             
         from DlgSelectSafety import DlgSelectSafety
-        dlg = DlgSelectSafety(id)
+        dlg = DlgSelectSafety(local_id)
         ret = dlg.exec_()
         # check if result set
         if ret != 0:
@@ -734,7 +734,10 @@ class GeosismaWindow(QDockWidget):
                 self.updatedCurrentSafety.emit()
                 
             elif (dlg.buttonSelected == "Save"): # Means Upload current safety
+                if dlg.currentSafety is None:
+                    return
                 # get selected request
+                self.safeties = dlg.records
                 self.currentSafety = dlg.currentSafety
                 self.updatedCurrentSafety.emit()
                 
@@ -822,12 +825,12 @@ class GeosismaWindow(QDockWidget):
             ArchiveManager.instance().archiveSafety(self.currentSafety["request_id"], self.currentSafety["team_id"], self.currentSafety, overwrite)
             ArchiveManager.instance().commit()
             # if it's a new record get new id to update currentSafety
-            if self.currentSafety["id"] == None:
+            if self.currentSafety["local_id"] == None:
                 lastId = ArchiveManager.instance().getLastRowId()
-                if lastId != self.currentSafety["id"]:
-                    self.currentSafety["id"] = lastId
+                if lastId != self.currentSafety["local_id"]:
+                    self.currentSafety["local_id"] = lastId
                     
-                    message = self.tr("Inserita nuova scheda con id %s" % self.currentSafety["id"])
+                    message = self.tr("Inserita nuova scheda con id %s" % self.currentSafety["local_id"])
                     self.showMessage(message, QgsMessageLog.INFO)
             
         except Exception:
@@ -915,7 +918,7 @@ class GeosismaWindow(QDockWidget):
                     subSafety[k] = '%s' % str(self.currentRequest[k])
 
         safety = "%s" % json.dumps(subSafety)
-        self.currentSafety = {"id":None, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "uploaded":0, "gid_catasto":"", "the_geom":None}
+        self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "uploaded":0, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
         self.initNewCurrentSafetyDone.emit()
@@ -937,7 +940,7 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug(self.tr("Cancella safety %s" % json.dumps( self.currentSafety )) )
         try:
             from ArchiveManager import ArchiveManager # import here to avoid circular import
-            ArchiveManager.instance().deleteSafety(self.currentSafety["id"])
+            ArchiveManager.instance().deleteSafety(self.currentSafety["local_id"])
             ArchiveManager.instance().commit()
             
             # reset current safety
@@ -964,7 +967,7 @@ class GeosismaWindow(QDockWidget):
         else:
             self.btnDeleteCurrentSafety.setEnabled(True)
             self.btnModifyCurrentSafety.setEnabled(True)
-            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["id"])
+            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["local_id"])
         
         if self.currentRequest == None:
             self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % "--")
@@ -1014,7 +1017,7 @@ class GeosismaWindow(QDockWidget):
                 feature = features[0]
                 # related safety is not the current safety... ask if you want to create another
                 # safety on the same polygon
-                if feature["id"] != self.currentSafety["id"]:
+                if feature["local_id"] != self.currentSafety["local_id"]:
                     msgBox = QMessageBox()
                     msgBox.setIcon(QMessageBox.Warning)
                     msgBox.setText("RT Geosisma")
@@ -1202,6 +1205,8 @@ class GeosismaWindow(QDockWidget):
         self.updatedCurrentSafety.emit()
     
     def uploadSafeties(self, safeties):
+        if safeties is None:
+            return
         from UploadManager import UploadManager
         self.uploadSafetyDlg = UploadManager()
         self.uploadSafetyDlg.initSafeties(safeties)
@@ -1225,13 +1230,13 @@ class GeosismaWindow(QDockWidget):
             QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         
         # get updated safeties
-        modifiedSafeties = self.uploadSafetyDlg.safeties
+        updatedSafeties = self.uploadSafetyDlg.updatedSafeties
         print "modifiedSafeties dal dialog", self.safeties
         
         print "self.safeties prima", self.safeties
-        for modSafety in modifiedSafeties:
+        for modSafety in updatedSafeties:
             for currentSafety in self.safeties:
-                if currentSafety["id"] == modSafety["id"]:
+                if currentSafety["local_id"] == modSafety["local_id"]:
                     currentSafety = modSafety
                     break
         print "self.safeties dopo", self.safeties
