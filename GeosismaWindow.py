@@ -173,23 +173,6 @@ class GeosismaWindow(QDockWidget):
         self.nuovaPointEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
         QObject.connect(self.nuovaPointEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
 
-        self.esistentePointEmitter = FeatureFinder()
-        QObject.connect(self.esistentePointEmitter, SIGNAL("pointEmitted"), self.identificaSchedaEsistente)
-
-        self.polygonDrawer = PolygonDrawer()
-        self.polygonDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
-        QObject.connect(self.polygonDrawer, SIGNAL("geometryEmitted"), self.linkSafetyGeometry)
-
-        self.lineDrawer = LineDrawer()
-        self.lineDrawer.registerStatusMsg( u"Click sx per disegnare la linea di taglio, click dx per chiuderla" )
-        QObject.connect(self.lineDrawer, SIGNAL("geometryEmitted"), self.spezzaGeometriaEsistente)
-
-        self.fotoPointEmitter = FeatureFinder()
-        self.fotoPointEmitter.registerStatusMsg( u"Click su una foto per visualizzarla" )
-        QObject.connect(self.fotoPointEmitter, SIGNAL("pointEmitted"), self.identificaFoto)
-
-        self.connect(self.iface.mapCanvas(), SIGNAL( "mapToolSet(QgsMapTool *)" ), self.toolChanged)
-
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
         self.connect(self.btnModifyCurrentSafety, SIGNAL("clicked()"), self.updateSafetyForm)
         self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
@@ -200,8 +183,6 @@ class GeosismaWindow(QDockWidget):
         
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
 
-#         self.connect(self.btnSpezzaGeometriaEsistente, SIGNAL("clicked()"), self.spezzaGeometriaEsistente)
-#         self.connect(self.btnRipulisciGeometrie, SIGNAL("clicked()"), self.ripulisciGeometrie)
 #         self.connect(self.btnAbout, SIGNAL("clicked()"), self.about)
         
         # custom signal
@@ -218,7 +199,6 @@ class GeosismaWindow(QDockWidget):
         
         self.manageGuiStatus()
 
-#         self.connect(self.iface, SIGNAL("projectRead()"), self.reloadLayersFromProject)
 #         self.connect(self.iface, SIGNAL("newProjectCreated()"), self.close)
 
     def setupUi(self):
@@ -991,22 +971,6 @@ class GeosismaWindow(QDockWidget):
         else:
             self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % self.currentRequest["id"])
         
-            
-    def ripulisciGeometrie(self, point=None, button=None):
-        pass
-     
-    def gestioneStradario(self, point=None, button=None):
-        pass
-     
-    def reloadLayersFromProject(self, point=None, button=None):
-        pass
-
-    def identificaSchedaEsistente(self, point=None, button=None):
-        pass
-     
-    def toolChanged(self, point=None, button=None):
-        pass
-    
     @classmethod
     def checkActionScale(cls, actionName, maxScale):
         if int(cls.instance().canvas.scale()) > maxScale:
@@ -1256,10 +1220,22 @@ class GeosismaWindow(QDockWidget):
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         else:
-            message = self.tr("Fatto l'upload di ????????????????")
+            message = self.tr("Upload avvenuto con successo")
             self.showMessage(message, QgsMessageLog.INFO)
             QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
-
+        
+        # get updated safeties
+        modifiedSafeties = self.uploadSafetyDlg.safeties
+        print "modifiedSafeties dal dialog", self.safeties
+        
+        print "self.safeties prima", self.safeties
+        for modSafety in modifiedSafeties:
+            for currentSafety in self.safeties:
+                if currentSafety["id"] == modSafety["id"]:
+                    currentSafety = modSafety
+                    break
+        print "self.safeties dopo", self.safeties
+        
         # notify end of download
         self.uploadSafetiesDone.emit(success)
         
@@ -1267,12 +1243,6 @@ class GeosismaWindow(QDockWidget):
             self.uploadSafetyDlg.deleteLater()
         self.uploadSafetyDlg = None
 
-    def spezzaGeometriaEsistente(self, point=None, button=None):
-        pass
-    
-    def identificaFoto(self, point=None, button=None):
-        pass
-    
     ###############################################################
     ###### static methods
     ###############################################################
