@@ -44,6 +44,7 @@ class UploadManager(DlgWaiting):
     def __init__(self, parent=None):
         DlgWaiting.__init__(self, parent)
         self.safeties = None
+        self.updatedSafeties = None
         self.saved_id = None
         self.saved_number = None
         self.saved_sopralluoghi = None
@@ -69,13 +70,15 @@ class UploadManager(DlgWaiting):
 
     def initSafeties(self, safeties):
         self.safeties = safeties
+        self.updatedSafeties = []
     
     def run(self):
         try:
+            if self.safeties is None or len(self.safeties) == 0:
+                return
             # init progress bar
-            #self.reset()
-            
-            #self.setRange( 0, 0 )
+            self.reset()
+            self.setRange( 0, len(self.safeties) )
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             # set semaphores
@@ -88,6 +91,10 @@ class UploadManager(DlgWaiting):
 
             # upload safeties
             for safety in self.safeties:
+                # check if safety already uploaded
+                if str(safety["id"]) != "-1":
+                    continue
+                
                 self.setWindowTitle( self.tr("Upload della scheda n: %d" % safety["number"]) )
                 # save safety to a temp safety because of need of modification befor to upload
                 safetyToUpload = safety.copy()
@@ -95,8 +102,8 @@ class UploadManager(DlgWaiting):
                 # save plygon data to be saved after saving current safety
                 the_geom = safetyToUpload.pop("the_geom")
                 gids = safetyToUpload.pop("gid_catasto")
+                local_id = safetyToUpload.pop("local_id")
                 id = safetyToUpload.pop("id")
-                uploaded = safetyToUpload.pop("uploaded")
                 number = safetyToUpload.pop("number")
                 
                 # prepare safety to send
@@ -187,7 +194,14 @@ class UploadManager(DlgWaiting):
                 # some other emitted done signal
                 if (self.allFinished):
                     break
-
+                
+                # notify successful upload of a safety
+                message = self.tr("Upload con successo della scheda con local_id: %s - Numero definitivo: %s" % (str(safety["local_id"]), str(safety["number"])))
+                self.message.emit(message, QgsMessageLog.CRITICAL)
+                
+                self.updatedSafeties.append(safety.copy())
+                self.onProgress()
+ 
             if not self.allFinished:
                 self.done.emit(True)
             
@@ -223,19 +237,22 @@ class UploadManager(DlgWaiting):
         request.setUrl(url)
         
         # register response manager
+        try:
+            self.manager.finished.disconnect()
+        except:
+            pass
         self.manager.finished.connect(self.replyUploadSafetyFinished)
 
         # start upload
         self.singleSafetyUploadFinished = False
         self.manager.post(request, json.dumps(safety) )
 
-        self.onProgress()
-
-        print safety
-        print json.dumps(safety)
-
     def downloadRemoteSafety(self, safety_id):
         # register response manager
+        try:
+            self.manager.finished.disconnect()
+        except:
+            pass
         self.manager.finished.connect(self.replyDownloadSafetyFinished)
 
         # build request
@@ -250,10 +267,12 @@ class UploadManager(DlgWaiting):
         self.singleSafetyDownloadFinished = False
         self.manager.get(request)
 
-        self.onProgress()
-
     def downloadRemoteSopralluoghi(self, safety_id):
         # register response manager
+        try:
+            self.manager.finished.disconnect()
+        except:
+            pass
         self.manager.finished.connect(self.replyDownloadSopralluoghiFinished)
 
         # build request
@@ -264,13 +283,10 @@ class UploadManager(DlgWaiting):
         url.addQueryItem("format", "json")
         
         request.setUrl(url)
-        print request.url()
         
         # start download
         self.singleSopralluoghiDownloadFinished = False
         self.manager.get(request)
-
-        self.onProgress()
 
     def updateSopralluoghi(self, sopralluoghi):
         request = QNetworkRequest()
@@ -286,11 +302,6 @@ class UploadManager(DlgWaiting):
         self.singleSopralluoghiUpdateFinished = False
         sopralluoghi.pop("gid")
         self.manager.put(request, json.dumps(sopralluoghi) )
-
-        self.onProgress()
-
-        print sopralluoghi
-        print json.dumps(sopralluoghi)
 
     def authenticationRequired(self, reply, authenticator ):
         # check if reached mas retry
@@ -317,7 +328,6 @@ class UploadManager(DlgWaiting):
         authenticator.setPassword(gw.instance().pwd)
 
     def replyUploadSafetyFinished(self, reply):
-        print "replyUploadSafetyFinished error", reply.error()
         # need auth. If this code is reached means that server is not asking auth
         # to generare authenticationRequired signal
         if reply.error() == QNetworkReply.AuthenticationRequiredError:
@@ -336,8 +346,6 @@ class UploadManager(DlgWaiting):
             self.message.emit(message, QgsMessageLog.WARNING)
             self.done.emit(False)
             return
-        
-        #self.onProgress()
         
         # well authenticated :)
         gw.instance().autenthicated = True
@@ -368,7 +376,6 @@ class UploadManager(DlgWaiting):
         self.singleSafetyUploadDone.emit(True)
 
     def replyDownloadSafetyFinished(self, reply):
-        print "replyDownloadSafetyFinished error", reply.error()
         # need auth. If this code is reached means that server is not asking auth
         # to generare authenticationRequired signal
         if reply.error() == QNetworkReply.AuthenticationRequiredError:
@@ -385,8 +392,6 @@ class UploadManager(DlgWaiting):
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
             self.message.emit(message, QgsMessageLog.WARNING)
             return
-        
-        #self.onProgress()
         
         # well authenticated :)
         gw.instance().autenthicated = True
@@ -411,7 +416,6 @@ class UploadManager(DlgWaiting):
         self.singleSafetyDownloadDone.emit(True)
         
     def replyDownloadSopralluoghiFinished(self, reply):
-        print "replyDownloadSopralluoghiFinished error", reply.error()
         # need auth. If this code is reached means that server is not asking auth
         # to generare authenticationRequired signal
         if reply.error() == QNetworkReply.AuthenticationRequiredError:
@@ -429,8 +433,6 @@ class UploadManager(DlgWaiting):
             self.message.emit(message, QgsMessageLog.CRITICAL)
             self.done.emit(False)
             return
-        
-        #self.onProgress()
         
         # well authenticated :)
         gw.instance().autenthicated = True
@@ -461,7 +463,6 @@ class UploadManager(DlgWaiting):
         self.singleSopralluoghiDownloadDone.emit(True)
         
     def replyUpdateSopralluoghiFinished(self, reply):
-        print "replyUpdateSopralluoghiFinished error", reply.error()
         # need auth. If this code is reached means that server is not asking auth
         # to generare authenticationRequired signal
         if reply.error() == QNetworkReply.AuthenticationRequiredError:
@@ -480,14 +481,9 @@ class UploadManager(DlgWaiting):
             self.done.emit(False)
             return
         
-        #self.onProgress()
-        
         # well authenticated :)
         gw.instance().autenthicated = True
         gw.instance().authenticationRetryCounter = 0
-
-        raw = reply.readAll()
-        print reply.readAll()
         
         # successfully end
         self.singleSopralluoghiUpdateDone.emit(True)

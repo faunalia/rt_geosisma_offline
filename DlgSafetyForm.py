@@ -70,6 +70,13 @@ class SafetyFormBridge(QObject):
     @pyqtSlot(str)
     def saveSafety(self, value):
         #self.jsonvalue = value
+        
+        # check if it's possibile to update safety (e.g. already uploaded)
+        if str(self.dialog.currentSafety["id"]) != "-1":
+            message = self.tr("Impossibile modificare la scheda. Upload effettuato!")
+            QMessageBox.critical(gw.instance(), gw.instance().MESSAGELOG_CLASS, message)
+            return
+        
         # manage directly safety in DlgSafetyForm class instead of emitting signal to avoid 
         # interference with signal emitted dring reload (done when safetyForm webView is saved)
         # the strategy is to save the safety before reloading in a synchronous way
@@ -152,13 +159,18 @@ class DlgSafetyForm(QDockWidget):
         if self.currentSafety is None:
             return
         
-        self.setWindowTitle( self.tr("Scheda Sopralluogo id locale: %d del team: %s - Numero provvisorio della scheda: %d" % (self.currentSafety["local_id"], self.teamName, self.currentSafety["number"])) )
+        if str(self.currentSafety["id"]) != "-1":
+            pass
+            self.setWindowTitle( self.tr("Scheda Sopralluogo id locale: %d della squadra: %s - Numero definitivo della scheda: %d" % (self.currentSafety["local_id"], self.teamName, self.currentSafety["number"])) )
+        else:
+            self.setWindowTitle( self.tr("Scheda Sopralluogo id locale: %d della squadra: %s - Numero provvisorio della scheda: %d" % (self.currentSafety["local_id"], self.teamName, self.currentSafety["number"])) )
 
         safety = self.prepareSafetyToJs(self.currentSafety["safety"])
         JsCommand = "updateSafety(%s, %s)" % (adapt(self.teamName), safety)
         QgsLogger.debug(self.tr("Init Safety with JS command: %s" % JsCommand))
         
         self.webView.page().mainFrame().evaluateJavaScript(JsCommand)
+        
         #self.jsonvalues = '{"s1istatprov":"045","s1istatcom":"004","sdate":"22/10/2013","s1prov":"MS","s1istatreg":"009","s1com":"Casola in Lunigiana","s1loc":"Casola in Lunigiana","s1istatloc":"10003","s1istatcens":"001","s1catfoglio":"24","s1catpart1":"966","s2nfloors":"1","s2floorsfc":"8","s2uso1":true,"s2uson1":12,"s2percuse":"0","s2occupiers":3,"s3tA1":true,"s3tG1":true,"s3tH1":true,"s3reg1":"1","s3as2":true,"s3as1":true,"s3as3":true,"s4dA1":true,"s4dC1":true,"s4dF1":true,"s4pB1":true,"s4pC1":true,"s4pD1":true,"s4pE1":true,"s4pF1":true,"s5ensA1":true,"s5ensB1":true,"s6extA1":true,"s6extB1":true,"s6extC1":true,"s6extD1":true,"s6extE1":true,"s7morfo":"1","s8riskst":"0","s8agibilita":"0","s8accuracy":"0","s8prov1":"0","s8prov7":"0","s8prov8":"0","s8prov2":"0","s8prov3":"0","s8prov4":"0","s8prov5":"0","s8prov6":"0","s8prov9":"0","s8prov10":"0","s8prov11":"0","s8prov12":"0","s8prov11other":"111111111111111","s8prov12other":"12121212121212"}'
 
     def prepareSafetyToJs(self, safety=None):

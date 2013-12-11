@@ -89,7 +89,6 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		columns['created'] = ( self.tr(u'Creata'), Show )
 		columns['date'] = ( self.tr(u'Aggiornata il'), Show )
 		columns['safety'] = ( self.tr(u'Scheda'), Hide )
-		columns['uploaded'] = ( self.tr(u'Uploaded'), Show )
 		columns['gid_catasto'] = ( self.tr(u'Id catasto'), Show )
 		columns['the_geom'] = ( self.tr(u'the_geom'), Hide )
 
@@ -118,10 +117,6 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 				if column == 0:
 					item.setData(Qt.UserRole, record)
 				
-				# unable if already uploaded
-				if record["uploaded"]:
-					item.setFlags(Qt.NoItemFlags)
-
 				self.safetyTableWidget.setItem(row, column, item )
 			
 				
@@ -161,9 +156,9 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		
 		if len(self.safetyTableWidget.selectedItems()) == 0:
 			enabled = False
-			
+		
 		self.buttonBox.button(QDialogButtonBox.Ok).setEnabled(enabled)
-
+			
 	def setCurrentClicked(self, button):
 		if (button is self.buttonBox.button(QDialogButtonBox.Ok)):
 			self.buttonSelected = "Ok"

@@ -741,16 +741,25 @@ class GeosismaWindow(QDockWidget):
                 self.currentSafety = dlg.currentSafety
                 self.updatedCurrentSafety.emit()
                 
-                # now upload currentSafety
-                ret = self.uploadSafeties([self.currentSafety])
-                if ret == 0:
-                    pass
+                # now upload currentSafety if not already uploaded
+                if str(self.currentSafety["id"]) == "-1":
+                    self.uploadSafeties([self.currentSafety])
+                else:
+                    message = self.tr("Scheda %s gia' archiviata con il numero: %s" % (self.currentSafety["local_id"], self.currentSafety["number"]))
+                    self.showMessage(message, QgsMessageLog.WARNING)
+                    QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
     
             elif (dlg.buttonSelected == "SaveAll"): # means upload all safeties
                 self.safeties = dlg.records
-                ret = self.uploadSafeties(self.safeties)
-                if ret == 0:
-                    pass
+                
+                # add to the list only safety to be uploaded
+                safetyToUpload = []
+                for safety in self.safeties:
+                    if str(safety["id"]) != "-1":
+                        continue
+                    safetyToUpload.append(safety)
+                
+                self.uploadSafeties(safetyToUpload)
 
     def openCurrentSafety(self):
         QgsLogger.debug("openCurrentSafety entered",2 )
@@ -818,19 +827,30 @@ class GeosismaWindow(QDockWidget):
         if self.currentSafety == None:
             return
         
-        QgsLogger.debug(self.tr("Dump di safety %s" % json.dumps( self.currentSafety )) )
+        tempSafety = self.updateArchivedSafety(self.currentSafety)
+        if not tempSafety is None:
+            self.currentSafety = tempSafety
+        
+        QgsLogger.debug("updateArchivedCurrentSafety exit",2 )
+
+    def updateArchivedSafety(self, safety):
+        QgsLogger.debug("updateArchivedSafety entered",2 )
+        if safety == None:
+            return safety
+        
+        QgsLogger.debug(self.tr("Dump di safety %s" % json.dumps( safety )) )
         try:
             from ArchiveManager import ArchiveManager # import here to avoid circular import
             overwrite = True
-            ArchiveManager.instance().archiveSafety(self.currentSafety["request_id"], self.currentSafety["team_id"], self.currentSafety, overwrite)
+            ArchiveManager.instance().archiveSafety(safety["request_id"], safety["team_id"], safety, overwrite)
             ArchiveManager.instance().commit()
             # if it's a new record get new id to update currentSafety
-            if self.currentSafety["local_id"] == None:
+            if safety["local_id"] == None:
                 lastId = ArchiveManager.instance().getLastRowId()
                 if lastId != self.currentSafety["local_id"]:
-                    self.currentSafety["local_id"] = lastId
+                    safety["local_id"] = lastId
                     
-                    message = self.tr("Inserita nuova scheda con id %s" % self.currentSafety["local_id"])
+                    message = self.tr("Inserita nuova scheda con id %s" % safety["local_id"])
                     self.showMessage(message, QgsMessageLog.INFO)
             
         except Exception:
@@ -840,10 +860,13 @@ class GeosismaWindow(QDockWidget):
             message = self.tr("Fallito l'update della scheda di sopralluogo")
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            safety = None
         finally:
             ArchiveManager.instance().close() # to avoid locking
-
-        QgsLogger.debug("updateArchivedCurrentSafety exit",2 )
+        
+        QgsLogger.debug("updateArchivedSafety exit",2 )
+        
+        return safety
 
     def repaintSafetyGeometryLayer(self):
         print "repaintSafetyGeometryLayer"
@@ -918,7 +941,7 @@ class GeosismaWindow(QDockWidget):
                     subSafety[k] = '%s' % str(self.currentRequest[k])
 
         safety = "%s" % json.dumps(subSafety)
-        self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "uploaded":0, "gid_catasto":"", "the_geom":None}
+        self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
         self.initNewCurrentSafetyDone.emit()
@@ -1205,7 +1228,7 @@ class GeosismaWindow(QDockWidget):
         self.updatedCurrentSafety.emit()
     
     def uploadSafeties(self, safeties):
-        if safeties is None:
+        if safeties is None or len(safeties) == 0:
             return
         from UploadManager import UploadManager
         self.uploadSafetyDlg = UploadManager()
@@ -1231,15 +1254,19 @@ class GeosismaWindow(QDockWidget):
         
         # get updated safeties
         updatedSafeties = self.uploadSafetyDlg.updatedSafeties
-        print "modifiedSafeties dal dialog", self.safeties
-        
-        print "self.safeties prima", self.safeties
+
+        currentModified = False
         for modSafety in updatedSafeties:
-            for currentSafety in self.safeties:
-                if currentSafety["local_id"] == modSafety["local_id"]:
-                    currentSafety = modSafety
-                    break
-        print "self.safeties dopo", self.safeties
+            self.updateArchivedSafety(modSafety)
+            
+            # check if currentSafety has been modified
+            if self.currentSafety != None:
+                if self.currentSafety["id"] == modSafety["id"]:
+                    self.currentSafety = modSafety
+                    currentModified = True
+        
+        if currentModified:
+            self.updatedCurrentSafety.emit()
         
         # notify end of download
         self.uploadSafetiesDone.emit(success)

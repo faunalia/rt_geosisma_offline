@@ -33,7 +33,6 @@ CREATE TABLE "missions_safety" (
     "team_id" integer REFERENCES "organization_team" ("id"),
     "number" integer,
     "date" varchar(10),
-    "uploaded" integer,
     "gid_catasto" integer,
     UNIQUE ("team_id", "date", "number")
 );
