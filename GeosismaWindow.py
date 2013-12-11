@@ -687,6 +687,7 @@ class GeosismaWindow(QDockWidget):
             return
         # get selected request
         self.currentRequest = dlg.currentRequest
+        self.requests = dlg.records
         
         self.selectRequestDone.emit()
     
@@ -869,7 +870,6 @@ class GeosismaWindow(QDockWidget):
         return safety
 
     def repaintSafetyGeometryLayer(self):
-        print "repaintSafetyGeometryLayer"
         vl = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
         if vl is not None:
             vl.triggerRepaint()
@@ -934,11 +934,19 @@ class GeosismaWindow(QDockWidget):
         strNumber = "%s" % adapt(safety_number)
         subSafety["number"] = strNumber
         subSafety["sdate"] = '%s' % dateForForm
-        if self.currentRequest is not None:
+        
+        # set subsafety data of selected request
+        from ArchiveManager import ArchiveManager
+        self.requests = ArchiveManager.instance().loadRequests()
+        
+        for request in self.requests:
+            if str(request["id"]) != str(request_number):
+                continue
             keys = ["s1prov", "s1com", "s1loc", "s1via", "s1civico", "s1catfoglio", "s1catpart1"]
             for k in keys:
-                if self.currentRequest[k] != "":
-                    subSafety[k] = '%s' % str(self.currentRequest[k])
+                if request[k] != "":
+                    subSafety[k] = '%s' % str(request[k])
+            break
 
         safety = "%s" % json.dumps(subSafety)
         self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
