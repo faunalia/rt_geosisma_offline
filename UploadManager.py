@@ -456,6 +456,12 @@ class UploadManager(DlgWaiting):
             jsonSopralluoghi = [jsonRequest]
         
         # get number of the archived safety
+        if len(jsonSopralluoghi) == 0:
+            message = self.tr("Errore nel record sopralluoghi appena scaricato: %s" % json.dumps(jsonSopralluoghi) )
+            self.message.emit(message, QgsMessageLog.CRITICAL)
+            self.done.emit(False)
+            return
+            
         self.saved_sopralluoghi = jsonSopralluoghi[0]
 
         message = self.tr("self.saved_sopralluoghi: %s" % json.dumps(self.saved_sopralluoghi) )
