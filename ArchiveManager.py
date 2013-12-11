@@ -533,6 +533,71 @@ class ArchiveManager(QObject):
         QgsLogger.debug(self.tr("Cancella safety con la query: %s" % sqlquery), 1 )
         self.cursor.execute(sqlquery)
 
+    def createNewAttachment(self, attachmentsDict):
+        '''
+        Method to a archive a attachments in missions_attachments table
+        @param attachmentsDict: attachments dictionary - keys have to be the same key of Db
+        '''
+        self.checkConnection()
+        
+        # create query
+        sqlquery = "INSERT INTO missions_attachment "
+        sqlquery += "( "+",".join(attachmentsDict.keys()) + " ) VALUES ( "
+        for v in attachmentsDict.values():
+            sqlquery += "%s, " % adapt(v)
+        sqlquery = sqlquery[0:-2] + " );"
+        
+        QgsLogger.debug(self.tr("Inserisce attachment con la query: %s" % sqlquery), 1 )
+        self.cursor.execute(sqlquery)
+    
+    def loadAttachments(self, safetyId=None):
+        '''
+        Method to a load attachments from missions_attachment table based on idexes
+        @param safetyId: select only records related to the safetyId
+        @return attachments: list of dict of the retrieved records
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "SELECT * FROM missions_attachment "
+        if safetyId != None:
+            sqlquery += "WHERE safety_id = '%s' " % safetyId
+        sqlquery += "ORDER BY id;"
+        
+        QgsLogger.debug(self.tr("Recupera gli attachments con la query: %s" % sqlquery), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            columnNames = [descr[0] for descr in self.cursor.description]
+            
+            attachments = []
+            for values in self.cursor:
+                attachments.append( dict(zip(columnNames, values)) )
+            
+            return attachments
+            
+        except Exception as ex:
+            raise(ex)
+
+    def deleteAttachments(self, indexes=None):
+        '''
+        Method to a delete attachments from missions_attachment table based on idexes
+        @param indexes: indexes of attachments to delete
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "DELETE FROM missions_attachment "
+        if (indexes != None) and (len(indexes) > 0):
+            sqlquery += "WHERE "
+            for index in indexes:
+                sqlquery += "id=%s OR " % adapt(index)
+            sqlquery = sqlquery[0:-4]
+        sqlquery += ";"
+        
+        QgsLogger.debug(self.tr("Rimozione attachments con la query: %s" % sqlquery), 1 )
+        self.cursor.execute(sqlquery)
+
 #############################################################################
 # utility queries
 #############################################################################

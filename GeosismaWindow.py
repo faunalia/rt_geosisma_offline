@@ -182,6 +182,7 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
         
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
+        self.connect(self.btnManageAttachments, SIGNAL("clicked()"), self.manageAttachments)
 
 #         self.connect(self.btnAbout, SIGNAL("clicked()"), self.about)
         
@@ -270,9 +271,8 @@ class GeosismaWindow(QDockWidget):
 
         text = u"Gestisci allegati"
         self.btnManageAttachments = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Aggiuinta e rimozione degli allegate alla sceda corrente"
+        text = u"Aggiuinta e rimozione degli allegati alla scheda corrente"
         self.btnManageAttachments.setToolTip( text )
-        self.btnManageAttachments.setCheckable(True)
         gridLayout.addWidget(self.btnManageAttachments, 1, 0, 1, 1)
 
 #         text = u"Suddividi"
@@ -994,10 +994,12 @@ class GeosismaWindow(QDockWidget):
         if self.currentSafety == None:
             self.btnDeleteCurrentSafety.setEnabled(False)
             self.btnModifyCurrentSafety.setEnabled(False)
+            self.btnManageAttachments.setEnabled(False)
             self.btnSelectSafety.setText("Seleziona Scheda [%s]" % "--")
         else:
             self.btnDeleteCurrentSafety.setEnabled(True)
             self.btnModifyCurrentSafety.setEnabled(True)
+            self.btnManageAttachments.setEnabled(True)
             self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["local_id"])
         
         if self.currentRequest == None:
@@ -1282,6 +1284,13 @@ class GeosismaWindow(QDockWidget):
         if self.uploadSafetyDlg:
             self.uploadSafetyDlg.deleteLater()
         self.uploadSafetyDlg = None
+
+    def manageAttachments(self):
+        if self.currentSafety is None:
+            return
+        from DlgManageAttachments import DlgManageAttachments
+        self.manageAttachmentsDlg = DlgManageAttachments(self.currentSafety["local_id"], self.currentSafety["team_id"])
+        self.manageAttachmentsDlg.exec_()
 
     ###############################################################
     ###### static methods
