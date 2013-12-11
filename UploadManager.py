@@ -165,35 +165,37 @@ class UploadManager(DlgWaiting):
                 
                 # now download geometry to allow it's update... I can't use
                 # HTTP patch to update field because seems it's not supported by QNetworkAccessManager
-                self.downloadRemoteSopralluoghi(safety["id"])
-
-                # whait end of single request
-                while (not self.singleSopralluoghiDownloadFinished and not self.allFinished):
-                    qApp.processEvents()
-                    time.sleep(0.1)
+                # do this only if the_geom  is not None
+                if the_geom != None:
+                    self.downloadRemoteSopralluoghi(safety["id"])
+    
+                    # whait end of single request
+                    while (not self.singleSopralluoghiDownloadFinished and not self.allFinished):
+                        qApp.processEvents()
+                        time.sleep(0.1)
+                        
+                    if self.saved_sopralluoghi is None:
+                        message = self.tr("Non riesco a scaricare la geometria dei sopralluoghi della scheda con id: %s" % safety["id"])
+                        self.message.emit(message, QgsMessageLog.CRITICAL)
+                        self.done.emit(False)
+                        break
+    
+                    # some other emitted done signal
+                    if (self.allFinished):
+                        break
                     
-                if self.saved_sopralluoghi is None:
-                    message = self.tr("Non riesco a scaricare la geometria dei sopralluoghi della scheda con id: %s" % safety["id"])
-                    self.message.emit(message, QgsMessageLog.CRITICAL)
-                    self.done.emit(False)
-                    break
-
-                # some other emitted done signal
-                if (self.allFinished):
-                    break
+                    # now update geometry related to the saved safety (based on self.saved_id)
+                    self.saved_sopralluoghi["the_geom"] = the_geom
+                    self.updateSopralluoghi(self.saved_sopralluoghi)
                 
-                # now update geometry related to the saved safety (based on self.saved_id)
-                self.saved_sopralluoghi["the_geom"] = the_geom
-                self.updateSopralluoghi(self.saved_sopralluoghi)
-            
-                # whait end of single request
-                while (not self.singleSopralluoghiUpdateFinished and not self.allFinished):
-                    qApp.processEvents()
-                    time.sleep(0.1)
-                    
-                # some other emitted done signal
-                if (self.allFinished):
-                    break
+                    # whait end of single request
+                    while (not self.singleSopralluoghiUpdateFinished and not self.allFinished):
+                        qApp.processEvents()
+                        time.sleep(0.1)
+                        
+                    # some other emitted done signal
+                    if (self.allFinished):
+                        break
                 
                 # notify successful upload of a safety
                 message = self.tr("Upload con successo della scheda con local_id: %s - Numero definitivo: %s" % (str(safety["local_id"]), str(safety["number"])))
