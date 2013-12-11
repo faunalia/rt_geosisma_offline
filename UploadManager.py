@@ -405,6 +405,7 @@ class UploadManager(DlgWaiting):
             traceback.print_exc()
             self.done.emit(False)
             return
+        QgsLogger.debug("replyDownloadSafetyFinished received request %s" % json.dumps(jsonRequest),2 )
         
         # get number of the archived safety
         self.saved_number = jsonRequest["number"]
@@ -446,13 +447,14 @@ class UploadManager(DlgWaiting):
             traceback.print_exc()
             self.done.emit(False)
             return
+        QgsLogger.debug("replyDownloadSopralluoghiFinished received request %s" % json.dumps(jsonRequest),2 )
         
         # check if return more than 20 elements (e.g. for the super user)
         if "objects" in jsonRequest:
             jsonSopralluoghi = jsonRequest["objects"] # get array of dicts
         else:
             jsonSopralluoghi = [jsonRequest]
-
+        
         # get number of the archived safety
         self.saved_sopralluoghi = jsonSopralluoghi[0]
 
