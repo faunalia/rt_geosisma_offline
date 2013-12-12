@@ -29,6 +29,7 @@ from PyQt4.QtGui import *
 from PyQt4.QtNetwork import *
 
 from GeosismaWindow import GeosismaWindow as gw
+from ArchiveManager import ArchiveManager
 from DlgWaiting import DlgWaiting
 
 class UploadManager(DlgWaiting):
@@ -36,6 +37,7 @@ class UploadManager(DlgWaiting):
     # signals
     done = pyqtSignal(bool)
     singleSafetyUploadDone = pyqtSignal(bool)
+    singleAttachmentUploadDone = pyqtSignal(bool)
     singleSafetyDownloadDone = pyqtSignal(bool)
     singleSopralluoghiDownloadDone = pyqtSignal(bool)
     singleSopralluoghiUpdateDone = pyqtSignal(bool)
@@ -67,12 +69,17 @@ class UploadManager(DlgWaiting):
         self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
         self.teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
         self.requestUrl = settings.value("/rt_geosisma_offline/requestUrl", "/api/v1/request/")
+        self.attachmentUrl = settings.value("/rt_geosisma_offline/attachmentUrl", "/api/v1/attachment/")
+        self.staffUrl = settings.value("/rt_geosisma_offline/staffUrl", "/api/v1/staff/")
 
     def initSafeties(self, safeties):
         self.safeties = safeties
         self.updatedSafeties = []
     
     def run(self):
+        # in this code I'll try to use semaphorese instead to event to manage sequence of actions
+        # as you can see the code is less readable in terms of lenght but it follow a linear workflow
+        # using event can crate a more modular and robust code but not linear to read
         try:
             if self.safeties is None or len(self.safeties) == 0:
                 return
@@ -84,6 +91,7 @@ class UploadManager(DlgWaiting):
             # set semaphores
             self.done.connect(self.setAllFinished)
             self.singleSafetyUploadDone.connect(self.setSingleSafetyUploadFinished)
+            self.singleAttachmentUploadDone.connect(self.setSingleAttachmentUploadFinished)
             self.singleSafetyDownloadDone.connect(self.setSingleSafetyDownloadFinished)
             self.singleSopralluoghiDownloadDone.connect(self.setSingleSopralluoghiDownloadFinished)
             self.singleSopralluoghiUpdateDone.connect(self.setSingleSopralluoghiUpdateFinished)
@@ -197,6 +205,24 @@ class UploadManager(DlgWaiting):
                     if (self.allFinished):
                         break
                 
+                # now upload attachments
+                attachments = ArchiveManager.instance().loadAttachments(safety["local_id"])
+                for attachment in attachments:
+                    message = self.tr("Caricando l'allegato: %s" % attachment["attached_file"])
+                    self.message.emit(message, QgsMessageLog.INFO)
+                    
+                    self.uploadAttachment(safety["id"], attachment)
+                    
+                    # wait end of upload
+                    while (not self.singleAttachmentUploadFinished and not self.allFinished):
+                        qApp.processEvents()
+                        time.sleep(0.1)
+                    # some other emitted done signal
+                    if (self.allFinished):
+                        break
+                if (self.allFinished):
+                    break
+                
                 # notify successful upload of a safety
                 message = self.tr("Upload con successo della scheda con local_id: %s - Numero definitivo: %s" % (str(safety["local_id"]), str(safety["number"])))
                 self.message.emit(message, QgsMessageLog.CRITICAL)
@@ -218,6 +244,9 @@ class UploadManager(DlgWaiting):
     
     def setSingleSafetyUploadFinished(self, success):
         self.singleSafetyUploadFinished = True
+
+    def setSingleAttachmentUploadFinished(self, success):
+        self.singleAttachmentUploadFinished = True
 
     def setSingleSafetyDownloadFinished(self, success):
         self.singleSafetyDownloadFinished = True
@@ -304,6 +333,58 @@ class UploadManager(DlgWaiting):
         self.singleSopralluoghiUpdateFinished = False
         sopralluoghi.pop("gid")
         self.manager.put(request, json.dumps(sopralluoghi) )
+
+    def uploadAttachment(self, safetyRemoteId, attachment):
+        
+        tempAttachment = attachment.copy()
+        # modify attachment values to be as requested by server records
+        tempAttachment["safety"] = self.safetyUrl + str(safetyRemoteId) + "/"
+        tempAttachment["attached_file"] = os.path.basename(tempAttachment["attached_file"])
+        tempAttachment.pop("id")
+        tempAttachment.pop("attached_by_id")
+        tempAttachment.pop("safety_id")
+        
+        QgsLogger.debug("uploadAttachment upload of %s" % json.dumps(tempAttachment),2 )
+
+        self.multipart = QHttpMultiPart(QHttpMultiPart.FormDataType)
+        # add parameters
+        for name, value in tempAttachment.iteritems():
+            if name == "attached_file":
+                continue
+            textpart = QHttpPart()
+            textpart.setHeader(QNetworkRequest.ContentTypeHeader, 'text/plain; charset=utf-8')
+            textpart.setHeader(QNetworkRequest.ContentDispositionHeader, 'form-data; name="%s"' % name)
+            textpart.setBody(value.encode('utf-8'))
+            self.multipart.append(textpart)
+        # add file
+        file = QFile(tempAttachment["attached_file"])
+        file.open(QIODevice.ReadOnly)
+        datas = QByteArray()
+        datas += file.readAll()
+        
+        filepart = QHttpPart()
+        filepart.setHeader(QNetworkRequest.ContentTypeHeader, "application/octet-stream")
+        filepart.setHeader(QNetworkRequest.ContentDispositionHeader, 'form-data; name="attached_file"; filename="%s"' % tempAttachment["attached_file"])
+        filepart.setBody(datas)
+        #filepart.setBodyDevice(file)
+        self.multipart.append(filepart)
+        
+        # build request
+        request = QNetworkRequest()
+        url = QUrl(self.baseApiUrl + self.attachmentUrl)
+        request.setUrl(url)
+        
+        # register response manager
+        try:
+            self.manager.finished.disconnect()
+        except:
+            pass
+        self.manager.finished.connect(self.replyUploadAttachmentFinished)
+
+        # start upload
+        self.singleAttachmentUploadFinished = False
+        reply = self.manager.post(request, self.multipart)
+        self.multipart.setParent(reply) # delete the multiPart with the reply
 
     def authenticationRequired(self, reply, authenticator ):
         # check if reached mas retry
@@ -497,3 +578,48 @@ class UploadManager(DlgWaiting):
         
         # successfully end
         self.singleSopralluoghiUpdateDone.emit(True)
+
+    def replyUploadAttachmentFinished(self, reply):
+        # need auth. If this code is reached means that server is not asking auth
+        # to generare authenticationRequired signal
+        if reply.error() == QNetworkReply.AuthenticationRequiredError:
+            message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
+            self.message.emit(message, QgsMessageLog.CRITICAL)
+            gw.instance().autenthicated = False
+            # cannot do post again because posterd multipart is linked to reply and then destroied => qgis crash
+            self.done.emit(False)
+            return
+        
+        # disconnect current reply callback
+        self.manager.finished.disconnect(self.replyUploadAttachmentFinished)
+        
+        # received error
+        if reply.error() and reply.error() != 204:
+            message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
+            self.message.emit(message, QgsMessageLog.CRITICAL)
+            self.done.emit(False)
+            return
+        
+        # well authenticated :)
+        gw.instance().autenthicated = True
+        gw.instance().authenticationRetryCounter = 0
+        
+        headerKeys = reply.rawHeaderList()
+        if not ("Location" in headerKeys):
+            message = self.tr("Errore nella HTTP reply header. Location is not set" )
+            self.message.emit(message, QgsMessageLog.CRITICAL)
+            self.done.emit(False)
+            return
+        
+        for elem in reply.rawHeaderPairs():
+            k,v = elem
+            if k != "Location":
+                continue
+            location = str(v)
+            break
+        
+        message = self.tr("Url dell'attachment caricato: %s" % location )
+        self.message.emit(message, QgsMessageLog.INFO)
+
+        # successfully end
+        self.singleAttachmentUploadDone.emit(True)
