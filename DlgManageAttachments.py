@@ -116,7 +116,7 @@ class DlgManageAttachments(QDialog, Ui_Dialog):
 	
 	def addNewAttachment(self):
 		filename = QFileDialog.getOpenFileName(self, self.tr("Seleziona Allegato"))
-		if filename is None:
+		if filename is None or filename == "":
 			return
 		
 		currentDateTime = datetime.today()
