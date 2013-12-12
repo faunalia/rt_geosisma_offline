@@ -1152,7 +1152,6 @@ class GeosismaWindow(QDockWidget):
         # get location data from DB to fill safety
         from GeoArchiveManager import GeoArchiveManager
         safetyLocationDataDict = GeoArchiveManager.instance().locationDataByBelfiore( featureDic["belfiore"] )[0]
-        print safetyLocationDataDict
         
         # update safety json with catasto data (foglio and particella)
         subSafetyDict = ast.literal_eval( tempSafety["safety"] )
@@ -1168,7 +1167,6 @@ class GeosismaWindow(QDockWidget):
         
         # get localita'
         localitaDict = GeoArchiveManager.instance().localitaByPoint( point )
-        print "len(localitaDict)", localitaDict
         if len(localitaDict) > 0:
             localitaDict = localitaDict[0]
             subSafetyDict["s1loc"] = localitaDict["denom_loc"]
@@ -1176,7 +1174,6 @@ class GeosismaWindow(QDockWidget):
         
         # get aggregato
         fab_10kDict = GeoArchiveManager.instance().fab_10kByPoint( point )
-        print "len(fab_10kDict)",fab_10kDict
         if len(fab_10kDict) > 0:
             fab_10kDict = fab_10kDict[0]
             subSafetyDict["s1aggn"] = fab_10kDict["identif"]
@@ -1194,7 +1191,6 @@ class GeosismaWindow(QDockWidget):
             return
         
         # fuse current safety polygon with the new feature's one
-        print 'tempSafety["the_geom"] -%s-' % tempSafety["the_geom"]
         if (tempSafety["the_geom"] == None) or (tempSafety["the_geom"] == ""):
             tempSafety["the_geom"] = featureGeometry.exportToWkt()
         else:
@@ -1231,7 +1227,6 @@ class GeosismaWindow(QDockWidget):
             tempSafety["gid_catasto"] = "_%d_" % featureDic["gid"]
         else:
             tempSafety["gid_catasto"] = "%s_%d_" % (tempSafety["gid_catasto"], featureDic["gid"])
-        print "new gid_catasto",tempSafety["gid_catasto"]
 
         # update safety
         self.currentSafety = tempSafety
