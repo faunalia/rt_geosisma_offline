@@ -22,7 +22,7 @@ Toscana - S.I.T.A. (http://www.regione.toscana.it/territorio/cartografia/index.h
  ***************************************************************************/
 """
 
-from datetime import date
+from datetime import datetime
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from collections import OrderedDict
@@ -119,8 +119,8 @@ class DlgManageAttachments(QDialog, Ui_Dialog):
 		if filename is None:
 			return
 		
-		currentDate = date.today()
-		dateIso = currentDate.isoformat()
+		currentDateTime = datetime.today()
+		dateIso = currentDateTime.isoformat()
  
 		attachment = OrderedDict()
 		attachment['attached_when'] = dateIso
