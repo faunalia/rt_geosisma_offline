@@ -602,6 +602,20 @@ class ArchiveManager(QObject):
 # utility queries
 #############################################################################
 
+    def deleteAttachmentsBySasfety(self, safetyId):
+        '''
+        Method to a delete attachments from missions_attachment related to a specified safety
+        @param indexes: indexes of attachments to delete
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "DELETE FROM missions_attachment "
+        sqlquery += "WHERE safety_id='%s';" % str(safetyId)
+        
+        QgsLogger.debug(self.tr("Rimozione attachments con la query: %s" % sqlquery), 1 )
+        self.cursor.execute(sqlquery)
+
     def loadSafetiesByCatasto(self, gid_catasto):
         '''
         Method to a load safeties from missions_safety related to catasto geometry

@@ -973,6 +973,8 @@ class GeosismaWindow(QDockWidget):
             from ArchiveManager import ArchiveManager # import here to avoid circular import
             ArchiveManager.instance().deleteSafety(self.currentSafety["local_id"])
             ArchiveManager.instance().commit()
+            ArchiveManager.instance().deleteAttachmentsBySasfety(self.currentSafety["local_id"])
+            ArchiveManager.instance().commit()
             
             # reset current safety
             self.currentSafety = None
