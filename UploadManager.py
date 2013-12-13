@@ -346,33 +346,38 @@ class UploadManager(DlgWaiting):
         
         QgsLogger.debug("uploadAttachment upload of %s" % json.dumps(tempAttachment),2 )
 
-        self.multipart = QHttpMultiPart(QHttpMultiPart.FormDataType)
+        boundary = "Boundary_.oOo._83uncb3yc7y83yb4ybi93u878278bx7b8789"
+        datas = QByteArray()
         # add parameters
+        datas += "--" + boundary + "\r\n"
         for name, value in tempAttachment.iteritems():
             if name == "attached_file":
                 continue
-            textpart = QHttpPart()
-            textpart.setHeader(QNetworkRequest.ContentTypeHeader, 'text/plain; charset=utf-8')
-            textpart.setHeader(QNetworkRequest.ContentDispositionHeader, 'form-data; name="%s"' % name)
-            textpart.setBody(value.encode('utf-8'))
-            self.multipart.append(textpart)
-        # add file
-        file = QFile(tempAttachment["attached_file"])
-        file.open(QIODevice.ReadOnly)
-        datas = QByteArray()
-        datas += file.readAll()
+            datas += 'Content-Disposition: form-data; name="%s"\r\n' % name;
+            datas += 'Content-Type: text/plain; charset=utf-8\r\n';
+            datas += "\r\n"
+            datas += str(value).encode('utf-8')
+            datas += "\r\n"
+            datas += "--" + boundary + "\r\n"
         
-        filepart = QHttpPart()
-        filepart.setHeader(QNetworkRequest.ContentTypeHeader, "application/octet-stream")
-        filepart.setHeader(QNetworkRequest.ContentDispositionHeader, 'form-data; name="attached_file"; filename="%s"' % tempAttachment["attached_file"])
-        filepart.setBody(datas)
-        #filepart.setBodyDevice(file)
-        self.multipart.append(filepart)
+        # add file
+        fd = QFile(tempAttachment["attached_file"])
+        fd.open(QIODevice.ReadOnly)
+        datas += 'Content-Disposition: form-data; name="attached_file"; filename="%s"\r\n' % tempAttachment["attached_file"];
+        datas += 'Content-Type: application/octet-stream\r\n';
+        datas += "\r\n"
+        datas += fd.readAll()
+        datas += "\r\n"
+        datas += "--" + boundary + "\r\n"
+        fd.close()
         
         # build request
         request = QNetworkRequest()
         url = QUrl(self.baseApiUrl + self.attachmentUrl)
         request.setUrl(url)
+        request.setRawHeader("Host", url.host())
+        request.setRawHeader("Content-type", "multipart/form-data; boundary=%s" % boundary)
+        request.setRawHeader("Content-Length", str(datas.size()))
         
         # register response manager
         try:
@@ -382,10 +387,14 @@ class UploadManager(DlgWaiting):
         self.manager.finished.connect(self.replyUploadAttachmentFinished)
 
         # start upload
+#         print "dump request-----------------------------------------------"
+#         for headerKey in request.rawHeaderList():
+#             print headerKey, request.rawHeader(headerKey)
+#         print datas
         self.singleAttachmentUploadFinished = False
-        reply = self.manager.post(request, self.multipart)
-        self.multipart.setParent(reply) # delete the multiPart with the reply
-
+        self.manager.post(request, datas)
+        
+        
     def authenticationRequired(self, reply, authenticator ):
         # check if reached mas retry
         gw.instance().authenticationRetryCounter += 1
@@ -586,7 +595,6 @@ class UploadManager(DlgWaiting):
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
             self.message.emit(message, QgsMessageLog.CRITICAL)
             gw.instance().autenthicated = False
-            # cannot do post again because posterd multipart is linked to reply and then destroied => qgis crash
             self.done.emit(False)
             return
         
