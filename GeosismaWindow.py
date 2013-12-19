@@ -804,6 +804,7 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug("updateSafetyForm exit",2 )
     
     def updateCurrentSafetyFromForm(self, safetyDict):
+        QgsLogger.debug("updateCurrentSafetyFromForm entered",2 )
         if safetyDict == None:
             return
         self.currentSafety["safety"] = safetyDict["safety"]
