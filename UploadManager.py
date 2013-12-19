@@ -277,6 +277,7 @@ class UploadManager(DlgWaiting):
         # start upload
         self.singleSafetyUploadFinished = False
         self.manager.post(request, json.dumps(safety) )
+        QgsLogger.debug("uploadSafety to url %s with safety %s" % (url.toString(), json.dumps(safety)) ,2 )
 
     def downloadRemoteSafety(self, safety_id):
         # register response manager
@@ -297,6 +298,7 @@ class UploadManager(DlgWaiting):
         # start download
         self.singleSafetyDownloadFinished = False
         self.manager.get(request)
+        QgsLogger.debug("downloadRemoteSafety to url " % url.toString() ,2 )
 
     def downloadRemoteSopralluoghi(self, safety_id):
         # register response manager
@@ -318,6 +320,7 @@ class UploadManager(DlgWaiting):
         # start download
         self.singleSopralluoghiDownloadFinished = False
         self.manager.get(request)
+        QgsLogger.debug("downloadRemoteSopralluoghi to url " % url.toString() ,2 )
 
     def updateSopralluoghi(self, sopralluoghi):
         request = QNetworkRequest()
@@ -333,6 +336,7 @@ class UploadManager(DlgWaiting):
         self.singleSopralluoghiUpdateFinished = False
         sopralluoghi.pop("gid")
         self.manager.put(request, json.dumps(sopralluoghi) )
+        QgsLogger.debug("updateSopralluoghi to url %s with sopralluoghi %s" % (url.toString(), json.dumps(sopralluoghi)) ,2 )
 
     def uploadAttachment(self, safetyRemoteId, attachment):
         
@@ -393,6 +397,7 @@ class UploadManager(DlgWaiting):
 #         print datas
         self.singleAttachmentUploadFinished = False
         self.manager.post(request, datas)
+        QgsLogger.debug("uploadAttachment to url %s with datas %s" % (url.toString(), str(datas)) ,2 )
         
         
     def authenticationRequired(self, reply, authenticator ):
@@ -420,15 +425,6 @@ class UploadManager(DlgWaiting):
         authenticator.setPassword(gw.instance().pwd)
 
     def replyUploadSafetyFinished(self, reply):
-        # need auth. If this code is reached means that server is not asking auth
-        # to generare authenticationRequired signal
-        if reply.error() == QNetworkReply.AuthenticationRequiredError:
-            gw.instance().autenthicated = False
-            # do again until authenticated or reached max retry
-            # need to add post data again?
-            self.manager.post(reply.request())
-            return
-        
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyUploadSafetyFinished)
         
@@ -468,14 +464,6 @@ class UploadManager(DlgWaiting):
         self.singleSafetyUploadDone.emit(True)
 
     def replyDownloadSafetyFinished(self, reply):
-        # need auth. If this code is reached means that server is not asking auth
-        # to generare authenticationRequired signal
-        if reply.error() == QNetworkReply.AuthenticationRequiredError:
-            gw.instance().autenthicated = False
-            # do again until authenticated or reached max retry
-            self.manager.get(reply.request())
-            return
-        
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyDownloadSafetyFinished)
         
@@ -509,14 +497,6 @@ class UploadManager(DlgWaiting):
         self.singleSafetyDownloadDone.emit(True)
         
     def replyDownloadSopralluoghiFinished(self, reply):
-        # need auth. If this code is reached means that server is not asking auth
-        # to generare authenticationRequired signal
-        if reply.error() == QNetworkReply.AuthenticationRequiredError:
-            gw.instance().autenthicated = False
-            # do again until authenticated or reached max retry
-            self.manager.get(reply.request())
-            return
-        
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyDownloadSopralluoghiFinished)
         
@@ -563,19 +543,11 @@ class UploadManager(DlgWaiting):
         self.singleSopralluoghiDownloadDone.emit(True)
         
     def replyUpdateSopralluoghiFinished(self, reply):
-        # need auth. If this code is reached means that server is not asking auth
-        # to generare authenticationRequired signal
-        if reply.error() == QNetworkReply.AuthenticationRequiredError:
-            gw.instance().autenthicated = False
-            # do again until authenticated or reached max retry
-            self.manager.put(reply.request())
-            return
-        
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyUpdateSopralluoghiFinished)
         
         # received error
-        if reply.error() and reply.error() != 204:
+        if reply.error():
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
             self.message.emit(message, QgsMessageLog.CRITICAL)
             self.done.emit(False)
@@ -589,20 +561,11 @@ class UploadManager(DlgWaiting):
         self.singleSopralluoghiUpdateDone.emit(True)
 
     def replyUploadAttachmentFinished(self, reply):
-        # need auth. If this code is reached means that server is not asking auth
-        # to generare authenticationRequired signal
-        if reply.error() == QNetworkReply.AuthenticationRequiredError:
-            message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
-            self.message.emit(message, QgsMessageLog.CRITICAL)
-            gw.instance().autenthicated = False
-            self.done.emit(False)
-            return
-        
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyUploadAttachmentFinished)
         
         # received error
-        if reply.error() and reply.error() != 204:
+        if reply.error():
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
             self.message.emit(message, QgsMessageLog.CRITICAL)
             self.done.emit(False)
