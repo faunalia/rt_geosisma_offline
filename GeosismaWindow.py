@@ -24,7 +24,6 @@ import traceback
 import os
 import json # used to dump dicts in strings
 import ast # used to convert string indict because json.loads could fail
-import time
 import inspect
 from datetime import date
 from psycopg2.extensions import adapt
