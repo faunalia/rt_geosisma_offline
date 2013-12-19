@@ -63,67 +63,76 @@ function updateSafety(teamName, newvalue) {
         "s1istatloc",
         "s1istatcens",
         "s1catfoglio",
-        "s1catpart1"
+        "s1catpart1",
+        "s3tG1", // tipologia mista
+        "s3tG2", // tipologia mista
+        "s3tG3" // tipologia mista
     ];
     prioritizedKyes.forEach(function(key) {
+        if (!$("#" + key).length) {
+            return;
+        }
+        
         console.log(key+":"+newvalue[key]);
         if (key in newvalue) {
             $("#"+key).prop("disabled", false);
             $("#"+key).val(newvalue[key]);
+            $("#"+key).trigger("click");
             $("#"+key).trigger("change");
         };
     });
     
-    // manage first unexisting DOM elements (most of radio buttons)
-    // first: because dome text element selection depends on radiobutton value
-    // unexisting: due they dinamic/positional id name
-    // e.g: s2nfloors_1 instead of only s2nfloors
+    // manage known DOM elements
     $.each(newvalue, function(key, value) {
-        // skip keys already set
+        // skip keys prioritized fields set
         if (prioritizedKyes.indexOf(key) != -1) {
             return;
         }
-        // skip if key exist
+
         if ($("#" + key).length) {
-            return;
+            // manage if field exist
+            var element = $("#" + key);
+            var type = element.get(0).type;
+            // first check if it's and observation
+            if (key == "s9obs") {
+                updateObservations(value);
+                return;
+            }
+            if (element.is("span")) {
+                console.log(element.is("span"));
+                element.text(value);
+                return;
+            }
+            // set value basing on object type
+            switch (type) {
+                case "text":
+                    element.val(value);
+                    element.trigger("change");
+                    break;
+                case "checkbox":
+                    element.attr("checked", true);
+                    element.trigger("change");
+                    break;
+                default:
+                    console.log(key + ": I don't know what to do type: " + type + " for key:" + key);
+                    break;
+            }
         }
-        var element = $("#" + key + "_" + value);
-        var type = element.get(0).type;
-        element.prop("checked", true);
-        element.trigger("click");
-        element.trigger("change");
-    });
-    // manage known DOM elements
-    $.each(newvalue, function(key, value) {
-        // skip if key doesn't exist
-        if (!$("#" + key).length) {
-            return;
-        }
-        var element = $("#" + key);
-        var type = element.get(0).type;
-        // first check if it's and observation
-        if (key == "s9obs") {
-            updateObservations(value);
-            return;
-        }
-        if (element.is("span")) {
-            console.log(element.is("span"));
-            element.text(value);
-            return;
-        }
-        // set value basing on object type
-        switch (type) {
-            case "text":
-                element.val(value);
-                element.trigger("change");
-                break;
-            case "checkbox":
-                element.attr("checked", true);
-                element.trigger("change");
-                break;
-            default:
-                console.log(key + ": I don't know what to do type: " + type);
-                break;
+        else
+        {
+            // manage if field doesn't exist and it's DOM id could be a composition
+            // unexisting: due they dinamic/positional id name
+            // e.g: s2nfloors_1 instead of only s2nfloors
+            keyname = "#" + key + "_" + value;
+            var element = $(keyname);
+            if (!element.length) {
+                console.log(key + ": I don't know element: " + keyname+" (key="+key+",value="+value+")");
+                return
+            }
+            var type = element.get(0).type;
+            element.prop("checked", true);
+            element.trigger("click");
+            element.trigger("change");
         }
     });
 }
