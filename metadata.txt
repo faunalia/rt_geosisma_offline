@@ -10,7 +10,7 @@
 name=RE Geosisma Offline
 qgisMinimumVersion=2.0
 description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
-version=version 0.7
+version=version 0.7.1
 author=Luigi Pirelli
 email=luipir@gmail.com
 
