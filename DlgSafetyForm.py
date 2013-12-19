@@ -190,7 +190,7 @@ class DlgSafetyForm(QDockWidget):
         self.webView.page().mainFrame().addToJavaScriptWindowObject("safetyFormBridge", self.safetyFormBridge)
 
     def notifySafetyModified(self):
-        print "notifySafetyModified in form dialog", self.currentSafety
+        QgsLogger.debug(self.tr("notifySafetyModified notify safety %s" % self.currentSafety))
         self.currentSafetyModifed.emit(self.currentSafety)
 
     def exec_(self):
