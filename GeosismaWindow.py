@@ -274,19 +274,6 @@ class GeosismaWindow(QDockWidget):
         self.btnManageAttachments.setToolTip( text )
         gridLayout.addWidget(self.btnManageAttachments, 1, 0, 1, 1)
 
-#         text = u"Suddividi"
-#         self.btnSpezzaGeometriaEsistente = QPushButton( QIcon(":/icons/spezza_geometria.png"), text, group )
-#         text = u"Suddividi una geometria"
-#         self.btnSpezzaGeometriaEsistente.setToolTip( text )
-#         self.btnSpezzaGeometriaEsistente.setCheckable(True)
-#         gridLayout.addWidget(self.btnSpezzaGeometriaEsistente, 0, 1, 1, 1)
-# 
-#         text = u"Ripulisci geometrie non associate"
-#         self.btnRipulisciGeometrie = QPushButton( QIcon(":/icons/ripulisci.png"), text, group )
-#         self.btnRipulisciGeometrie.setToolTip( text )
-#         gridLayout.addWidget(self.btnRipulisciGeometrie, 1, 0, 1, 2)
-        
-        # init button status basing on data availability and more
 #         text = u"About"
 #         self.btnAbout = QPushButton( QIcon(":/icons/about.png"), text, child )
 #         self.btnAbout.setToolTip( text )
