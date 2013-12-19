@@ -19,7 +19,10 @@ email=luipir@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=0.7.1
+changelog=0.8
+	* Aggiunta feature di scelta se sotituire o unire particelle
+	* bugfix errore bad file descriptor (https://trac.faunalia.it/geosisma/ticket/401)
+	0.7.1
 	Corretta gestione delle Strutture miste (Sezione 3)
 	0.7
 	Supporto all'upload degli allegati
