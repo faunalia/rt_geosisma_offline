@@ -1099,13 +1099,22 @@ class GeosismaWindow(QDockWidget):
                 msgBox = QMessageBox()
                 msgBox.setIcon(QMessageBox.Warning)
                 msgBox.setText("RT Geosisma")
-                msgBox.setInformativeText(self.tr("La scheda ha gia' una particella associata\nVuoi unire la nuova particella?"))
-                msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-                msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
-                msgBox.setButtonText(QMessageBox.Cancel, self.tr("No"))
+                msgBox.setInformativeText(self.tr("La scheda ha gia' una particella associata\nCosa vuoi fare?"))
+                msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel | QMessageBox.Open)
+                msgBox.setButtonText(QMessageBox.Yes, self.tr("Sostituire"))
+                msgBox.setButtonText(QMessageBox.Cancel, self.tr("Nulla"))
+                msgBox.setButtonText(QMessageBox.Open, self.tr("Unire"))
                 ret = msgBox.exec_()
+                # if ignore do nothing
                 if ret == QMessageBox.Cancel:
                     return
+                # if unify then do nothing... the feature will be added to the current values of geom
+                elif ret == QMessageBox.Open:
+                    pass
+                # if substitute then reset current safety geometry and pass... next steps will add selected geometry
+                elif ret == QMessageBox.Yes:
+                    tempSafety["gid_catasto"] = ""
+                    tempSafety["the_geom"] = None
             else:
                 # it's a particella already in linked partielle => probabily need 
                 # to overwrite safety geometry modification
