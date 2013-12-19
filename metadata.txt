@@ -19,7 +19,9 @@ email=luipir@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=0.7
+changelog=0.7.1
+	Corretta gestione delle Strutture miste (Sezione 3)
+	0.7
 	Supporto all'upload degli allegati
 	0.6
 	Aggiunto il supporto per l'upload delle schede di sopralluogo
