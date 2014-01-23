@@ -5,12 +5,12 @@
 Name                 : RT Geosisma Offline
 Description          : Geosisma Offline Plugin
 Date                 : October 21, 2011 
-modified             : (C) 2013 by Luigi Pirelli (Faunalia)
-email                : sucameli@faunalia.it - luigi.pirelli@faunalia.it
+copyright            : (C) 2013 by Luigi Pirelli (Faunalia)
+email                : luigi.pirelli@faunalia.it
  ***************************************************************************/
 
-Works done from Faunalia (http://www.faunalia.it) with funding from Regione 
-Toscana - S.I.T.A. (http://www.regione.toscana.it/territorio/cartografia/index.html)
+Works done for Faunalia (http://www.faunalia.it) with funding from Regione 
+Toscana - Servizio Sismico (http://www.rete.toscana.it/sett/pta/sismica/)
 
 /***************************************************************************
  *                                                                         *
