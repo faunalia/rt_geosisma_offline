@@ -172,6 +172,10 @@ class GeosismaWindow(QDockWidget):
         self.nuovaPointEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
         QObject.connect(self.nuovaPointEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
 
+        self.lookForSafetiesEmitter = FeatureFinder()
+        self.lookForSafetiesEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
+        QObject.connect(self.lookForSafetiesEmitter, SIGNAL("pointEmitted"), self.listLinkedSafeties)
+
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
         self.connect(self.btnModifyCurrentSafety, SIGNAL("clicked()"), self.updateSafetyForm)
         self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
@@ -181,6 +185,7 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
         
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
+        self.connect(self.btnListLinkedSafeties, SIGNAL("clicked()"), self.listLinkedSafeties)
         self.connect(self.btnManageAttachments, SIGNAL("clicked()"), self.manageAttachments)
 
 #         self.connect(self.btnAbout, SIGNAL("clicked()"), self.about)
@@ -268,11 +273,18 @@ class GeosismaWindow(QDockWidget):
         self.btnLinkSafetyGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnLinkSafetyGeometry, 0, 0, 1, 1)
 
+        text = u"Elenco schede associate"
+        self.btnListLinkedSafeties = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
+        text = u"Elencare le scehde associate a una particella"
+        self.btnListLinkedSafeties.setToolTip( text )
+        self.btnListLinkedSafeties.setCheckable(True)
+        gridLayout.addWidget(self.btnListLinkedSafeties, 1, 0, 1, 1)
+
         text = u"Gestisci allegati"
         self.btnManageAttachments = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
         text = u"Aggiuinta e rimozione degli allegati alla scheda corrente"
         self.btnManageAttachments.setToolTip( text )
-        gridLayout.addWidget(self.btnManageAttachments, 1, 0, 1, 1)
+        gridLayout.addWidget(self.btnManageAttachments, 2, 0, 1, 1)
 
 #         text = u"About"
 #         self.btnAbout = QPushButton( QIcon(":/icons/about.png"), text, child )
@@ -700,14 +712,33 @@ class GeosismaWindow(QDockWidget):
         layer.setSelectedFeatures( [f.id() for f in features] )
         self.iface.mapCanvas().zoomToSelected(layer)
 
-    def selectSafety(self):
+    def selectSafety(self, gid=None):
         # get id of the current selected safety
         local_id = None
-        if self.currentSafety is not None:
+        if self.currentSafety is not None and not gid:
             local_id = self.currentSafety["local_id"]
             
         from DlgSelectSafety import DlgSelectSafety
-        dlg = DlgSelectSafety(local_id)
+        dlg = DlgSelectSafety(currentSafetyId=local_id, gid=gid)
+
+        # delete becouse no results to show
+        if len(dlg.records) == 0 :
+            if gid:
+                message = u"Nessuna scheda associata alla particella"
+            elif local_id:
+                message = u"Nessuna scheda con local_id %" % local_id
+            else:
+                message = u"Nessuna scheda disponibile"
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Information)
+            msgBox.setText("RT Geosisma")
+            msgBox.setInformativeText(self.tr( message ))
+            msgBox.setStandardButtons(QMessageBox.Yes)
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Ok"))
+            ret = msgBox.exec_()
+            dlg.deleteLater()
+            return
+
         ret = dlg.exec_()
         # check if result set
         if ret != 0:
@@ -745,7 +776,7 @@ class GeosismaWindow(QDockWidget):
                     if str(safety["id"]) != "-1":
                         continue
                     safetyToUpload.append(safety)
-                
+                    
                 self.uploadSafeties(safetyToUpload)
 
     def openCurrentSafety(self):
@@ -1071,6 +1102,34 @@ class GeosismaWindow(QDockWidget):
         else:
             self.nuovaPointEmitter.startCapture()
     
+    def listLinkedSafeties(self, point=None, button=None):
+        action = self.btnListLinkedSafeties.toolTip()
+        if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
+            return self.lookForSafetiesEmitter.startCapture()
+
+        if button != Qt.LeftButton:
+            self.btnListLinkedSafeties.setChecked(False)
+            return
+
+        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        if layerOrig == None:
+            self.btnListLinkedSafeties.setChecked(False)
+            return
+
+        feat = self.lookForSafetiesEmitter.findAtPoint(layerOrig, point)
+        if feat != None:
+            # already get => unselect if
+            gidIndex = feat.fieldNameIndex("gid")
+            gid = feat.attributes()[gidIndex]
+            layerOrig.deselect(gid)
+            
+            # show list of safeties related to gid
+            self.btnListLinkedSafeties.setChecked(False)
+            self.selectSafety(gid=gid)
+            
+        else:
+            self.lookForSafetiesEmitter.startCapture()
+
     def updateCurrentSafetyWithCatasto(self, geoDbCrs, feature, point):
         '''
         Method update CurrentSafety with element related to current original feature (from catasto)

@@ -36,10 +36,11 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 	loadSafetiesDone = pyqtSignal()
 	loadTableDone = pyqtSignal()
 	
-	def __init__(self, currentSafetyId=None, parent=None):
+	def __init__(self, currentSafetyId=None, gid=None, parent=None):
 		QDialog.__init__(self, parent)
 		
 		self.currentSafetyId = currentSafetyId
+		self.currentGid = gid
 		self.currentSafety = {}
 		self.buttonSelected = None
 		
@@ -58,12 +59,20 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		self.buttonBox.clicked.connect(self.setCurrentClicked)
 		
 		self.loadSafeties()
+
+		# check if safeties are available
+		if len(self.records) == 0:
+			return
+
 		self.loadTeams()
 		self.loadTable()
 		self.safetyTableWidget.sortByColumn(0)
 		
 	def loadSafeties(self):
-		self.records = ArchiveManager.instance().loadSafeties()
+		if self.currentGid:
+			self.records = ArchiveManager.instance().loadSafetiesByCatasto(self.currentGid)
+		else:
+			self.records = ArchiveManager.instance().loadSafeties()
 		self.loadSafetiesDone.emit()
 		
 	def loadTeams(self):
