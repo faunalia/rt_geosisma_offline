@@ -1037,28 +1037,27 @@ class GeosismaWindow(QDockWidget):
 
             # controlla se tale geometria ha qualche scheda associata
             features = ArchiveManager.instance().loadSafetiesByCatasto(gid)
-            if len(features) == 1:
-                feature = features[0]
-                # related safety is not the current safety... ask if you want to create another
-                # safety on the same polygon
-                if feature["local_id"] != self.currentSafety["local_id"]:
-                    msgBox = QMessageBox()
-                    msgBox.setIcon(QMessageBox.Warning)
-                    msgBox.setText("RT Geosisma")
-                    msgBox.setInformativeText(self.tr("E' già presente la scheda %d su questa particella. Vuoi continuare?" % feature["number"]))
-                    msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
-                    msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
-                    msgBox.setButtonText(QMessageBox.Cancel, self.tr("No: seleziono un'altra particella"))
-                    ret = msgBox.exec_()
-                    if ret == QMessageBox.Cancel:
-                        # continue on another geometry
-                        return self.nuovaPointEmitter.startCapture()
+            
+            # get all local_id but not of the current one
+            associated_features = [feature for feature in features if feature["local_id"] != self.currentSafety["local_id"] ]
+            
+            # if previous list is != 0
+            if len(associated_features) > 0:
                 
-            if len(features) > 1:
-                # NO, c'è già una scheda associata
-                QMessageBox.critical( self, "RT Geosisma", self.tr("Anomalia! Esistono più schede associate al poligono! Seleziona un'altro poligono") )
-                return self.nuovaPointEmitter.startCapture()
-
+                safety_numbers = [feature["number"] for feature in associated_features]
+                
+                msgBox = QMessageBox()
+                msgBox.setIcon(QMessageBox.Warning)
+                msgBox.setText("RT Geosisma")
+                msgBox.setInformativeText(self.tr(u"Già presenti le schede %s su questa particella. Vuoi continuare?" % str(safety_numbers) ))
+                msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+                msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
+                msgBox.setButtonText(QMessageBox.Cancel, self.tr("No: seleziono un'altra particella"))
+                ret = msgBox.exec_()
+                if ret == QMessageBox.Cancel:
+                    # continue on another geometry
+                    return self.nuovaPointEmitter.startCapture()
+                
             QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
             # OK, non esiste alcuna scheda associata a tale geometria
             # associa il poligono alla safety
