@@ -1100,7 +1100,7 @@ class GeosismaWindow(QDockWidget):
                 msgBox = QMessageBox()
                 msgBox.setIcon(QMessageBox.Warning)
                 msgBox.setText("RT Geosisma")
-                msgBox.setInformativeText(self.tr("La scheda ha gia' una particella associata\nCosa vuoi fare?"))
+                msgBox.setInformativeText(self.tr(u"La scheda ha già una particella associata\nCosa vuoi fare?"))
                 msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel | QMessageBox.Open)
                 msgBox.setButtonText(QMessageBox.Yes, self.tr("Sostituire"))
                 msgBox.setButtonText(QMessageBox.Cancel, self.tr("Nulla"))
