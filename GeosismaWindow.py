@@ -1059,7 +1059,6 @@ class GeosismaWindow(QDockWidget):
                     return self.nuovaPointEmitter.startCapture()
                 
             QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
-            # OK, non esiste alcuna scheda associata a tale geometria
             # associa il poligono alla safety
             crs = layerOrig.dataProvider().crs()
             
