@@ -672,7 +672,7 @@ class WmsLayersBridge:
 	@classmethod
 	def getWMSRepositoryUrl(self):
 		settings = QSettings()
-		return settings.value( "/rt_geosisma_offline/wmsRepositoryURL", "https://dl.dropboxusercontent.com/u/12837459/zz_wms.zip" )
+		return settings.value( "/rt_geosisma_offline/wmsRepositoryURL", "http://geosisma-test.faunalia.it/offline/zz_wms.zip" )
 	
 	
 	@classmethod
