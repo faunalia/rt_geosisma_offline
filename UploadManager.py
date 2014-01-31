@@ -298,7 +298,7 @@ class UploadManager(DlgWaiting):
         # start download
         self.singleSafetyDownloadFinished = False
         self.manager.get(request)
-        QgsLogger.debug("downloadRemoteSafety to url " % url.toString() ,2 )
+        QgsLogger.debug("downloadRemoteSafety to url %s" % url.toString() ,2 )
 
     def downloadRemoteSopralluoghi(self, safety_id):
         # register response manager
