@@ -135,6 +135,26 @@ function updateSafety(teamName, newvalue) {
             element.trigger("change");
         }
     });
+    
+    // manage again some value becaouse seemes
+    // that some events are not correctly triggered
+    // under windows: https://trac.faunalia.it/geosisma/ticket/424 
+    toRetriggerKyes = [
+        "s1catpart1",
+    ];
+    toRetriggerKyes.forEach(function(key) {
+        if (!$("#" + key).length) {
+            return;
+        }
+        
+        console.log("retriggering " + key+":"+newvalue[key]);
+        if (key in newvalue) {
+            $("#"+key).prop("disabled", false);
+            $("#"+key).val(newvalue[key]);
+            $("#"+key).trigger("click");
+            $("#"+key).trigger("change");
+        };
+    });
 }
 
 function sortOnKeys(dict) {
