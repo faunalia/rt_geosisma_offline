@@ -32,6 +32,9 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtNetwork import *
 
+from qgis.core import *
+from qgis.gui import * 
+
 from Utils import *
 # import cache manager
 from DlgWmsLayersManager import DlgWmsLayersManager, WmsLayersBridge
@@ -689,6 +692,19 @@ class GeosismaWindow(QDockWidget):
         
         self.selectRequestDone.emit()
     
+    def zoomToExtent(self, boundingBox):
+        # bbox arrive in DB coordinate 32632 => convert in default view coordinate 3003
+        defaultCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        geoDbCrs = QgsCoordinateReferenceSystem(self.GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        xform = QgsCoordinateTransform(geoDbCrs, defaultCrs)
+        geom = QgsGeometry.fromWkt(boundingBox.asWktPolygon())
+        if geom.transform(xform):
+            message = self.tr("Errore nella conversione del bbox del DB a quello del progetto")
+            self.showMessage(message, QgsMessageLog.WARNING)
+            return
+        self.iface.mapCanvas().setExtent(geom.boundingBox())
+        self.iface.mapCanvas().refresh()
+    
     def selectCatastoGeometry(self, catastos):
         if len(catastos) == 0:
             return
@@ -711,6 +727,7 @@ class GeosismaWindow(QDockWidget):
         features = filter(exp.evaluate, layer.getFeatures())
         layer.setSelectedFeatures( [f.id() for f in features] )
         self.iface.mapCanvas().zoomToSelected(layer)
+        self.iface.mapCanvas().refresh()
 
     def selectSafety(self, gid=None):
         # get id of the current selected safety

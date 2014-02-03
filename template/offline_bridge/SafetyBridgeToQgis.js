@@ -292,6 +292,7 @@ $(function() {
                 var c = OpenLayers.Geometry.fromWKT(geoms);
                 var bounds = c.getBounds();
                 //map.zoomToExtent(bounds);
+                safetyFormBridge.zoomToExtent(bounds);
             });
         },
     });
@@ -324,6 +325,7 @@ $(function() {
             var geom = OpenLayers.Geometry.fromWKT(val.the_geom);
             var bounds = geom.getBounds();
             //map.zoomToExtent(bounds);
+            safetyFormBridge.zoomToExtent(bounds);
         },
     });
 
@@ -416,10 +418,11 @@ $(function() {
             console.log("catasto", data);
             var geoms = $.map(data.objects, function(el) { return el.the_geom; });
             if(geoms.length > 0) {
-                safetyFormBridge.selectCatasto(JSON.stringify(data));
+                //safetyFormBridge.selectCatasto(JSON.stringify(data));
                 var c = OpenLayers.Geometry.fromWKT(geoms[0]);
                 var bounds = c.getBounds();
                 //map.zoomToExtent(bounds);
+                safetyFormBridge.zoomToExtent(bounds);
             } else {
                 alert("Dato foglio/particella non rilevato in archivio");
             }

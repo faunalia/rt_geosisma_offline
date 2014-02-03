@@ -19,7 +19,7 @@ Created on Oct 4, 2013
 @author: Luigi Pirelli (luipir@gmail.com)
 '''
 import os, sys, traceback
-from qgis.core import QgsLogger
+from qgis.core import QgsLogger, QgsRectangle
 from qgis.utils import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -66,6 +66,12 @@ class SafetyFormBridge(QObject):
         # discard json strigify meta descriptor
         catastos = recordsDict["objects"]
         gw.instance().selectCatastoGeometry( catastos )
+        
+    @pyqtSlot(str)
+    def zoomToExtent(self, boundingBoxUnicode):
+        arr = boundingBoxUnicode.split(",")
+        boundingBox = QgsRectangle(float(arr[0]), float(arr[1]), float(arr[2]), float(arr[3]))
+        gw.instance().zoomToExtent( boundingBox )
         
     @pyqtSlot(str)
     def saveSafety(self, value):
