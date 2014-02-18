@@ -173,7 +173,6 @@ class FeatureFinder(MapTool):
 			# this cause the rectangle is empty and the select 
 			# returns all the features...
 			radius = 0.5	# it means 0.50% of the canvas extent
-		print MapTool.canvas.extent().width(),radius/100.0
 		radius = MapTool.canvas.extent().width() * radius/100.0
 
 		# crea il rettangolo da usare per la ricerca
@@ -192,12 +191,12 @@ class FeatureFinder(MapTool):
 		if onlyTheClosestOne:
 			minDist = -1
 			featureId = None
-			rect = QgsGeometry.fromRect(rect)
+			rect2 = QgsGeometry.fromRect(rect)
 
-			for f in layer.getFeatures():
+			for f in layer.getFeatures(QgsFeatureRequest(rect)):
 				if onlyTheClosestOne:
 					geom = f.geometry()
-					distance = geom.distance(rect)
+					distance = geom.distance(rect2)
 					if minDist < 0 or distance < minDist:
 						minDist = distance
 						featureId = f.id()
@@ -209,7 +208,7 @@ class FeatureFinder(MapTool):
 				ret = f.next()
 
 		else:
-			IDs = [f.id() for f in layer.getFeatures()]
+			IDs = [f.id() for f in layer.getFeatures(QgsFeatureRequest(rect))]
 
 			if onlyIds:
 				ret = IDs
@@ -321,74 +320,3 @@ class PicViewer(QGraphicsView):
 
 		def clearCache(self):
 			self.imageBytes = None
-
-
-class TemporaryFile:
-	# gestisci i file temporanei, eliminandoli alla chiusura del plugin
-	tmpFiles = {}
-
-	KEY_SCHEDAEDIFICIO = 'SchedaEdificio'
-	KEY_SCHEDAEDIFICIO2HTML = 'SchedaEdificio2Html'
-	KEY_VISUALIZZAFOTO = 'DlgVisualizzaFoto'
-
-	@staticmethod
-	def getNewFile(key=None, ext=None):
-		tmp = QTemporaryFile()
-		if ext != None:
-			tmp.setFileTemplate( tmp.fileTemplate().append( ".%s" % ext ) )
-		if not TemporaryFile.tmpFiles.has_key( key ):
-			TemporaryFile.tmpFiles[ key ] = [ tmp ]
-		else:
-			TemporaryFile.tmpFiles[ key ].append( tmp )
-		return tmp
-
-	@staticmethod
-	def delFile(tmp, key=None):
-
-		def deleteTempFile(tmp, key):
-			TemporaryFile.tmpFiles[ key ].remove( tmp )
-			tmp.deleteLater()
-			del tmp
-
-		if not TemporaryFile.tmpFiles.has_key( key ):
-			return False
-		if tmp != None:	# rimuovi solo il file passato
-			if TemporaryFile.tmpFiles[ key ].count( tmp ) > 0:
-				deleteTempFile(tmp, key)
-		else:	# rimuovi tutti i file che hanno quella chiave
-			for tmp in TemporaryFile.tmpFiles[ key ]:
-				deleteTempFile(tmp, key)
-			del TemporaryFile.tmpFiles[ key ]
-		return True
-
-	@staticmethod
-	def delAllFiles(key=None):
-		return TemporaryFile.delFile(None, key)
-
-	@staticmethod
-	def clear():
-		for key in TemporaryFile.tmpFiles.keys():
-			TemporaryFile.delAllFiles(key)
-		TemporaryFile.tmpFiles = {}
-
-
-	@staticmethod
-	def salvaDati(dati, tempKey=None, ext=None):
-		if dati == None:
-			return
-
-		tmp = TemporaryFile.getNewFile( tempKey, ext )
-		if not tmp.open():
-			TemporaryFile.delFile( tmp, tempKey )
-			return
-		filename = tmp.fileName()
-		tmp.close()
-
-		outfile = open( filename.toUtf8(), "wb" )
-		try:
-			outfile.write( str(dati) )
-		finally:
-			outfile.close()
-
-		return filename
-
