@@ -138,7 +138,13 @@ class QueryProvincia(GeosismaQuery):
         for field in self.FIELDS:
             sqlquery += field + ", "
         sqlquery = sqlquery[:-2] # trim last ", "
-        sqlquery += " FROM "+DATABASE_SCHEMA+self.TABLENAME+" WHERE LOWER(toponimo) LIKE LOWER('"+queryParams["toponimo__istartswith"]+"%')"
+        sqlquery += " FROM "+DATABASE_SCHEMA+self.TABLENAME
+        if ("toponimo__istartswith" in queryParams):
+            sqlquery += " WHERE LOWER(toponimo) LIKE LOWER('"+queryParams["toponimo__istartswith"]+"%')"
+        elif ("sigla__iexact" in queryParams):
+            sqlquery += " WHERE LOWER(sigla) = LOWER('"+queryParams["sigla__iexact"]+"')"
+        if ("limit" in queryParams and str(queryParams["limit"]) != "0"):
+            sqlquery += " LIMIT " + str(queryParams["limit"])
         self.cursor.execute(sqlquery)
         
         self.saveJson()
@@ -168,10 +174,15 @@ class QueryComune(GeosismaQuery):
             sqlquery += field + ", "
         sqlquery = sqlquery[:-2] # trim last ", "
         sqlquery += " FROM "+DATABASE_SCHEMA+self.TABLENAME+" , "+DATABASE_SCHEMA+self.EXTTABLE
-        sqlquery += " WHERE LOWER("+self.TABLENAME+".toponimo) LIKE LOWER('"+queryParams["toponimo__istartswith"]+"%')"
+        if ("toponimo__istartswith" in queryParams):
+            sqlquery += " WHERE LOWER("+self.TABLENAME+".toponimo) LIKE LOWER('"+queryParams["toponimo__istartswith"]+"%')"
+        elif ("toponimo__iexact" in queryParams):
+            sqlquery += " WHERE LOWER("+self.TABLENAME+".toponimo) = LOWER('"+queryParams["toponimo__iexact"]+"')"
         sqlquery += " AND "+self.TABLENAME+".idprovincia = "+self.EXTTABLE+".id_istat"
         if ( 'provincia__sigla' in queryParams ):
             sqlquery += " AND "+self.EXTTABLE+".sigla = '"+queryParams['provincia__sigla']+"'"
+        if ("limit" in queryParams and str(queryParams["limit"]) != "0"):
+            sqlquery += " LIMIT " + str(queryParams["limit"])
         
         self.cursor.execute(sqlquery)
         
@@ -221,11 +232,17 @@ class QueryLocalita(GeosismaQuery):
             else:
                 sqlquery += field + ", "
         sqlquery = sqlquery[:-2] # trim last ", "
-        sqlquery += " FROM "+DATABASE_SCHEMA+self.TABLENAME+" WHERE LOWER(denom_loc) LIKE LOWER('"+queryParams["denom_loc__istartswith"]+"%')"
+        sqlquery += " FROM "+DATABASE_SCHEMA+self.TABLENAME
+        if ("denom_loc__istartswith" in queryParams):
+            sqlquery += " WHERE LOWER(denom_loc) LIKE LOWER('"+queryParams["denom_loc__istartswith"]+"%')"
+        elif ("denom_loc__iexact" in queryParams):
+            sqlquery += " WHERE LOWER(denom_loc) = LOWER('"+queryParams["denom_loc__iexact"]+"')"
         if ( 'cod_pro' in queryParams ):
             sqlquery += " AND cod_pro = '"+queryParams["cod_pro"]+"'"
         if ( 'cod_com' in queryParams ):
             sqlquery += " AND cod_com = '"+queryParams["cod_com"]+"'"
+        if ("limit" in queryParams and str(queryParams["limit"]) != "0"):
+            sqlquery += " LIMIT " + str(queryParams["limit"])
         self.cursor.execute(sqlquery)
         
         self.saveJson()
