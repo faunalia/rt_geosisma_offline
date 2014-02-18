@@ -58,12 +58,12 @@ function updateSafety(teamName, newvalue) {
     // they need to be set in an specific order to allow
     // correct trigghering
     prioritizedKyes = [
-        "s1istatprov",
-        "s1istatcom",
-        "s1istatloc",
-        "s1istatcens",
-        "s1catfoglio",
-        "s1catpart1",
+        // "s1istatprov",
+        // "s1istatcom",
+        // "s1istatloc",
+        // "s1istatcens",
+        // "s1catfoglio",
+        // "s1catpart1",
         "s3tG1", // tipologia mista
         "s3tG2", // tipologia mista
         "s3tG3" // tipologia mista
@@ -136,25 +136,8 @@ function updateSafety(teamName, newvalue) {
         }
     });
     
-    // manage again some value becaouse seemes
-    // that some events are not correctly triggered
-    // under windows: https://trac.faunalia.it/geosisma/ticket/424 
-    toRetriggerKyes = [
-        "s1catpart1",
-    ];
-    toRetriggerKyes.forEach(function(key) {
-        if (!$("#" + key).length) {
-            return;
-        }
-        
-        console.log("retriggering " + key+":"+newvalue[key]);
-        if (key in newvalue) {
-            $("#"+key).prop("disabled", false);
-            $("#"+key).val(newvalue[key]);
-            $("#"+key).trigger("click");
-            $("#"+key).trigger("change");
-        };
-    });
+    // autocomplete and trigger elements like, Provicia, Comune, Localita
+    fillAutocomplete()
 }
 
 function sortOnKeys(dict) {
@@ -171,6 +154,103 @@ function sortOnKeys(dict) {
     }
 
     return tempDict;
+}
+
+function fillAutocomplete() {
+    // code has been get from GeosismaSchedaAgibilita.html in the javascript sction
+    // under the if condition (autocomplete_istat == "1")
+    
+    // Fill the ISTAT fields
+    var provincia = $("#s1prov").val();
+    var comune = $("#s1com").val();
+    var localita = $("#s1loc").val();
+    var foglio = $("#s1catfoglio").val();
+    var part1 = $("#s1catpart1").val();
+    var api_url = "/api/v1/";
+    if (provincia != "") {
+        var q = {
+            "format" : "json",
+            "limit" : 1,
+            "sigla__iexact" : provincia,
+        };
+        $.getJSON(safetyFormBridge.get( "provincia/", JSON.stringify(q) ), q, function(data) {
+            var p = data.objects[0];
+            $("#s1prov").data("poly_subfield").set(p.sigla);
+            $("#s1istatreg").data("poly_subfield").set(p.idregione);
+            $("#s1istatprov").data("poly_subfield").set(p.id_istat);
+        });
+    }
+
+    if (comune != "") {
+        var q = {
+            "format" : "json",
+            "limit" : 1,
+            "toponimo__iexact" : comune,
+        };
+        $.getJSON(safetyFormBridge.get( "comune/", JSON.stringify(q) ), q, function(data) {
+            var c = data.objects[0];
+            $("#s1istatcom").data("poly_subfield").set(c.id_istat);
+            // Now we have s1istatcom, and so we have also s1istatprov
+            // If there is foglio and part1, we can zoom on particella
+            if (foglio != "" && part1 != "") {
+                var query = {
+                    "format" : "json",
+                    "limit" : 0,
+                };
+                if (!provincia || !comune || !foglio)
+                    return;
+
+                query["belfiore__provincia__id_istat"] = $("#s1istatprov").val();
+                query["belfiore__comune__id_istat"] = $("#s1istatcom").val();
+                query["foglio"] = foglio;
+                query["codbo"] = part1;
+
+                console.log("PART_CHANGED", query);
+
+                // Piazza al Serchio (LU) foglio=1 belfiore="G582", part 10 to 19 are all good
+
+                $.getJSON(safetyFormBridge.get( "catasto2010_2/" , JSON.stringify(query) ), query, function(data) {
+                    var p = data.objects[0];
+                    var geoms = $.map(data.objects, function(el) {
+                        return el.the_geom
+                    });
+                    var c = OpenLayers.Geometry.fromWKT(geoms[0]);
+                    var bounds = c.getBounds();
+                    //map.zoomToExtent(bounds);
+                    safetyFormBridge.zoomToExtent(bounds);
+                });
+            }
+        });
+    }
+
+    if (localita != "") {
+        var q = {
+            "format" : "json",
+            "limit" : 1,
+            "denom_loc__iexact" : localita,
+        };
+        $.getJSON(safetyFormBridge.get( "localita/" , JSON.stringify(q) ), q, function(data) {
+            var l = data.objects[0];
+            $("#s1istatprov").data("poly_subfield").set(l.cod_pro);
+            $("#s1istatcom").data("poly_subfield").set(l.cod_com);
+            $("#s1istatloc").data("poly_subfield").set(l.cod_loc);
+            $("#s1istatcens").data("poly_subfield").set(l.sez2001.substring(l.sez2001.length - 3));
+            // And zoom the map if there is no particella
+            if (part1 == "") {
+                var geoms = $.map(data.objects, function(el) {
+                    return el.the_geom
+                });
+                var c = OpenLayers.Geometry.fromWKT(geoms[0]);
+                var bounds = c.getBounds();
+                //map.zoomToExtent(bounds);
+                safetyFormBridge.zoomToExtent(bounds);
+            }
+            // Trigger s1catfoglio and s1catpart1 change() to save them in the jsonfield
+            $("#s1catfoglio").trigger("change");
+            $("#s1catpart1").trigger("change");
+        });
+    }
+
 }
 
 // switch (key+"_uused_") {
