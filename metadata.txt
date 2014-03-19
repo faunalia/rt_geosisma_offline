@@ -10,7 +10,7 @@
 name=RE Geosisma Offline
 qgisMinimumVersion=2.0
 description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
-version=version 0.9.4
+version=version 0.9.5
 author=Luigi Pirelli
 email=luipir@gmail.com
 
@@ -19,7 +19,9 @@ email=luipir@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=0.9.4
+changelog=0.9.5
+	fix bug nella visualizzazione di un messaggio - tiket #445
+	0.9.4
 	Zoom automatico su localita' o parcella al caricamento della scheda
 	0.9.3
 	Bug fix introducendo lo zoom selezionando la localita' => semplificando lo zoom sulla particella
