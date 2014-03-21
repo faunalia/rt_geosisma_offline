@@ -179,6 +179,10 @@ class GeosismaWindow(QDockWidget):
         self.lookForSafetiesEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
         QObject.connect(self.lookForSafetiesEmitter, SIGNAL("pointEmitted"), self.listLinkedSafeties)
 
+        self.polygonDrawer = PolygonDrawer()
+        self.polygonDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
+        QObject.connect(self.polygonDrawer, SIGNAL("geometryEmitted"), self.createNewSafetyGeometry)
+
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
         self.connect(self.btnModifyCurrentSafety, SIGNAL("clicked()"), self.updateSafetyForm)
         self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
@@ -189,10 +193,11 @@ class GeosismaWindow(QDockWidget):
         
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
         self.connect(self.btnListLinkedSafeties, SIGNAL("clicked()"), self.listLinkedSafeties)
+        self.connect(self.btnNewSafetyGeometry, SIGNAL("clicked()"), self.createNewSafetyGeometry)
+        self.connect(self.btnZoomToSafety, SIGNAL("clicked()"), self.zoomToSafety)
+        self.connect(self.btnCleanUnlinkedSafeties, SIGNAL("clicked()"), self.cleanUnlinkedSafeties)
         self.connect(self.btnManageAttachments, SIGNAL("clicked()"), self.manageAttachments)
 
-#         self.connect(self.btnAbout, SIGNAL("clicked()"), self.about)
-        
         # custom signal
         self.downloadTeamsDone.connect(self.archiveTeams)
         self.archiveTeamsDone.connect(self.downloadRequests)
@@ -200,6 +205,8 @@ class GeosismaWindow(QDockWidget):
         self.updatedCurrentSafety.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateArchivedCurrentSafety)
         self.updatedCurrentSafety.connect(self.repaintSafetyGeometryLayer)
+        self.updatedCurrentSafety.connect(self.zoomToSafety)
+        self.updatedCurrentSafety.connect(self.selectCurrentSafetyFeature)
         
         # GUI state based on signals
         self.selectRequestDone.connect(self.manageGuiStatus)
@@ -269,25 +276,44 @@ class GeosismaWindow(QDockWidget):
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
-        text = u"Associa particella"
+        text = u"Nuova"
+        self.btnNewSafetyGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
+        text = u"Disegna un poligono da associare alla scheda"
+        self.btnNewSafetyGeometry.setToolTip( text )
+        self.btnNewSafetyGeometry.setCheckable(True)
+        gridLayout.addWidget(self.btnNewSafetyGeometry, 0, 0, 1, 2)
+
+        text = u"Zoom"
+        self.btnZoomToSafety = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
+        text = u"Zoom al poligono della scheda"
+        self.btnZoomToSafety.setToolTip( text )
+        gridLayout.addWidget(self.btnZoomToSafety, 0, 2, 1, 1)
+
+        text = u"Associa"
         self.btnLinkSafetyGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
         text = u"Seleziona una particella da associare alla scheda"
         self.btnLinkSafetyGeometry.setToolTip( text )
         self.btnLinkSafetyGeometry.setCheckable(True)
-        gridLayout.addWidget(self.btnLinkSafetyGeometry, 0, 0, 1, 1)
+        gridLayout.addWidget(self.btnLinkSafetyGeometry, 1, 0, 1, 1)
 
-        text = u"Elenco schede associate"
+        text = u"Elenco"
         self.btnListLinkedSafeties = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
         text = u"Elencare le scehde associate a una particella"
         self.btnListLinkedSafeties.setToolTip( text )
         self.btnListLinkedSafeties.setCheckable(True)
-        gridLayout.addWidget(self.btnListLinkedSafeties, 1, 0, 1, 1)
+        gridLayout.addWidget(self.btnListLinkedSafeties, 1, 1, 1, 1)
+
+        text = u"Ripulisci"
+        self.btnCleanUnlinkedSafeties = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
+        text = u"Elimina schede non associate a nessuna particella"
+        self.btnCleanUnlinkedSafeties.setToolTip( text )
+        gridLayout.addWidget(self.btnCleanUnlinkedSafeties, 1, 2, 1, 1)
 
         text = u"Gestisci allegati"
         self.btnManageAttachments = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
         text = u"Aggiuinta e rimozione degli allegati alla scheda corrente"
         self.btnManageAttachments.setToolTip( text )
-        gridLayout.addWidget(self.btnManageAttachments, 2, 0, 1, 1)
+        gridLayout.addWidget(self.btnManageAttachments, 3, 0, 1, 3)
 
 #         text = u"About"
 #         self.btnAbout = QPushButton( QIcon(":/icons/about.png"), text, child )
@@ -347,7 +373,9 @@ class GeosismaWindow(QDockWidget):
         self.loadLayerGeomOrig()
         self.loadFab10kGeometries()
         self.loadSafetyGeometries()
-
+        self.setProjectDefaultSetting()
+        self.manageEditingSignals()
+        
         return True
 
     def reloadCrs(self):
@@ -358,6 +386,41 @@ class GeosismaWindow(QDockWidget):
         self._setRendererCrs(renderer, srs)
         renderer.setMapUnits( srs.mapUnits() if srs.mapUnits() != QGis.UnknownUnit else QGis.Meters )
         renderer.setProjectionsEnabled(True)
+
+    def setProjectDefaultSetting(self):
+        project = QgsProject.instance()
+        layerSnappingList = [GeosismaWindow.VLID_GEOM_ORIG, GeosismaWindow.VLID_GEOM_FAB10K]
+        layerSnappingEnabledList = ["enabled", "enabled"]
+        layerSnappingToleranceUnitList = ["0", "0"]
+        layerSnapToList = ["to_vertex", "to_vertex"]
+        layerSnappingToleranceList = ["0.300000", "0.300000"]
+        project.writeEntry("Digitizing", "/IntersectionSnapping", Qt.Checked)
+        project.writeEntry("Digitizing", "/LayerSnappingList", layerSnappingList)
+        project.writeEntry("Digitizing", "/LayerSnappingEnabledList", layerSnappingEnabledList)
+        project.writeEntry("Digitizing", "/LayerSnappingToleranceUnitList", layerSnappingToleranceUnitList)
+        project.writeEntry("Digitizing", "/LayerSnapToList", layerSnapToList)
+        project.writeEntry("Digitizing", "/LayerSnappingToleranceList", layerSnappingToleranceList)
+
+    def emitGeometryUpdate(self):
+        QgsLogger.debug("emitGeometryUpdate entered",2 )
+        layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
+        if len(layers) > 0:
+            layer = layers[0]
+            features = layer.selectedFeatures()
+            if len(features) == 0 or len(features) > 1:
+                message = self.tr(u"Nessuno o troppi [%d] record selezionati su %s" % (len(features), self.LAYER_GEOM_ORIG) )
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+                return
+            # get updated geometry and update currentSafety
+            self.currentSafety["the_geom"] = features[0].geometry().exportToWkt()
+            
+        self.updateArchivedCurrentSafety()
+
+    def manageEditingSignals(self):
+        layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
+        if len(layers) > 0:
+            layers[0].editingStopped.connect(self.emitGeometryUpdate)
 
     def loadLayerGeomOrig(self):
         # skip if already present
@@ -692,16 +755,17 @@ class GeosismaWindow(QDockWidget):
         
         self.selectRequestDone.emit()
     
-    def zoomToExtent(self, boundingBox):
-        # bbox arrive in DB coordinate 32632 => convert in default view coordinate 3003
-        defaultCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
-        geoDbCrs = QgsCoordinateReferenceSystem(self.GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
-        xform = QgsCoordinateTransform(geoDbCrs, defaultCrs)
+    def zoomToExtent(self, boundingBox, transform=True):
         geom = QgsGeometry.fromWkt(boundingBox.asWktPolygon())
-        if geom.transform(xform):
-            message = self.tr("Errore nella conversione del bbox del DB a quello del progetto")
-            self.showMessage(message, QgsMessageLog.WARNING)
-            return
+        if transform:
+            # bbox arrive in DB coordinate 32632 => convert in default view coordinate 3003
+            defaultCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
+            geoDbCrs = QgsCoordinateReferenceSystem(self.GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
+            xform = QgsCoordinateTransform(geoDbCrs, defaultCrs)
+            if geom.transform(xform):
+                message = self.tr("Errore nella conversione del bbox del DB a quello del progetto")
+                self.showMessage(message, QgsMessageLog.WARNING)
+                return
         self.iface.mapCanvas().setExtent(geom.boundingBox())
         self.iface.mapCanvas().refresh()
     
@@ -738,7 +802,7 @@ class GeosismaWindow(QDockWidget):
         from DlgSelectSafety import DlgSelectSafety
         dlg = DlgSelectSafety(currentSafetyId=local_id, gid=gid)
 
-        # delete becouse no results to show
+        # delete because no results to show
         if len(dlg.records) == 0 :
             if gid:
                 message = u"Nessuna scheda associata alla particella"
@@ -997,7 +1061,7 @@ class GeosismaWindow(QDockWidget):
         msgBox = QMessageBox()
         msgBox.setIcon(QMessageBox.Warning)
         msgBox.setText(self.tr("Sicuro di cancellare la scheda %s ?" % self.currentSafety["number"]))
-        msgBox.setInformativeText(self.tr("L'operazione cancellera' definitivamente la scheda dal database"))
+        msgBox.setInformativeText(self.tr(u"L'operazione cancellerà definitivamente la scheda dal database"))
         msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
         msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
         msgBox.setButtonText(QMessageBox.Cancel, self.tr("No"))
@@ -1033,14 +1097,24 @@ class GeosismaWindow(QDockWidget):
         if self.currentSafety == None:
             self.btnDeleteCurrentSafety.setEnabled(False)
             self.btnModifyCurrentSafety.setEnabled(False)
-            self.btnManageAttachments.setEnabled(False)
             self.btnSelectSafety.setText("Seleziona Scheda [%s]" % "--")
+            
+            self.btnLinkSafetyGeometry.setEnabled(False)
+            #self.btnListLinkedSafeties.setEnabled(False)
+            self.btnNewSafetyGeometry.setEnabled(False)
+            self.btnZoomToSafety.setEnabled(False)
+            self.btnManageAttachments.setEnabled(False)
         else:
             self.btnDeleteCurrentSafety.setEnabled(True)
             self.btnModifyCurrentSafety.setEnabled(True)
-            self.btnManageAttachments.setEnabled(True)
             self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["local_id"])
         
+            self.btnLinkSafetyGeometry.setEnabled(True)
+            #self.btnListLinkedSafeties.setEnabled(True)
+            self.btnNewSafetyGeometry.setEnabled(True)
+            self.btnZoomToSafety.setEnabled(True)
+            self.btnManageAttachments.setEnabled(True)
+
         if self.currentRequest == None:
             self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % "--")
         else:
@@ -1052,6 +1126,77 @@ class GeosismaWindow(QDockWidget):
             QMessageBox.warning( cls.instance(), "Azione non permessa", u"L'azione \"%s\" è ammessa solo dalla scala 1:%d" % (actionName, maxScale) )
             return False
         return True
+
+    def zoomToSafety(self):
+        QgsLogger.debug("zoomToSafety entered",2 )
+        if self.currentSafety == None:
+            return
+        
+        if self.currentSafety["the_geom"] == None or self.currentSafety["the_geom"] == "":
+            QMessageBox.warning( self, "Poligono inesistente", u"Nessun poligono associato alla scheda n.%s" % self.currentSafety["number"])
+            return
+        
+        # get bbox of the current safety geometry
+        geom = QgsGeometry.fromWkt(self.currentSafety["the_geom"])
+        bbox = geom.boundingBox()
+        
+        # zoom to bbox
+        self.zoomToExtent(bbox, transform=False)
+        
+    def selectCurrentSafetyFeature(self):
+        QgsLogger.debug("selectCurrentSafetyFeature entered",2 )
+        if self.currentSafety == None:
+            return
+        
+        layerModified = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
+        if layerModified:
+            layerModified.removeSelection()
+            layerModified.select(self.currentSafety["local_id"])
+
+    def createNewSafetyGeometry(self, polygon=None):
+        QgsLogger.debug("createNewSafetyGeometry entered",2 )
+        if self.currentSafety == None:
+            QMessageBox.warning( self, "Nessuna scheda corrente", u"Creare o selezionare almeno una scheda su cui creare/sostituire il poligono")
+            self.btnNewSafetyGeometry.setChecked(False)
+            return
+        
+        # if exist polygon and is the first time activated the funzion (polygon=None)
+        if (self.currentSafety["the_geom"] != None and
+            self.currentSafety["the_geom"] != "" and
+            polygon == None):
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setText(self.tr(u"Esiste già un poligono associato alla scheda n.%s ?" % self.currentSafety["number"]) )
+            msgBox.setInformativeText(self.tr("Vuoi sostituirlo con un nuovo poligono?"))
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
+            msgBox.setButtonText(QMessageBox.Cancel, self.tr("No"))
+            ret = msgBox.exec_()
+            if ret == QMessageBox.Cancel:
+                self.btnNewSafetyGeometry.setChecked(False)
+                return
+
+        action = self.btnNewSafetyGeometry.toolTip()
+
+        if not self.checkActionScale( action, self.SCALE_MODIFY ):
+            self.polygonDrawer.startCapture()
+            self.polygonDrawer.stopCapture()
+            self.btnNewSafetyGeometry.setChecked(False)
+            return
+        if polygon == None:
+            return self.polygonDrawer.startCapture()
+        
+        # try to convert to multypolygon to match DB constraint
+        if not polygon.isMultipart():
+            if not polygon.convertToMultiType(): 
+                QMessageBox.critical( self, "RT Geosisma", self.tr("Non posso convertire la geometria disegnata in Multipolygon") )
+                self.btnNewSafetyGeometry.setChecked(False)
+                return
+            
+        self.currentSafety["the_geom"] = polygon.exportToWkt()
+        self.btnNewSafetyGeometry.setChecked(False)
+
+        self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
 
     def linkSafetyGeometry(self, point=None, button=None):
         if self.currentSafety == None:
@@ -1147,6 +1292,57 @@ class GeosismaWindow(QDockWidget):
         else:
             self.lookForSafetiesEmitter.startCapture()
 
+    def cleanUnlinkedSafeties(self):
+        QgsLogger.debug("cleanUnlinkedSafeties entered",2 )
+        try:
+            from ArchiveManager import ArchiveManager # import here to avoid circular import
+            # get list of unlinked safeties
+            safeties = ArchiveManager.instance().loadUnlikedSafeties()
+            if len(safeties) == 0:
+                QMessageBox.warning( self, "Nessuna scheda da cancellare", u"Non ci sono schede non associate a particelle")
+                return
+            
+            listOfSafeties = [x["number"] for x in safeties]
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setText(self.tr(u"Sicuro di cancellare le schede %s ?" % str(listOfSafeties) ) )
+            msgBox.setInformativeText(self.tr(u"L'operazione cancellerà definitivamente le schede elencate dal database"))
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
+            msgBox.setButtonText(QMessageBox.Cancel, self.tr("No"))
+            ret = msgBox.exec_()
+            if ret == QMessageBox.Cancel:
+                return
+    
+            resetCurrentSafety = False
+            for safety in safeties:
+                QgsLogger.debug(self.tr("Cancella safety %s" % json.dumps( self.currentSafety )) )
+                ArchiveManager.instance().deleteSafety(safety["local_id"])
+                ArchiveManager.instance().commit()
+                ArchiveManager.instance().deleteAttachmentsBySasfety(safety["local_id"])
+                ArchiveManager.instance().commit()
+                
+                if self.currentSafety and (safety["local_id"] == self.currentSafety["local_id"]):
+                    resetCurrentSafety = True
+            
+            if resetCurrentSafety:
+                # reset current safety
+                self.currentSafety = None
+                self.updatedCurrentSafety.emit()
+            
+        except Exception:
+            traceback.print_exc()
+            ArchiveManager.instance().close() # to avoid locking
+            traceback.print_exc()
+            message = self.tr(u"Fallita la cancellazione delle schede non associate")
+            self.showMessage(message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        finally:
+            ArchiveManager.instance().close() # to avoid locking
+
+        QgsLogger.debug("cleanUnlinkedSafeties exit",2 )
+        
+
     def updateCurrentSafetyWithCatasto(self, geoDbCrs, feature, point):
         '''
         Method update CurrentSafety with element related to current original feature (from catasto)
@@ -1165,8 +1361,12 @@ class GeosismaWindow(QDockWidget):
         # check if there is already a geometry in the current safety
         # => ask if you want to add a new particella or reset if it 
         # refer to the same geometry
+        associateMode = False
+        substituteMode = False
+        unifyMode = False
+        
         if (tempSafety["the_geom"] == None) or (tempSafety["the_geom"] == ""):
-            pass
+            substituteMode = True
         else:
             # check if safety geometry is referred to the same feature
             gidToFind = "_%s_" % featureDic["gid"]
@@ -1176,20 +1376,27 @@ class GeosismaWindow(QDockWidget):
                 msgBox = QMessageBox()
                 msgBox.setIcon(QMessageBox.Warning)
                 msgBox.setText("RT Geosisma")
-                msgBox.setInformativeText(self.tr(u"La scheda ha già una particella associata\nCosa vuoi fare?"))
+                msgBox.setInformativeText(self.tr(u"La scheda ha già una geometria associata\nCosa vuoi fare?"))
                 msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel | QMessageBox.Open)
-                msgBox.setButtonText(QMessageBox.Yes, self.tr("Sostituire"))
-                msgBox.setButtonText(QMessageBox.Cancel, self.tr("Nulla"))
+                msgBox.setButtonText(QMessageBox.Yes, self.tr("Associare"))
+                msgBox.setButtonText(QMessageBox.Reset, self.tr("Sostituire"))
                 msgBox.setButtonText(QMessageBox.Open, self.tr("Unire"))
+                msgBox.setButtonText(QMessageBox.Cancel, self.tr("Nulla"))
                 ret = msgBox.exec_()
                 # if ignore do nothing
                 if ret == QMessageBox.Cancel:
                     return
                 # if unify then do nothing... the feature will be added to the current values of geom
                 elif ret == QMessageBox.Open:
+                    unifyMode = True
+                    pass
+                # only associate particella to the current geometry without modifing it
+                elif ret == QMessageBox.Yes:
+                    associateMode = True
                     pass
                 # if substitute then reset current safety geometry and pass... next steps will add selected geometry
-                elif ret == QMessageBox.Yes:
+                elif ret == QMessageBox.Reset:
+                    substituteMode = True
                     tempSafety["gid_catasto"] = ""
                     tempSafety["the_geom"] = None
             else:
@@ -1208,6 +1415,7 @@ class GeosismaWindow(QDockWidget):
                     return self.nuovaPointEmitter.startCapture()
                 tempSafety["gid_catasto"] = ""
                 tempSafety["the_geom"] = None
+                substituteMode = True
 
         # convert point come from default SRID to GEODB srid to allow geos search in that db
         # point is a pick from the current canvas that is in self.DEFAULT_SRID
@@ -1264,10 +1472,11 @@ class GeosismaWindow(QDockWidget):
             QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione della particella al CRS corrente") )
             return
         
-        # fuse current safety polygon with the new feature's one
-        if (tempSafety["the_geom"] == None) or (tempSafety["the_geom"] == ""):
+        # manage geometry
+        if substituteMode:
             tempSafety["the_geom"] = featureGeometry.exportToWkt()
-        else:
+        
+        if unifyMode:
             # create geometry from current safety geometry
             featureMultiPolygon = featureGeometry.asMultiPolygon()
             if len(featureMultiPolygon) == 0:
@@ -1296,10 +1505,14 @@ class GeosismaWindow(QDockWidget):
             # update geometry in the safety
             tempSafety["the_geom"] = safetyGeometry.exportToWkt()
         
+        if associateMode:
+            pass
+        
         # record reference to the related cataasto polygons
-        if (tempSafety["gid_catasto"] == None) or (tempSafety["gid_catasto"] == ""):
+        if substituteMode:
             tempSafety["gid_catasto"] = "_%d_" % featureDic["gid"]
-        else:
+        
+        if associateMode or unifyMode:
             tempSafety["gid_catasto"] = "%s_%d_" % (tempSafety["gid_catasto"], featureDic["gid"])
 
         # update safety
