@@ -91,13 +91,19 @@ class MapTool(QObject):
 
 			self.rubberBand = qgis.gui.QgsRubberBand( self.canvas, self.isPolygon )
 			self.rubberBand.setColor( Qt.red )
+			self.rubberBand.setBrushStyle(Qt.DiagCrossPattern)
 			self.rubberBand.setWidth( 1 )
 
+			# imposta lo snap a snap to vertex with tollerance 0.9 map units
+			customSnapOptions = { 'mode' : "to vertex", 'tolerance' : 0.3, 'unit' : 0 }
+			self.oldSnapOptions = self.customizeSnapping( customSnapOptions )
 			self.snapper = qgis.gui.QgsMapCanvasSnapper( self.canvas )
 
 			self.isEmittingPoints = False
 
 		def __del__(self):
+			if self.oldSnapOptions:
+				self.customizeSnapping( self.oldSnapOptions )
 			del self.rubberBand
 			del self.snapper
 			self.deleteLater()
@@ -106,6 +112,17 @@ class MapTool(QObject):
 			self.isEmittingPoints = False
 			self.rubberBand.reset( self.isPolygon )
 
+		def customizeSnapping(self, option):
+			oldSnap = {}
+			settings = QSettings()
+			oldSnap['mode'] = settings.value( "/Qgis/digitizing/default_snap_mode", "to vertex", type=str)
+			oldSnap['tolerance'] = settings.value( "/Qgis/digitizing/default_snapping_tolerance", 0, type=float)
+			oldSnap['unit'] = settings.value( "/Qgis/digitizing/default_snapping_tolerance_unit", 1, type=int )
+			settings.setValue( "/Qgis/digitizing/default_snap_mode", option['mode'] )
+			settings.setValue( "/Qgis/digitizing/default_snapping_tolerance", option['tolerance'] )
+			settings.setValue( "/Qgis/digitizing/default_snapping_tolerance_unit", option['unit'] )
+			return oldSnap
+	
 		def canvasPressEvent(self, e):
 			if e.button() == Qt.RightButton:
 				self.isEmittingPoints = False
@@ -220,3 +237,23 @@ class FeatureFinder(MapTool):
 
 		QApplication.restoreOverrideCursor()
 		return ret
+
+
+class PolygonDrawer(MapTool):
+
+	class PolygonDrawer(MapTool.Drawer):
+		def __init__(self, canvas):
+			MapTool.Drawer.__init__(self, canvas, QGis.Polygon)
+
+	def __init__(self, canvas=None):
+		MapTool.__init__(self, self.PolygonDrawer, canvas)
+
+
+class LineDrawer(MapTool):
+
+	class LineDrawer(MapTool.Drawer):
+		def __init__(self, canvas):
+			MapTool.Drawer.__init__(self, canvas, QGis.Line)
+
+	def __init__(self, canvas=None):
+		MapTool.__init__(self, self.LineDrawer, canvas)
