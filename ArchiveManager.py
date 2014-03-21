@@ -616,6 +616,41 @@ class ArchiveManager(QObject):
         QgsLogger.debug(self.tr("Rimozione attachments con la query: %s" % sqlquery), 1 )
         self.cursor.execute(sqlquery)
 
+    def loadUnlikedSafeties(self):
+        '''
+        Method to a load safeties without linked Particella
+        @return safeties: list of dict of the retrieved records
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "SELECT *,ST_AsText(the_geom) FROM missions_safety WHERE gid_catasto == '' OR gid_catasto == 'None' OR gid_catasto IS NULL "
+        sqlquery += "ORDER BY id;"
+        
+        QgsLogger.debug(self.tr("Recupera le safety non associate a particelle"), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            columnNames = [descr[0] for descr in self.cursor.description]
+            # get index of the_geom and ST_AsText(the_geom)
+            geomIndex = columnNames.index("the_geom")
+            textGeomIndex = columnNames.index("ST_AsText(the_geom)")
+            
+            # modify column to erase binary the_geom and substitude with renamed ST_AsText(st_geom)
+            columnNames[textGeomIndex] = "the_geom" 
+            columnNames.pop(geomIndex)
+            
+            safeties = []
+            for values in self.cursor:
+                listValues = [v for v in values]
+                listValues.pop(geomIndex)
+                safeties.append( dict(zip(columnNames, listValues)) )
+            
+            return safeties
+            
+        except Exception as ex:
+            raise(ex)
+
     def loadSafetiesByCatasto(self, gid_catasto):
         '''
         Method to a load safeties from missions_safety related to catasto geometry
