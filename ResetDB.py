@@ -56,7 +56,10 @@ class ResetDB(DlgWaiting):
             self.resetDone.emit(True)
             
         except Exception as e:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.resetDone.emit(False)
             self.resetMessage.emit(e.message, QgsMessageLog.CRITICAL)
             raise e

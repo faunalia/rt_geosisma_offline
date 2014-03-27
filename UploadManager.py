@@ -234,7 +234,10 @@ class UploadManager(DlgWaiting):
                 self.done.emit(True)
             
         except Exception as e:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.done.emit(False)
             self.message.emit(e.message, QgsMessageLog.CRITICAL)
             QApplication.restoreOverrideCursor()
@@ -482,7 +485,10 @@ class UploadManager(DlgWaiting):
         try:
             jsonRequest = loads(raw.data())
         except Exception:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.done.emit(False)
             return
         QgsLogger.debug("replyDownloadSafetyFinished received request %s" % json.dumps(jsonRequest),2 )
@@ -516,7 +522,10 @@ class UploadManager(DlgWaiting):
         try:
             jsonRequest = loads(raw.data())
         except Exception:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.done.emit(False)
             return
         QgsLogger.debug("replyDownloadSopralluoghiFinished received request %s" % json.dumps(jsonRequest),2 )

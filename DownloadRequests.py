@@ -103,7 +103,10 @@ class DownloadRequests(DlgWaiting):
             self.done.emit(True)
             
         except Exception as e:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.done.emit(False)
             self.message.emit(e.message, QgsMessageLog.CRITICAL)
             raise e
@@ -192,7 +195,10 @@ class DownloadRequests(DlgWaiting):
         try:
             self.jsonRequests = loads(raw.data())
         except Exception as e:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.done.emit(False)
             return
         
