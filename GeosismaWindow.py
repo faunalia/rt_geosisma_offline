@@ -256,12 +256,12 @@ class GeosismaWindow(QDockWidget):
         self.btnSelectSafety.setToolTip( text )
         gridLayout.addWidget(self.btnSelectSafety, 1, 0, 1, 3)
 
-        text = u"Seleziona Sopralluogo"
+        text = u"Seleziona Richiesta"
         self.btnSelectRequest = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
         self.btnSelectRequest.setToolTip( text )
         gridLayout.addWidget(self.btnSelectRequest, 2, 0, 1, 3)
 
-        text = u"Download Sopralluoghi"
+        text = u"Download Richieste"
         self.btnDownloadRequests = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
         self.btnDownloadRequests.setToolTip( text )
         gridLayout.addWidget(self.btnDownloadRequests, 3, 0, 1, 2)
@@ -1126,9 +1126,9 @@ class GeosismaWindow(QDockWidget):
             self.btnManageAttachments.setEnabled(True)
 
         if self.currentRequest == None:
-            self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % "--")
+            self.btnSelectRequest.setText("Seleziona Richiesta [%s]" % "--")
         else:
-            self.btnSelectRequest.setText("Seleziona Sopralluogo [%s]" % self.currentRequest["id"])
+            self.btnSelectRequest.setText("Seleziona Richiesta [%s]" % self.currentRequest["id"])
         
     @classmethod
     def checkActionScale(cls, actionName, maxScale):

@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Riepilogo Sopralluoghi</string>
+   <string>Riepilogo Richieste</string>
   </property>
   <property name="modal">
    <bool>true</bool>
