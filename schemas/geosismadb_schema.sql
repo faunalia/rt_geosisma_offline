@@ -1,3 +1,5 @@
+BEGIN;
+
 SELECT InitSpatialMetadata();
 
 CREATE TABLE "missions_attachment" (
@@ -57,3 +59,5 @@ CREATE INDEX "missions_request_fcf8ac47" ON "missions_request" ("team_id");
 CREATE INDEX "missions_safety_792812e8" ON "missions_safety" ("request_id");
 CREATE INDEX "missions_safety_fcf8ac47" ON "missions_safety" ("team_id");
 CREATE INDEX "organization_team_e9b82f95" ON "organization_team" ("event_id");
+
+COMMIT;
