@@ -47,7 +47,10 @@ class DownloadTeams(DlgWaiting):
                 time.sleep(0.1)
             
         except Exception as e:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.done.emit(False)
             self.message.emit(e.message, QgsMessageLog.CRITICAL)
             raise e
@@ -144,7 +147,10 @@ class DownloadTeams(DlgWaiting):
         try:
             json = loads(raw.data())
         except Exception as e:
-            traceback.print_exc()
+            try:
+                traceback.print_exc()
+            except:
+                pass
             self.done.emit(False)
             return
         # check if return more than 20 elements (e.g. for the super user)

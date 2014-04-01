@@ -661,14 +661,14 @@ class GeosismaWindow(QDockWidget):
 
             self.archiveTeamsDone.emit(success)
             
-        except Exception:
+        except Exception as ex:
             try:
                 traceback.print_exc()
             except:
                 pass
             ArchiveManager.instance().close() # to avoid locking
             message = self.tr("Fallito l'archiviazione dei team")
-            self.showMessage(message, QgsMessageLog.CRITICAL)
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
             ArchiveManager.instance().close() # to avoid locking
@@ -734,14 +734,14 @@ class GeosismaWindow(QDockWidget):
                     ArchiveManager.instance().commit()
 
             
-        except Exception:
+        except Exception as ex:
             try:
                 traceback.print_exc()
             except:
                 pass
             ArchiveManager.instance().close() # to avoid locking
             message = self.tr("Fallito l'archiviazione delle richieste di sopralluogo")
-            self.showMessage(message, QgsMessageLog.CRITICAL)
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
             ArchiveManager.instance().close() # to avoid locking
@@ -959,14 +959,14 @@ class GeosismaWindow(QDockWidget):
                     message = self.tr("Inserita nuova scheda con id %s" % safety["local_id"])
                     self.showMessage(message, QgsMessageLog.INFO)
             
-        except Exception:
+        except Exception as ex:
             try:
                 traceback.print_exc()
             except:
                 pass
             ArchiveManager.instance().close() # to avoid locking
             message = self.tr("Fallito l'update della scheda di sopralluogo")
-            self.showMessage(message, QgsMessageLog.CRITICAL)
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             safety = None
         finally:
@@ -992,14 +992,14 @@ class GeosismaWindow(QDockWidget):
             ArchiveManager.instance().archiveSafety(self.currentSafety["request_id"], self.currentSafety["team_id"], self.currentSafety)
             ArchiveManager.instance().commit()
             
-        except Exception:
+        except Exception as ex:
             try:
                 traceback.print_exc()
             except:
                 pass
             ArchiveManager.instance().close() # to avoid locking
             message = self.tr("Fallito l'archiviazione della scheda di sopralluogo")
-            self.showMessage(message, QgsMessageLog.CRITICAL)
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
             ArchiveManager.instance().close() # to avoid locking
@@ -1089,14 +1089,14 @@ class GeosismaWindow(QDockWidget):
             self.currentSafety = None
             self.updatedCurrentSafety.emit()
             
-        except Exception:
+        except Exception as ex:
             try:
                 traceback.print_exc()
             except:
                 pass
             ArchiveManager.instance().close() # to avoid locking
             message = self.tr("Fallita la cancellazione della scheda %s" % self.currentSafety["number"])
-            self.showMessage(message, QgsMessageLog.CRITICAL)
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
             ArchiveManager.instance().close() # to avoid locking
@@ -1340,14 +1340,14 @@ class GeosismaWindow(QDockWidget):
                 self.currentSafety = None
                 self.updatedCurrentSafety.emit()
             
-        except Exception:
+        except Exception as ex:
             try:
                 traceback.print_exc()
             except:
                 pass
             ArchiveManager.instance().close() # to avoid locking
             message = self.tr(u"Fallita la cancellazione delle schede non associate")
-            self.showMessage(message, QgsMessageLog.CRITICAL)
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
             ArchiveManager.instance().close() # to avoid locking
