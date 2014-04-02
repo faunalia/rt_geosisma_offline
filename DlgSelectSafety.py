@@ -86,9 +86,9 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		Hide = True
 		Show = False
 		columns = OrderedDict()
-		columns['local_id'] = ( self.tr(u'Id locale'), Show )
-		columns['id'] = ( self.tr(u'Id remoto'), Show )
+		columns['local_id'] = ( self.tr(u'Id locale'), Hide )
 		columns['number'] = ( self.tr(u'Numero'), Show )
+		columns['id'] = ( self.tr(u'Id remoto'), Show )
 		columns['request_id'] = ( self.tr(u'Richiesta Sopralluogo'), Show )
 		columns['name'] = ( self.tr(u'Team'), Show )
 		columns['created'] = ( self.tr(u'Creata'), Show )
@@ -96,7 +96,7 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		columns['safety'] = ( self.tr(u'Scheda'), Hide )
 		columns['gid_catasto'] = ( self.tr(u'Id catasto'), Show )
 		columns['the_geom'] = ( self.tr(u'the_geom'), Hide )
-
+		
 		# set table size
 		self.safetyTableWidget.clear()
 		self.safetyTableWidget.setRowCount( len(self.records) )
@@ -111,7 +111,12 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		for row, record in enumerate(self.records):
 			for column, columnKey in enumerate(columns.keys()):
 				if columnKey != "name":
-					item = QTableWidgetItem( str(record[columnKey]) )
+					item = QTableWidgetItem()
+					try:
+						value = int(record[columnKey])
+					except:
+						value = str(record[columnKey])
+					item.setData(Qt.DisplayRole, value)
 				else:
 					# look for name in teams
 					for team in self.teams:

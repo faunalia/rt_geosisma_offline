@@ -92,7 +92,12 @@ class DlgSelectRequest(QDialog, Ui_Dialog):
 		self.requestsTableWidget.setHorizontalHeaderLabels( [val[0] for val in columns.values()] )
 		for row, record in enumerate(self.records):
 			for column, columnKey in enumerate(columns.keys()):
-				item = QTableWidgetItem( str(record[columnKey]) )
+				item = QTableWidgetItem()
+				try:
+					value = int(record[columnKey])
+				except:
+					value = str(record[columnKey])
+				item.setData(Qt.DisplayRole, value)
 				
 				# add record in the first "id" colum
 				if columnKey == "id":
