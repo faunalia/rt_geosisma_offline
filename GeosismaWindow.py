@@ -25,6 +25,7 @@ import os
 import json # used to dump dicts in strings
 import ast # used to convert string indict because json.loads could fail
 import inspect
+import copy
 from datetime import date
 from psycopg2.extensions import adapt
 
@@ -1117,7 +1118,7 @@ class GeosismaWindow(QDockWidget):
         else:
             self.btnDeleteCurrentSafety.setEnabled(True)
             self.btnModifyCurrentSafety.setEnabled(True)
-            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["local_id"])
+            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["number"])
         
             self.btnLinkSafetyGeometry.setEnabled(True)
             #self.btnListLinkedSafeties.setEnabled(True)
@@ -1221,22 +1222,57 @@ class GeosismaWindow(QDockWidget):
             self.btnLinkSafetyGeometry.setChecked(False)
             return
 
+        layerModif = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
         layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
-        if layerOrig == None:
+        if layerOrig == None and layerModif == None:
             self.btnLinkSafetyGeometry.setChecked(False)
             return
 
-        feat = self.nuovaPointEmitter.findAtPoint(layerOrig, point)
-        if feat != None:
-            from ArchiveManager import ArchiveManager
-
-            # already get => unselect if
-            gidIndex = feat.fieldNameIndex("gid")
-            gid = feat.attributes()[gidIndex]
-            layerOrig.deselect(gid)
+        featModif = self.nuovaPointEmitter.findAtPoint(layerModif, point) if layerOrig != None else None
+        featOrig = self.nuovaPointEmitter.findAtPoint(layerOrig, point) if layerOrig != None else None
+        
+        # if no features found... continue campturing mouse
+        if featModif == None and featOrig == None:
+            return self.nuovaPointEmitter.startCapture()
             
-            #if not self.checkActionSpatialFromFeature( action, feat, True ):
-            #    return self.nuovaPointEmitter.startCapture()
+        
+        # check whato to do
+        getFromCatasto = False
+        getFromSafety = False
+        if featOrig != None and featModif == None:
+            getFromCatasto = True
+        if featOrig == None and featModif != None:
+            getFromSafety = True
+        if featOrig != None and featModif != None:
+            # then ask
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setText("RT Geosisma")
+            msgBox.setInformativeText(self.tr(u"Presenti geometrie Schede e Catasto su questo punto. Cosa vuoi fare?"))
+            msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel | QMessageBox.Open)
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Copio dal Catasto"))
+            msgBox.setButtonText(QMessageBox.Open, self.tr("Copio da Geometria schede"))
+            msgBox.setButtonText(QMessageBox.Cancel, self.tr("Nulla, seleziono un'altra geometria"))
+            ret = msgBox.exec_()
+            if ret == QMessageBox.Cancel:
+                # continue on another geometry
+                return self.nuovaPointEmitter.startCapture()
+            if ret == QMessageBox.Yes:
+                getFromCatasto = True
+            if ret == QMessageBox.Open:
+                getFromSafety = True
+        
+        # delesect records
+        if featOrig:
+            gid = featOrig["gid"]
+            layerOrig.deselect(gid)
+        if featModif:
+            local_id = featModif["local_id"]
+            layerModif.deselect(local_id)
+        
+        # copy from Particella (nominal case)
+        if getFromCatasto:
+            from ArchiveManager import ArchiveManager
 
             # controlla se tale geometria ha qualche scheda associata
             features = ArchiveManager.instance().loadSafetiesByCatasto(gid)
@@ -1255,7 +1291,7 @@ class GeosismaWindow(QDockWidget):
                 msgBox.setInformativeText(self.tr(u"Già presenti le schede %s su questa particella. Vuoi continuare?" % str(safety_numbers) ))
                 msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
                 msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
-                msgBox.setButtonText(QMessageBox.Cancel, self.tr("No: seleziono un'altra particella"))
+                msgBox.setButtonText(QMessageBox.Cancel, self.tr("No: seleziono un'altra geometria"))
                 ret = msgBox.exec_()
                 if ret == QMessageBox.Cancel:
                     # continue on another geometry
@@ -1265,15 +1301,29 @@ class GeosismaWindow(QDockWidget):
             # associa il poligono alla safety
             crs = layerOrig.dataProvider().crs()
             
-            self.updateCurrentSafetyWithCatasto(crs, feat, point)
+            self.updateCurrentSafetyWithCatasto(crs, featOrig, point)
             
-            self.canvas.refresh()
-            QApplication.restoreOverrideCursor()
-            self.btnLinkSafetyGeometry.setChecked(False)
+        # copy from safety geometry (enhanced linking)
+        if getFromSafety:
+            # check if feature already belongs to current safety
+            if featModif["local_id"] == self.currentSafety["local_id"]:
+                msgBox = QMessageBox()
+                msgBox.setIcon(QMessageBox.Warning)
+                msgBox.setText("RT Geosisma")
+                msgBox.setInformativeText(self.tr(u"Il poligono già appartiene alla scheda corrente. Seleziona un'altra geometria!"))
+                msgBox.setStandardButtons(QMessageBox.Ok)
+                msgBox.exec_()
+                return self.nuovaPointEmitter.startCapture()
             
-        else:
-            self.nuovaPointEmitter.startCapture()
-    
+            QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
+            # associa il poligono alla safety
+            self.updateCurrentSafetyWithSafetyPolygon(featModif, point)
+            
+        self.canvas.refresh()
+        QApplication.restoreOverrideCursor()
+        self.btnLinkSafetyGeometry.setChecked(False)
+
+
     def listLinkedSafeties(self, point=None, button=None):
         action = self.btnListLinkedSafeties.toolTip()
         if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
@@ -1291,8 +1341,7 @@ class GeosismaWindow(QDockWidget):
         feat = self.lookForSafetiesEmitter.findAtPoint(layerOrig, point)
         if feat != None:
             # already get => unselect if
-            gidIndex = feat.fieldNameIndex("gid")
-            gid = feat.attributes()[gidIndex]
+            gid = feat["gid"]
             layerOrig.deselect(gid)
             
             # show list of safeties related to gid
@@ -1355,11 +1404,121 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug("cleanUnlinkedSafeties exit",2 )
         
 
+    def updateCurrentSafetyWithSafetyPolygon(self, feature, point):
+        '''
+        Method update CurrentSafety with element get from Safety Geometries
+        @param feature: QgsFeature of the original safety
+        @param point: QgsPoint where user cliked
+        @signal currentSafetyModified
+        '''
+        if self.currentSafety == None:
+            return
+
+        fieldNames = [field.name() for field in feature.fields()]
+        featureDic = dict(zip(fieldNames, feature.attributes()))
+        
+        tempSafety = copy.copy( self.currentSafety )
+        
+        # check if there is already a geometry in the current safety
+        # => ask if you want to add a new particella or reset if it 
+        # refer to the same geometry
+        substituteMode = False
+        unifyMode = False
+        
+        if (tempSafety["the_geom"] == None) or (tempSafety["the_geom"] == ""):
+            substituteMode = True
+            tempSafety["gid_catasto"] = ""
+            tempSafety["the_geom"] = None
+        else:
+            # ask what to do in case ther is already a geometryu
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Warning)
+            msgBox.setText("RT Geosisma")
+            msgBox.setInformativeText(self.tr(u"La scheda ha già una geometria associata\nCosa vuoi fare?"))
+            msgBox.setStandardButtons(QMessageBox.Reset | QMessageBox.Cancel | QMessageBox.Yes)
+            msgBox.setButtonText(QMessageBox.Reset, self.tr("Sostituire"))
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Unire"))
+            msgBox.setButtonText(QMessageBox.Cancel, self.tr("Nulla"))
+            ret = msgBox.exec_()
+            # if ignore do nothing
+            if ret == QMessageBox.Cancel:
+                return
+            # if unify then do nothing... the feature will be added to the current values of geom
+            elif ret == QMessageBox.Yes:
+                unifyMode = True
+                pass
+            # if substitute then reset current safety geometry and pass... next steps will add selected geometry
+            elif ret == QMessageBox.Reset:
+                substituteMode = True
+                tempSafety["gid_catasto"] = ""
+                tempSafety["the_geom"] = None
+        
+        # copy origin to current
+        tempSafety["gid_catasto"] = featureDic["gid_catasto"]
+        tempSafety["safety"] = featureDic["safety"]
+        
+        # get current Part that intersect point in the origin multipolygon
+        sourceGeom = feature.geometry()
+        sourceMultyPartGeom = sourceGeom.asMultiPolygon()
+        updatedSourceGeom = QgsGeometry()
+        newDestinationGeom = QgsGeometry()
+        for part in sourceMultyPartGeom:
+            partGeom = QgsGeometry.fromPolygon(part)
+            if (partGeom.contains(point)):
+                newDestinationGeom.addPart(part[0], QGis.Polygon)
+            else:
+                updatedSourceGeom.addPart(part[0], QGis.Polygon)
+        
+        # manage geometry
+        if substituteMode:
+            # get safety geometry converting to MultyPolygon (that is a DB contraint)
+            # this is necessary because  QgsGeometry.fromWkt tries to convert to simple POLYGON if
+            # actuals safety geometry has only one polygon.
+            newDestinationGeom = QgsGeometry.fromWkt( newDestinationGeom.exportToWkt() )
+            if not newDestinationGeom.isMultipart():
+                if not newDestinationGeom.convertToMultiType(): 
+                    QMessageBox.critical( self, "RT Geosisma", self.tr("Non posso convertire la geometria della scheda in Multipolygon") )
+                    return
+            
+            tempSafety["the_geom"] = newDestinationGeom.exportToWkt()
+        
+        if unifyMode:
+            # get safety geometry converting to MultyPolygon (that is a DB contraint)
+            # this is necessary because  QgsGeometry.fromWkt tries to convert to simple POLYGON if
+            # actuals safety geometry has only one polygon.
+            safetyGeometry = QgsGeometry.fromWkt( tempSafety["the_geom"] )
+            if not safetyGeometry.isMultipart():
+                if not safetyGeometry.convertToMultiType(): 
+                    QMessageBox.critical( self, "RT Geosisma", self.tr("Non posso convertire la geometria della scheda in Multipolygon") )
+                    return
+
+            # add polygon in the current safety multypolygon
+            safetyGeometry = safetyGeometry.combine(newDestinationGeom)
+            
+            # again convert to Multypolygon beacuse QgsGeometry.combine create one Polygon if
+            # the two geometry are adiacent and the result is a unique Polygon
+            if not safetyGeometry.isMultipart():
+                if not safetyGeometry.convertToMultiType(): 
+                    QMessageBox.critical( self, "RT Geosisma", self.tr("Non posso convertire la geometria della scheda in Multipolygon") )
+                    return
+
+            # update geometry in the safety
+            tempSafety["the_geom"] = safetyGeometry.exportToWkt()
+        
+        # now update origin safety with the new Multypoligon without the part that has been moved to current safety
+        layerModif = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
+        layerModif.dataProvider().changeGeometryValues( { featureDic["local_id"]: updatedSourceGeom } )
+        
+        # at the end update currentSafety and emit signal
+        self.currentSafety = tempSafety        
+        self.updatedCurrentSafety.emit()
+        
     def updateCurrentSafetyWithCatasto(self, geoDbCrs, feature, point):
         '''
         Method update CurrentSafety with element related to current original feature (from catasto)
         @param crs: QgsCoordinateReferenceSystem of the feature geometry
         @param feature: QgsFeature of the original catasto layer
+        @param point: QgsPoint where user cliked
         @signal currentSafetyModified
         '''
         if self.currentSafety == None:
@@ -1368,7 +1527,7 @@ class GeosismaWindow(QDockWidget):
         fieldNames = [field.name() for field in feature.fields()]
         featureDic = dict(zip(fieldNames, feature.attributes()))
         
-        tempSafety = self.currentSafety
+        tempSafety = copy.copy( self.currentSafety )
         
         # check if there is already a geometry in the current safety
         # => ask if you want to add a new particella or reset if it 
@@ -1492,7 +1651,7 @@ class GeosismaWindow(QDockWidget):
             # create geometry from current safety geometry
             featureMultiPolygon = featureGeometry.asMultiPolygon()
             if len(featureMultiPolygon) == 0:
-                QMessageBox.critical( self, "RT Geosisma", self.tr("La geometria della sceda corrente non e' Multipolygon") )
+                QMessageBox.critical( self, "RT Geosisma", self.tr("La geometria della scheda corrente non e' Multipolygon") )
                 return
             
             # get safety geometry converting to MultyPolygon (that is a DB contraint)
