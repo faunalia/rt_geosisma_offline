@@ -1454,8 +1454,16 @@ class GeosismaWindow(QDockWidget):
                 tempSafety["the_geom"] = None
         
         # copy origin to current
+        # updating safety json with fixed data in the current safety
+        # e.g avoid the hineritance of safety number, team number, and all already set data
+        # in the current safety
+        currentSafetyDict = json.loads( self.currentSafety["safety"] )
+        tempSafetyDict = json.loads( featureDic["safety"] )
+        for k in currentSafetyDict.keys():
+            tempSafetyDict[k] = currentSafetyDict[k]
+
+        tempSafety["safety"] = json.dumps(tempSafetyDict)
         tempSafety["gid_catasto"] = featureDic["gid_catasto"]
-        tempSafety["safety"] = featureDic["safety"]
         
         # get current Part that intersect point in the origin multipolygon
         sourceGeom = feature.geometry()
@@ -1506,8 +1514,21 @@ class GeosismaWindow(QDockWidget):
             tempSafety["the_geom"] = safetyGeometry.exportToWkt()
         
         # now update origin safety with the new Multypoligon without the part that has been moved to current safety
+
+        # get source geometry converting to MultyPolygon (that is a DB contraint)
+        # this is necessary because  QgsGeometry.fromWkt tries to convert to simple POLYGON if
+        # actuals safety geometry has only one polygon.
+        updatedSourceGeom = QgsGeometry.fromWkt( updatedSourceGeom.exportToWkt() )
+        if not updatedSourceGeom.isMultipart():
+            if not updatedSourceGeom.convertToMultiType(): 
+                QMessageBox.critical( self, "RT Geosisma", self.tr("Non posso convertire la geometria sorgente della scheda in Multipolygon") )
+                return
+        
         layerModif = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
-        layerModif.dataProvider().changeGeometryValues( { featureDic["local_id"]: updatedSourceGeom } )
+        if not layerModif.dataProvider().changeGeometryValues( { featureDic["local_id"]: updatedSourceGeom } ):
+            errors = layerModif.dataProvider().errors()
+            QMessageBox.critical( self, "RT Geosisma", self.tr("Errore eliminando poligono dalla sheda di origine %s" % str(errors)) )
+            return
         
         # at the end update currentSafety and emit signal
         self.currentSafety = tempSafety        
