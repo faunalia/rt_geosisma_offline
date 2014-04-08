@@ -134,7 +134,7 @@ class UploadManager(DlgWaiting):
                 self.saved_sopralluoghi = None
                 self.uploadSafety(safetyToUpload)
             
-                # whait end of single request
+                # wait end of single request
                 while (not self.singleSafetyUploadFinished and not self.allFinished):
                     qApp.processEvents()
                     time.sleep(0.1)
@@ -151,11 +151,11 @@ class UploadManager(DlgWaiting):
                 
                 # update current saved safety with new id
                 safety["id"] = self.saved_id
-                
+
                 # get uploaded safety to update the offline version (mainly safety number)
                 self.downloadRemoteSafety(safety["id"])
 
-                # whait end of single request
+                # wait end of single request
                 while (not self.singleSafetyDownloadFinished and not self.allFinished):
                     qApp.processEvents()
                     time.sleep(0.1)
@@ -170,6 +170,9 @@ class UploadManager(DlgWaiting):
                 else:
                     # update current saved safety with new id
                     safety["number"] = self.saved_number
+                    currentSafetyDict = json.loads( safety["safety"] )
+                    currentSafetyDict["number"] = self.saved_number
+                    safety["safety"] = json.dumps(currentSafetyDict)
                 
                 # now download geometry to allow it's update... I can't use
                 # HTTP patch to update field because seems it's not supported by QNetworkAccessManager
@@ -177,7 +180,7 @@ class UploadManager(DlgWaiting):
                 if the_geom != None:
                     self.downloadRemoteSopralluoghi(safety["id"])
     
-                    # whait end of single request
+                    # wait end of single request
                     while (not self.singleSopralluoghiDownloadFinished and not self.allFinished):
                         qApp.processEvents()
                         time.sleep(0.1)
@@ -196,7 +199,7 @@ class UploadManager(DlgWaiting):
                     self.saved_sopralluoghi["the_geom"] = the_geom
                     self.updateSopralluoghi(self.saved_sopralluoghi)
                 
-                    # whait end of single request
+                    # wait end of single request
                     while (not self.singleSopralluoghiUpdateFinished and not self.allFinished):
                         qApp.processEvents()
                         time.sleep(0.1)
