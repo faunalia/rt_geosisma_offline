@@ -11,8 +11,8 @@ name=RE Geosisma Offline
 qgisMinimumVersion=2.0
 description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
 version=version 1.1.2
-author=Luigi Pirelli
-email=luipir@gmail.com
+author=Luigi Pirelli (luipir@gmail.com)
+email=info@faunalia.eu
 
 # end of mandatory metadata
 
@@ -69,7 +69,7 @@ changelog=1.1.2
 tags=geosisma, python, javascript, offline, Regione Toscana
 
 tracker=https://trac.faunalia.it/geosisma/newticket
-homepage=
+homepage=http://www.faunalia.eu/
 repository=https://github.com/faunalia/rt_geosisma_offline
 # experimental flag
 experimental=True
