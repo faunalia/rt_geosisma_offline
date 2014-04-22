@@ -49,7 +49,7 @@ function updateSafety(teamName, newvalue) {
     $("#j_team").text(teamName);
     
     // set safety number disable to avoid change it
-    $("#number").prop("disabled", true);
+    //$("#number").prop("disabled", true);
     
     newvalue = sortOnKeys(newvalue);
     console.log(newvalue);

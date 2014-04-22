@@ -924,6 +924,22 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug("updateCurrentSafetyFromForm entered",2 )
         if safetyDict == None:
             return
+        
+        # check if safetyNumber is changed
+        subSafetyDict = json.loads( safetyDict["safety"] )
+        if self.currentSafety["number"] != subSafetyDict["number"]:
+            # check if number is laready kept
+            from ArchiveManager import ArchiveManager # import here to avoid circular import
+            safety_numbers = ArchiveManager.instance().loadSafetyNumbers()
+            if int(subSafetyDict["number"]) in [int(v) for v in safety_numbers]:
+                message = self.tr(u"Scheda non salvata. Il numero di scheda %s è giá presente. Scegline un'altro" % subSafetyDict["number"])
+                self.showMessage(message, QgsMessageLog.WARNING)
+                QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+                return
+            
+            #modify safetyNumber of the record
+            self.currentSafety["number"] = subSafetyDict["number"]
+        
         self.currentSafety["safety"] = safetyDict["safety"]
         self.updatedCurrentSafety.emit()
         
