@@ -165,11 +165,7 @@ class DlgSafetyForm(QDockWidget):
         if self.currentSafety is None:
             return
         
-        if str(self.currentSafety["id"]) != "-1":
-            pass
-            self.setWindowTitle( self.tr("Scheda Sopralluogo id locale: %d della squadra: %s - Numero definitivo della scheda: %d" % (self.currentSafety["local_id"], self.teamName, self.currentSafety["number"])) )
-        else:
-            self.setWindowTitle( self.tr("Scheda Sopralluogo id locale: %d della squadra: %s - Numero provvisorio della scheda: %d" % (self.currentSafety["local_id"], self.teamName, self.currentSafety["number"])) )
+        self.setWindowTitle( self.tr("Squadra: %s - Scheda: %d" % (self.teamName, self.currentSafety["number"])) )
 
         safety = self.prepareSafetyToJs(self.currentSafety["safety"])
         JsCommand = "updateSafety(%s, %s)" % (adapt(self.teamName), safety)
