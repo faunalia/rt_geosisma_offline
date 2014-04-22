@@ -63,7 +63,6 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 		self.safetyNumberspinBox.setValue( max(values)+1 if len(values)>0 else 0 )
 		
 		self.safetyNumberspinBox.valueChanged.connect(self.checkNumber)
-		self.safetyNumberspinBox.setEnabled(False)
 		self.buttonBox.button(QDialogButtonBox.Ok).clicked.connect(self.setSelection)
 		
 		# set default value if available in input
