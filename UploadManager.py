@@ -112,7 +112,8 @@ class UploadManager(DlgWaiting):
                 gids = safetyToUpload.pop("gid_catasto")
                 local_id = safetyToUpload.pop("local_id")
                 id = safetyToUpload.pop("id")
-                number = safetyToUpload.pop("number")
+                #number = safetyToUpload.pop("number")
+                number = safetyToUpload["number"]
                 
                 # prepare safety to send
                 if "team_id" in safety:
