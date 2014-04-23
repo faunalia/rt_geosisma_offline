@@ -61,9 +61,9 @@ class GeosismaWindow(QDockWidget):
     GEODBDEFAULT_SRID = 32632
 
     # nomi dei layer in TOC
-    LAYER_GEOM_ORIG = "Geometrie Originali"
-    LAYER_GEOM_MODIF = "Geometrie Schede"
-    LAYER_GEOM_FAB10K = "Codici Aggregati"
+    LAYER_GEOM_ORIG = "Catasto"
+    LAYER_GEOM_MODIF = "Schede"
+    LAYER_GEOM_FAB10K = "Aggregati"
     LAYER_FOTO = "Foto Edifici"
 
     # stile per i layer delle geometrie
