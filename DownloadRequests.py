@@ -103,6 +103,7 @@ class DownloadRequests(DlgWaiting):
             self.done.emit(True)
             
         except Exception as e:
+            QApplication.restoreOverrideCursor()
             try:
                 traceback.print_exc()
             except:
