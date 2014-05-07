@@ -180,7 +180,7 @@ class FeatureFinder(MapTool):
 	def findAtPoint(self, layer, point, onlyTheClosestOne=True, onlyIds=False):
 		QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
 
-		point = MapTool.canvas.mapRenderer().mapToLayerCoordinates(layer, point)
+		point = MapTool.canvas.mapSettings().mapToLayerCoordinates(layer, point)
 
 		# recupera il valore del raggio di ricerca
 		settings = QSettings()
