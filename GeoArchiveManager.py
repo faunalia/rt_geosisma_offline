@@ -19,7 +19,8 @@ Created on Oct 7, 2013
 @author: Luigi Pirelli (luipir@gmail.com)
 '''
 import os
-from qgis.core import QgsLogger, QgsMessageLog
+from datetime import datetime
+from qgis.core import QgsLogger, QgsMessageLog, QgsFeature
 from PyQt4.QtGui import QMessageBox
 from PyQt4.QtCore import SIGNAL
 
@@ -60,7 +61,7 @@ class GeoArchiveManager(QObject):
         self.conn = None
         self.cursor = None
         self.connect()
-    
+
     def connect(self):
         self.conn = db.connect(gw.instance().GEODATABASE_OUTNAME)
         self.cursor = self.conn.cursor()
@@ -90,7 +91,129 @@ class GeoArchiveManager(QObject):
         
     def close(self):
         self.conn.close()
+
+    def archiveFab10kModifications(self, modificationDict):
+        '''
+        Method to a archive a fab_10k_modifications in fab_10k_mod table
+        @param modificationDict: modification record dictionary - keys have to be the same key of Db
+        '''
+        self.checkConnection()
+        
+        # preare dictionary to be used for DB
+        modificationOrdered = self.prepareFab10kModificationDict(modificationDict)
+        
+        # create query
+        sqlquery = "INSERT INTO %s " % gw.instance().TABLE_GEOM_FAB10K_MODIF
+        sqlquery += "( "+",".join(modificationOrdered.keys()) + " ) VALUES ( "
+        for k, v in modificationOrdered.items():
+            if v == None:
+                sqlquery += "NULL, "
+                continue
+            if k == "the_geom":
+                sqlquery += "GeomFromText('%s',%d), " % ( v, gw.instance().GEODBDEFAULT_SRID )
+                continue
+            sqlquery += "%s, " % adapt(v)
+        sqlquery = sqlquery[0:-2] + " );"
+        
+        QgsLogger.debug(self.tr("Inserisce record in %s con la query: %s" % (gw.instance().TABLE_GEOM_FAB10K_MODIF, sqlquery) ), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            
+        except db.IntegrityError:
+            QgsLogger.debug(self.tr("Record modifica aggregati gia' presente nel db"), 1)
+        except Exception as ex:
+            raise(ex)
+
     
+    def updateFab10kModifications(self, modification):
+        '''
+        Method to a update a fab_10k_modifications in fab_10k_mod table
+        @param modificationDict: modification record dictionary - keys have to be the same key of Db
+        '''
+        # check input
+        if type(modification) == dict:
+            modificationDict = modification
+        elif type(modification) == QgsFeature:
+            modificationDict = {}
+            modificationDict["local_gid"] = modification["local_gid"]
+            modificationDict["gid"] = modification["gid"]
+            modificationDict["identif"] = modification["identif"]
+            modificationDict["fab_10k_gid"] = modification["fab_10k_gid"]
+            modificationDict["mod_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            modificationDict["team_id"] = modification["team_id"]
+            modificationDict["upload_time"] = modification["upload_time"]
+            modificationDict["the_geom"] = modification.geometry().exportToWkt()
+        
+        self.checkConnection()
+        
+        # preare dictionary to be used for DB
+        modificationOrdered = self.prepareFab10kModificationDict(modificationDict)
+
+        # create query
+        sqlquery = "UPDATE %s SET " % gw.instance().TABLE_GEOM_FAB10K_MODIF
+        for k,v in modificationOrdered.items():
+            if v == None:
+                sqlquery += '%s=%s, ' % (k,"NULL")
+                continue
+            if k == "local_gid":
+                continue
+            if k == "the_geom":
+                sqlquery += "%s=GeomFromText('%s',%d), " % ( k, v, gw.instance().GEODBDEFAULT_SRID )
+                continue
+            sqlquery += '%s=%s, ' % (k,adapt(v))
+        sqlquery = sqlquery[0:-2] + " "
+        sqlquery += "WHERE local_gid=%s" % adapt(modificationDict["local_gid"])
+        
+        QgsLogger.debug(self.tr("Aggiorna record in %s con la query: %s" % (gw.instance().TABLE_GEOM_FAB10K_MODIF, sqlquery) ), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            
+        except Exception as ex:
+            raise(ex)
+        
+        
+    def deleteFab10kModifications(self, local_id):
+        '''
+        Method to a remove a fab_10k_modifications record in fab_10k_mod table
+        @param local_id: id of the record to delete
+        '''
+        self.checkConnection()
+        
+        # create query
+        sqlquery = "DELETE FROM %s " % gw.instance().TABLE_GEOM_FAB10K_MODIF
+        sqlquery += "WHERE local_gid=%s" % adapt(local_id)
+        
+        QgsLogger.debug(self.tr("Rimuovi il record in %s con la query: %s" % (gw.instance().TABLE_GEOM_FAB10K_MODIF, sqlquery) ), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            
+        except Exception as ex:
+            raise(ex)
+    
+    def prepareFab10kModificationDict(self, modificationDict):
+        '''
+        Method to adapt team dictionary to be the same to db fab_10k_mod table
+        @param modificationDict: modification record dictionary - keys have to be the same key of Db
+        @return: an orderedDict of the key values of the record 
+        '''
+        # create ordered Dict from dict to be sure of the order of the fields
+        ordered = OrderedDict()
+        for k,v in modificationDict.items():
+            if k == "local_gid":
+                continue
+            ordered[k]=v
+
+        return ordered
+    
+    def getLastRowId(self):
+        '''
+        Method to return the id of the last inserted record. Could not have meaning other than in insert action
+        '''
+        return self.cursor.lastrowid
+
 #############################################################################
 # utility queries
 #############################################################################

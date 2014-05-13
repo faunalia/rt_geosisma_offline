@@ -26,7 +26,8 @@ import json # used to dump dicts in strings
 import ast # used to convert string indict because json.loads could fail
 import inspect
 import copy
-from datetime import date
+import time
+from datetime import date, datetime
 from psycopg2.extensions import adapt
 
 from PyQt4.QtCore import *
@@ -48,6 +49,8 @@ class GeosismaWindow(QDockWidget):
     downloadTeamsDone = pyqtSignal(bool)
     archiveTeamsDone = pyqtSignal(bool)
     downloadRequestsDone = pyqtSignal(bool)
+    archiveRequestsDone = pyqtSignal(bool)
+    downloadFab10kModificationsDone = pyqtSignal(bool)
     uploadSafetiesDone = pyqtSignal(bool)
     selectRequestDone = pyqtSignal()
     updatedCurrentSafety = pyqtSignal()
@@ -64,6 +67,7 @@ class GeosismaWindow(QDockWidget):
     LAYER_GEOM_ORIG = "Catasto"
     LAYER_GEOM_MODIF = "Schede"
     LAYER_GEOM_FAB10K = "Aggregati"
+    LAYER_GEOM_FAB10K_MODIF = "Aggregati modificati"
     LAYER_FOTO = "Foto Edifici"
 
     # stile per i layer delle geometrie
@@ -71,6 +75,7 @@ class GeosismaWindow(QDockWidget):
     STYLE_GEOM_ORIG = "stile_geometrie_originali.qml"
     STYLE_GEOM_MODIF = "stile_geometrie_modificate.qml"
     STYLE_GEOM_FAB10K = "stile_geometrie_aggregati.qml"
+    STYLE_GEOM_FAB10K_MODIF = "stile_geometrie_aggregati_modificati.qml"
     STYLE_FOTO = "stile_fotografie.qml"
 
     SCALE_IDENTIFY = 5000
@@ -80,11 +85,13 @@ class GeosismaWindow(QDockWidget):
     TABLE_GEOM_ORIG = "fab_catasto".lower()
     TABLE_GEOM_MODIF = "missions_safety".lower()
     TABLE_GEOM_FAB10K = "fab_10k".lower()
+    TABLE_GEOM_FAB10K_MODIF = "fab_10k_mod".lower()
 
     # ID dei layer contenenti geometrie e wms
     VLID_GEOM_ORIG = ''
     VLID_GEOM_MODIF = ''
     VLID_GEOM_FAB10K = ''
+    VLID_GEOM_FAB10K_MODIF = ''
     VLID_FOTO = ''
     RLID_WMS = {}
 
@@ -107,6 +114,10 @@ class GeosismaWindow(QDockWidget):
     def __init__(self):
         pass
     
+    def closeEvent(self, event):
+        self.cleanUp()
+        return QDockWidget.closeEvent(self, event)
+    
     def cleanUp(self):
         try:
             from ArchiveManager import ArchiveManager
@@ -121,6 +132,18 @@ class GeosismaWindow(QDockWidget):
         except:
             pass
         
+        # clean registered event handler
+        if self.iface.actionToggleEditing():
+            try:
+                self.iface.actionToggleEditing().changed.disconnect(self.actionToggleEditingChanged)
+            except:
+                pass
+            try:
+                self.iface.actionToggleEditing().triggered.disconnect(self.actionToggleEditingTriggered)
+            except:
+                pass
+        
+        # reset singleton
         try:
             GeosismaWindow._instance = None
         except:
@@ -128,7 +151,6 @@ class GeosismaWindow(QDockWidget):
     
     def init(self, parent=None, iface=None):
         QDockWidget.__init__(self, parent)
-        QObject.connect(self, SIGNAL("destroyed()"), self.cleanUp)
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setupUi()
         
@@ -166,30 +188,31 @@ class GeosismaWindow(QDockWidget):
         self.currentRequest = None
         self.downloadedTeams = []
         self.downloadedRequests = []
+        self.fab10kModifications = []
         self.currentSafety = None
         self.safeties = []
         self.teams = None
         
         MapTool.canvas = self.canvas
 
-        self.nuovaPointEmitter = FeatureFinder()
-        self.nuovaPointEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
-        QObject.connect(self.nuovaPointEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
+        self.linkSafetyGeometryEmitter = FeatureFinder()
+        self.linkSafetyGeometryEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
+        QObject.connect(self.linkSafetyGeometryEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
 
         self.lookForSafetiesEmitter = FeatureFinder()
         self.lookForSafetiesEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
         QObject.connect(self.lookForSafetiesEmitter, SIGNAL("pointEmitted"), self.listLinkedSafeties)
 
-        self.polygonDrawer = PolygonDrawer()
-        self.polygonDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
-        QObject.connect(self.polygonDrawer, SIGNAL("geometryEmitted"), self.createNewSafetyGeometry)
+        self.newSafetyGeometryDrawer = PolygonDrawer()
+        self.newSafetyGeometryDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
+        QObject.connect(self.newSafetyGeometryDrawer, SIGNAL("geometryEmitted"), self.createNewSafetyGeometry)
 
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
         self.connect(self.btnModifyCurrentSafety, SIGNAL("clicked()"), self.updateSafetyForm)
         self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
         self.connect(self.btnSelectSafety, SIGNAL("clicked()"), self.selectSafety)
         self.connect(self.btnSelectRequest, SIGNAL("clicked()"), self.selectRequest)
-        self.connect(self.btnDownloadRequests, SIGNAL("clicked()"), self.downloadTeams)
+        self.connect(self.btnDownload, SIGNAL("clicked()"), self.downloadTeams) # ends emitting downloadTeamsDone
         self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
         
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
@@ -199,10 +222,22 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.btnCleanUnlinkedSafeties, SIGNAL("clicked()"), self.cleanUnlinkedSafeties)
         self.connect(self.btnManageAttachments, SIGNAL("clicked()"), self.manageAttachments)
 
-        # custom signal
-        self.downloadTeamsDone.connect(self.archiveTeams)
-        self.archiveTeamsDone.connect(self.downloadRequests)
-        self.downloadRequestsDone.connect( self.archiveRequests )
+        self.newAggregatiDrawer = PolygonDrawer()
+        self.newAggregatiDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
+        QObject.connect(self.newAggregatiDrawer, SIGNAL("geometryEmitted"), self.createNewAggregatiGeometry)
+        self.connect(self.btnNewAggregatiGeometry, SIGNAL("clicked()"), self.createNewAggregatiGeometry)
+        
+        self.modifyAggregatiEmitter = FeatureFinder()
+        self.modifyAggregatiEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
+        self.connect(self.btnModifyAggregatiGeometry, SIGNAL("clicked()"), self.modifyAggregatiGeometry)
+        
+        # custom signals
+        self.downloadTeamsDone.connect(self.archiveTeams) # ends emitting archiveTeamsDone
+        self.archiveTeamsDone.connect(self.downloadRequests) # ends emitting downloadRequestsDone
+        self.archiveTeamsDone.connect(self.resetTeamComboBox)
+        self.downloadRequestsDone.connect( self.archiveRequests ) # ends emitting archiveRequestsDone
+        self.archiveRequestsDone.connect( self.downloadFab10kModifications ) # ends emitting downloadFab10kModificationsDone
+        self.downloadFab10kModificationsDone.connect( self.archiveFab10kModifications )
         self.updatedCurrentSafety.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateArchivedCurrentSafety)
         self.updatedCurrentSafety.connect(self.repaintSafetyGeometryLayer)
@@ -262,10 +297,10 @@ class GeosismaWindow(QDockWidget):
         self.btnSelectRequest.setToolTip( text )
         gridLayout.addWidget(self.btnSelectRequest, 2, 0, 1, 3)
 
-        text = u"Download Richieste"
-        self.btnDownloadRequests = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
-        self.btnDownloadRequests.setToolTip( text )
-        gridLayout.addWidget(self.btnDownloadRequests, 3, 0, 1, 2)
+        text = u"Download"
+        self.btnDownload = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
+        self.btnDownload.setToolTip( "Download Richieste di sopralluogo e Aggregati modificati" )
+        gridLayout.addWidget(self.btnDownload, 3, 0, 1, 2)
 
         text = u"Reset"
         self.btnReset = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
@@ -273,7 +308,7 @@ class GeosismaWindow(QDockWidget):
         gridLayout.addWidget(self.btnReset, 3, 2, 1, 1)
 
 
-        group = QGroupBox( "Geometrie e allegati", child )
+        group = QGroupBox( "Geometrie Sopralluoghi e allegati", child )
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
@@ -315,6 +350,27 @@ class GeosismaWindow(QDockWidget):
         text = u"Aggiuinta e rimozione degli allegati alla scheda corrente"
         self.btnManageAttachments.setToolTip( text )
         gridLayout.addWidget(self.btnManageAttachments, 3, 0, 1, 3)
+
+        group = QGroupBox( "Geometrie Aggregati", child )
+        vLayout.addWidget( group )
+        gridLayout = QGridLayout( group )
+
+        label = QLabel( "Team", group )
+        gridLayout.addWidget(label, 0, 0, 1, 1)
+        self.teamComboBox = QComboBox( group )
+        gridLayout.addWidget(self.teamComboBox, 0, 1, 1, 1)
+
+        text = u"Nuova"
+        self.btnNewAggregatiGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
+        self.btnNewAggregatiGeometry.setToolTip( u"Disegna un nuovo aggregato" )
+        self.btnNewAggregatiGeometry.setCheckable(True)
+        gridLayout.addWidget(self.btnNewAggregatiGeometry, 0, 2, 1, 1)
+
+        text = u"Modifica"
+        self.btnModifyAggregatiGeometry = QPushButton( QIcon(":/icons/modifica_scheda.png"), text, group )
+        self.btnModifyAggregatiGeometry.setToolTip( u"Copia e modifica un Aggregato esistente" )
+        self.btnModifyAggregatiGeometry.setCheckable(True)
+        gridLayout.addWidget(self.btnModifyAggregatiGeometry, 0, 3, 1, 1)
 
 #         text = u"About"
 #         self.btnAbout = QPushButton( QIcon(":/icons/about.png"), text, child )
@@ -361,7 +417,7 @@ class GeosismaWindow(QDockWidget):
 #        return
         self.reloadCrs()
         
-        # load all the layers from db
+        # load all layers from db
         self.wmsLayersBridge = WmsLayersBridge(self.iface, self.showMessage)
         self.wmsLayersBridge.instance.offlineMode = True
         firstTime = True
@@ -373,20 +429,30 @@ class GeosismaWindow(QDockWidget):
 
         self.loadLayerGeomOrig()
         self.loadFab10kGeometries()
+        self.loadFab10kModifiedGeometries()
         self.loadSafetyGeometries()
         self.setProjectDefaultSetting()
-        self.manageEditingSignals()
+        self.manageSafetyEditingSignals()
+        self.resetTeamComboBox()
+        self.registerAggregatiEditingSignals()
+        #self.registerAggregatiEditingSignals___APPPP()
         
         return True
+
+    def resetTeamComboBox(self):
+        from ArchiveManager import ArchiveManager
+        self.teams = ArchiveManager.instance().loadTeams()
+        self.teamComboBox.clear()
+        self.teamComboBox.addItems([str(v["name"]) for v in self.teams])
 
     def reloadCrs(self):
         #self.srid = self.getSridFromDb()
         self.srid = self.DEFAULT_SRID
-        srs = QgsCoordinateReferenceSystem( self.srid, QgsCoordinateReferenceSystem.EpsgCrsId )
-        renderer = self.canvas.mapRenderer()
-        self._setRendererCrs(renderer, srs)
-        renderer.setMapUnits( srs.mapUnits() if srs.mapUnits() != QGis.UnknownUnit else QGis.Meters )
-        renderer.setProjectionsEnabled(True)
+        crs = QgsCoordinateReferenceSystem( self.srid, QgsCoordinateReferenceSystem.EpsgCrsId )
+        mapSettings = self.canvas.mapSettings()
+        mapSettings.setDestinationCrs(crs)
+        mapSettings.setMapUnits( crs.mapUnits() if crs.mapUnits() != QGis.UnknownUnit else QGis.Meters )
+        self.iface.mapCanvas().setCrsTransformEnabled(True)
 
     def setProjectDefaultSetting(self):
         project = QgsProject.instance()
@@ -402,8 +468,8 @@ class GeosismaWindow(QDockWidget):
         project.writeEntry("Digitizing", "/LayerSnapToList", layerSnapToList)
         project.writeEntry("Digitizing", "/LayerSnappingToleranceList", layerSnappingToleranceList)
 
-    def emitGeometryUpdate(self):
-        QgsLogger.debug("emitGeometryUpdate entered",2 )
+    def emitSafetyGeometryUpdate(self):
+        QgsLogger.debug("emitSafetyGeometryUpdate entered",2 )
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
         if len(layers) > 0:
             layer = layers[0]
@@ -418,10 +484,12 @@ class GeosismaWindow(QDockWidget):
             
         self.updateArchivedCurrentSafety()
 
-    def manageEditingSignals(self):
+    def manageSafetyEditingSignals(self):
+        QgsLogger.debug("manageSafetyEditingSignals entered",2 )
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
         if len(layers) > 0:
-            layers[0].editingStopped.connect(self.emitGeometryUpdate)
+            layers[0].editingStopped.connect(self.emitSafetyGeometryUpdate)
+           
 
     def loadLayerGeomOrig(self):
         # skip if already present
@@ -523,7 +591,7 @@ class GeosismaWindow(QDockWidget):
                 self.showMessage(message, QgsMessageLog.CRITICAL)
                 QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return
-        # carica il layer con le geometrie delle safety
+        # carica il layer
         if QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K ) == None:
             GeosismaWindow.VLID_GEOM_FAB10K = ''
 
@@ -547,6 +615,52 @@ class GeosismaWindow(QDockWidget):
             self._addMapLayer(vl)
             # set custom property
             vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_FAB10K" )
+        return True
+
+    def loadFab10kModifiedGeometries(self):
+        # skip if already present
+        layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_FAB10K_MODIF)
+        if len(layers) > 0:
+            # get id of the Geosisma layer
+            valid = False
+            for layer in layers:
+                prop = layer.customProperty( "loadedByGeosismaRTPlugin" )
+                if prop == "VLID_GEOM_FAB10K_MODIF":
+                    valid = True
+                    GeosismaWindow.VLID_GEOM_FAB10K_MODIF = self._getLayerId( layer )
+            if not valid:
+                message = self.tr("Manca il layer %s, ricaricando il plugin verrà caricato automaticamente" % self.LAYER_GEOM_FAB10K_MODIF)
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            return
+        # carica il layer
+        if QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K_MODIF ) == None:
+            GeosismaWindow.VLID_GEOM_FAB10K_MODIF = ''
+
+            uri = QgsDataSourceURI()
+            uri.setDatabase(self.GEODATABASE_OUTNAME)
+            uri.setDataSource('', self.TABLE_GEOM_FAB10K_MODIF, 'the_geom')
+            vl = QgsVectorLayer( uri.uri(), self.LAYER_GEOM_FAB10K_MODIF, "spatialite" )
+            if vl == None or not vl.isValid():
+                return False
+
+            # imposta lo stile del layer
+            style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_FAB10K_MODIF )
+            errorMsg, success= vl.loadNamedStyle( style_path )
+            if not success:
+                message = self.tr("Non posso caricare lo stile %s - %s: %s" % (GeosismaWindow.STYLE_GEOM_FAB10K_MODIF, errorMsg, style_path) )
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            self.iface.legendInterface().refreshLayerSymbology(vl)
+
+            GeosismaWindow.VLID_GEOM_FAB10K_MODIF = self._getLayerId(vl)
+            self._addMapLayer(vl)
+            # set custom property
+            vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_FAB10K_MODIF" )
+            
+            # add signal to manage editing of the this layer integrating with qgis editing tools 
+            #self.registerAggregatiEditingSignals()
+            
         return True
 
     def showMessage(self, message, messagetype):
@@ -592,15 +706,20 @@ class GeosismaWindow(QDockWidget):
         
         # reload safety geometrys layer
         self.loadSafetyGeometries()
+        self.loadFab10kModifiedGeometries()
         
         # reset some important globals
         self.requests = []
         self.currentRequest = None
         self.downloadedTeams = []
         self.downloadedRequests = []
+        self.fab10kModifications = []
         self.teams = None
         self.currentSafety = None
         self.updatedCurrentSafety.emit()
+
+        # cleanup some gui elements
+        self.teamComboBox.clear()
 
     def manageEndResetDbDlg(self, success):
         self.resetDbDlg.hide()
@@ -659,7 +778,9 @@ class GeosismaWindow(QDockWidget):
             for team in self.downloadedTeams:
                 ArchiveManager.instance().archiveTeam(team)
                 ArchiveManager.instance().commit()
-
+            
+            self.teams = self.downloadedTeams
+            
             self.archiveTeamsDone.emit(success)
             
         except Exception as ex:
@@ -720,6 +841,7 @@ class GeosismaWindow(QDockWidget):
     def archiveRequests(self, success):
         if not success:
             return
+        success = True
         
         #QgsLogger.debug(self.tr("Dump di Teams e Requests scaricate: %s" % json.dumps( self.downloadedTeams )), 2 )
         try:
@@ -744,9 +866,71 @@ class GeosismaWindow(QDockWidget):
             message = self.tr("Fallito l'archiviazione delle richieste di sopralluogo")
             self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            success = False
         finally:
             ArchiveManager.instance().close() # to avoid locking
 
+        # notify end of download
+        self.archiveRequestsDone.emit(success)
+
+    def downloadFab10kModifications(self, success):
+        if not success:
+            return
+        
+        # download all requests
+        self.fab10kModifications = []
+        from DownloadFab10kModifications import DownloadFab10kModifications
+        self.downloadFab10kModificationsDlg = DownloadFab10kModifications()
+        self.downloadFab10kModificationsDlg.done.connect( self.manageEndDownloadFab10kModificationsDlg )
+        self.downloadFab10kModificationsDlg.message.connect(self.showMessage)
+        self.downloadFab10kModificationsDlg.exec_()
+        
+    def manageEndDownloadFab10kModificationsDlg(self, success):
+        if self.downloadFab10kModificationsDlg is None:
+            return
+        self.downloadFab10kModificationsDlg.hide()
+
+        QApplication.restoreOverrideCursor()
+        if not success:
+            message = self.tr("Fallito lo scaricamento delle Modifiche agli Aggregati. Controlla il Log")
+            self.showMessage(message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        else:
+            message = self.tr("Scaricate %s modifiche dei Aggregati" % self.fab10kModifications.__len__())
+            self.showMessage(message, QgsMessageLog.INFO)
+            QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+
+        # notify end of download
+        self.downloadFab10kModificationsDone.emit(success)
+        
+        if self.downloadFab10kModificationsDlg:
+            self.downloadFab10kModificationsDlg.deleteLater()
+        self.downloadFab10kModificationsDlg = None
+
+    def archiveFab10kModifications(self, success):
+        if not success:
+            return
+        
+        #QgsLogger.debug(self.tr("Dump di Teams e Requests scaricate: %s" % json.dumps( self.downloadedTeams )), 2 )
+        try:
+            from GeoArchiveManager import GeoArchiveManager # import here to avoid circular import
+            for modification in self.fab10kModifications:
+                GeoArchiveManager.instance().archiveFab10kModifications(modification)
+                GeoArchiveManager.instance().commit()
+
+        except Exception as ex:
+            try:
+                traceback.print_exc()
+            except:
+                pass
+            GeoArchiveManager.instance().close() # to avoid locking
+            message = self.tr("Fallito l'archiviazione delle modifiche agli Aggregati")
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        finally:
+            GeoArchiveManager.instance().close() # to avoid locking
+
+    
     def selectRequest(self):
         from DlgSelectRequest import DlgSelectRequest
         dlg = DlgSelectRequest()
@@ -1203,15 +1387,21 @@ class GeosismaWindow(QDockWidget):
                 self.btnNewSafetyGeometry.setChecked(False)
                 return
 
+        # set current active layer VLID_GEOM_MODIF
+        currentActiveLayer = self.iface.activeLayer()
+        if self._getLayerId(currentActiveLayer) != GeosismaWindow.VLID_GEOM_MODIF:
+            layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
+            self.iface.setActiveLayer(layer)
+
         action = self.btnNewSafetyGeometry.toolTip()
 
         if not self.checkActionScale( action, self.SCALE_MODIFY ):
-            self.polygonDrawer.startCapture()
-            self.polygonDrawer.stopCapture()
+            self.newSafetyGeometryDrawer.startCapture()
+            self.newSafetyGeometryDrawer.stopCapture()
             self.btnNewSafetyGeometry.setChecked(False)
             return
         if polygon == None:
-            return self.polygonDrawer.startCapture()
+            return self.newSafetyGeometryDrawer.startCapture()
         
         # try to convert to multypolygon to match DB constraint
         if not polygon.isMultipart():
@@ -1232,7 +1422,7 @@ class GeosismaWindow(QDockWidget):
         
         action = self.btnLinkSafetyGeometry.toolTip()
         if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
-            return self.nuovaPointEmitter.startCapture()
+            return self.linkSafetyGeometryEmitter.startCapture()
 
         if button != Qt.LeftButton:
             self.btnLinkSafetyGeometry.setChecked(False)
@@ -1244,12 +1434,12 @@ class GeosismaWindow(QDockWidget):
             self.btnLinkSafetyGeometry.setChecked(False)
             return
 
-        featModif = self.nuovaPointEmitter.findAtPoint(layerModif, point) if layerOrig != None else None
-        featOrig = self.nuovaPointEmitter.findAtPoint(layerOrig, point) if layerOrig != None else None
+        featModif = self.linkSafetyGeometryEmitter.findAtPoint(layerModif, point) if layerOrig != None else None
+        featOrig = self.linkSafetyGeometryEmitter.findAtPoint(layerOrig, point) if layerOrig != None else None
         
         # if no features found... continue campturing mouse
         if featModif == None and featOrig == None:
-            return self.nuovaPointEmitter.startCapture()
+            return self.linkSafetyGeometryEmitter.startCapture()
             
         
         # check whato to do
@@ -1272,7 +1462,7 @@ class GeosismaWindow(QDockWidget):
             ret = msgBox.exec_()
             if ret == QMessageBox.Cancel:
                 # continue on another geometry
-                return self.nuovaPointEmitter.startCapture()
+                return self.linkSafetyGeometryEmitter.startCapture()
             if ret == QMessageBox.Yes:
                 getFromCatasto = True
             if ret == QMessageBox.Open:
@@ -1311,7 +1501,7 @@ class GeosismaWindow(QDockWidget):
                 ret = msgBox.exec_()
                 if ret == QMessageBox.Cancel:
                     # continue on another geometry
-                    return self.nuovaPointEmitter.startCapture()
+                    return self.linkSafetyGeometryEmitter.startCapture()
                 
             QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
             # associa il poligono alla safety
@@ -1329,7 +1519,7 @@ class GeosismaWindow(QDockWidget):
                 msgBox.setInformativeText(self.tr(u"Il poligono già appartiene alla scheda corrente. Seleziona un'altra geometria!"))
                 msgBox.setStandardButtons(QMessageBox.Ok)
                 msgBox.exec_()
-                return self.nuovaPointEmitter.startCapture()
+                return self.linkSafetyGeometryEmitter.startCapture()
             
             QApplication.setOverrideCursor(QCursor(Qt.WaitCursor))
             # associa il poligono alla safety
@@ -1620,7 +1810,7 @@ class GeosismaWindow(QDockWidget):
                 ret = msgBox.exec_()
                 if ret == QMessageBox.Cancel:
                     # continue on another geometry
-                    return self.nuovaPointEmitter.startCapture()
+                    return self.linkSafetyGeometryEmitter.startCapture()
                 tempSafety["gid_catasto"] = ""
                 tempSafety["the_geom"] = None
                 substituteMode = True
@@ -1782,35 +1972,564 @@ class GeosismaWindow(QDockWidget):
         self.manageAttachmentsDlg = DlgManageAttachments(self.currentSafety["local_id"], self.currentSafety["team_id"])
         self.manageAttachmentsDlg.exec_()
 
+
+    ###############################################################
+    ###### section to manage Aggregati creation and modification
+    ###############################################################
+
+    def createNewAggregatiGeometry(self, polygon=None):
+        QgsLogger.debug("createNewAggregatiGeometry entered",2 )
+        
+        # set current active layer VLID_GEOM_FAB10K_MODIF
+        currentActiveLayer = self.iface.activeLayer()
+        if self._getLayerId(currentActiveLayer) != GeosismaWindow.VLID_GEOM_FAB10K_MODIF:
+            currentActiveLayer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K_MODIF )
+            self.iface.setActiveLayer(currentActiveLayer)
+        
+        action = self.btnNewAggregatiGeometry.toolTip()
+
+        if not self.checkActionScale( action, self.SCALE_MODIFY ):
+            self.newAggregatiDrawer.startCapture()
+            self.newAggregatiDrawer.stopCapture()
+            self.btnNewSafetyGeometry.setChecked(False)
+            return
+        if polygon == None:
+            return self.newAggregatiDrawer.startCapture()
+        
+        # try to convert to polygon to match DB constraint
+        # could be more efficiend usign dict compherension
+        # but I prefere readability when there's no performance problems
+        # iterating on all features
+        if polygon.isMultipart():
+            polygon = polygon.convertToType(QGis.Polygon, False)
+            if polygon == None:
+                QMessageBox.critical( self, "RT Geosisma", self.tr(u"La geometria disegnata è Multipolygon. Non posso convertirla in Polygon") )
+                self.btnNewSafetyGeometry.setChecked(False)
+                return
+        
+        # find nearest fab_10k record to state the value of identif field
+        nearestfeat = self.getNearestAggregato(polygon)
+        if nearestfeat == None:
+            return
+        
+        # determine new aggregato identif basing on the nearest aggregato
+        # new aggregato is specified as in specifiche aggregati.odt ​
+        newidentif = nearestfeat["identif"]+"51"
+        
+        # set team_id
+#         settings = QSettings()
+#         teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
+#         team_id = teamUrl + str(self.currentSafety["team_id"]) + "/"
+
+        # build the new record
+        if not polygon.convertToMultiType():
+            message = self.tr(u"Problemi convertendo in multiplygon il nuovo poligono")
+            self.showMessage(message, QgsMessageLog.WARNING)
+            QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            return
+        newAggregato = self.initNewAggregatiDict()
+        newAggregato["identif"] = newidentif
+        newAggregato["fab_10k_gid"] = nearestfeat["gid"]
+        
+        newAggregato["the_geom"] = polygon.exportToWkt()
+        
+        #save newAggregato in DB
+        from GeoArchiveManager import GeoArchiveManager
+        try:
+            GeoArchiveManager.instance().archiveFab10kModifications(newAggregato)
+            GeoArchiveManager.instance().commit()
+            
+            newAggregato["local_gid"] = GeoArchiveManager.instance().getLastRowId()
+            message = self.tr("Inserito nuovo aggregato con id %s" % newAggregato["local_gid"])
+            self.showMessage(message, QgsMessageLog.INFO)
+            
+        except Exception as ex:
+            try:
+                traceback.print_exc()
+            except:
+                pass
+            message = self.tr(u"Fallito il salvataggio del nuovo aggregato %s" % newidentif)
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        finally:
+            GeoArchiveManager.instance().close() # to avoid locking
+        
+        # redraw canvas to paint new added records
+        self.iface.mapCanvas().refresh() 
+        
+        self.btnNewAggregatiGeometry.setChecked(False)
+
+
+    def initNewAggregatiDict(self):
+        newAggregato = {}
+        newAggregato["local_gid"] = None
+        newAggregato["gid"] = -1 # <--- it's new so it's not yet archived on remote server
+        newAggregato["identif"] = None
+        newAggregato["fab_10k_gid"] = None
+        newAggregato["mod_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        newAggregato["team_id"] = self.teamComboBox.currentText()
+        newAggregato["upload_time"] = None
+        newAggregato["the_geom"] = None
+        
+        return newAggregato
+
+
+    def getNearestAggregato(self, polygon):
+        """
+        find the nearest Aggregato to the input polygon
+        @param polygon: target polygon to measure nearest distance
+        @return feature: nearest Aggregato feature
+        """
+        QgsLogger.debug("getNearestAggregato entered",2 )
+        
+        # tranform input polygon to VLID_GEOM_FAB10K crs
+        defaultCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        geoDbCrs = QgsCoordinateReferenceSystem(self.GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        xform = QgsCoordinateTransform(defaultCrs, geoDbCrs)
+        if polygon.transform(xform):
+            QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione del poligono al CRS degli aggregati: %d" % self.GEODBDEFAULT_SRID) )
+            return None
+        
+        # could be implemented getting nearest point to polygon, than intersect this point
+        # with the feature and get this last feature. But I implemented a readable solution that
+        # shouldn't have performance problems
+        nearest = {"distance":999999999999999999999999999999999, "feature":None}
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K )
+        for feat in layer.getFeatures():
+            distance = polygon.distance( feat.geometry() )
+            if distance != 0 and distance < nearest["distance"]:
+                nearest["distance"] = distance
+                nearest["feature"] = feat
+        return nearest["feature"]
+        
+        
+    def modifyAggregatiGeometry(self, point=None, button=None):
+        """
+        function to manage action to modify an existing Aggregaty polygon
+        using default qgis edit tools and intercepting standard edit events
+        @param point: point on canvas to point the Aggregato to modify
+        @param button: what buttn has been pressed
+        """
+        QgsLogger.debug("modifyAggregatiGeometry entered",2 )
+
+        self.modifyAggregatiEmitter.stopCapture()
+        try:
+            QObject.disconnect(self.modifyAggregatiEmitter, SIGNAL("pointEmitted"), self.modifyAggregatiGeometry)
+        except:
+            traceback.print_exc()
+
+        action = self.btnModifyAggregatiGeometry.toolTip()
+        if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
+            QObject.connect(self.modifyAggregatiEmitter, SIGNAL("pointEmitted"), self.modifyAggregatiGeometry)
+            return self.modifyAggregatiEmitter.startCapture()
+
+        if button != Qt.LeftButton:
+            self.btnModifyAggregatiGeometry.setChecked(False)
+            return
+
+        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K )
+        if layerOrig == None:
+            self.btnModifyAggregatiGeometry.setChecked(False)
+            return
+
+        # if no features found... continue campturing mouse
+        featOrig = self.modifyAggregatiEmitter.findAtPoint(layerOrig, point) if layerOrig != None else None
+        if featOrig == None:
+            QObject.connect(self.modifyAggregatiEmitter, SIGNAL("pointEmitted"), self.modifyAggregatiGeometry)
+            return self.modifyAggregatiEmitter.startCapture()
+        
+        # delesect records
+        if featOrig:
+            gid = featOrig["gid"]
+            layerOrig.deselect(gid)
+        
+        # stop capturing and reset interface
+        self.btnModifyAggregatiGeometry.setChecked(False)
+        
+        ####################################
+        # copy from Aggregati (nominal case)
+        ####################################
+        aggregatoModificato = self.initNewAggregatiDict()
+        aggregatoModificato["identif"] = featOrig["identif"]
+        aggregatoModificato["fab_10k_gid"] = featOrig["gid"]
+        aggregatoModificato["the_geom"] = featOrig.geometry().exportToWkt()
+
+        #save newAggregato in DB
+        from GeoArchiveManager import GeoArchiveManager
+        try:
+            GeoArchiveManager.instance().archiveFab10kModifications(aggregatoModificato)
+            GeoArchiveManager.instance().commit()
+            
+            aggregatoModificato["local_id"] = GeoArchiveManager.instance().getLastRowId()
+            message = self.tr("Inserito aggregato modificato con local_id %s" % aggregatoModificato["local_id"])
+            self.showMessage(message, QgsMessageLog.INFO)
+            
+        except Exception as ex:
+            try:
+                traceback.print_exc()
+            except:
+                pass
+            message = self.tr(u"Fallito il salvataggio dell'aggregato modificato %s" % featOrig["identif"] )
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        finally:
+            GeoArchiveManager.instance().close() # to avoid locking
+        
+        ####################################
+        # activate a qgis editing session 
+        # on the Aggregati layer 
+        ####################################
+        
+        # set current active layer VLID_GEOM_FAB10K_MODIF
+        currentActiveLayer = self.iface.activeLayer()
+        if self._getLayerId(currentActiveLayer) != GeosismaWindow.VLID_GEOM_FAB10K_MODIF:
+            currentActiveLayer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K_MODIF )
+            self.iface.setActiveLayer(currentActiveLayer)
+        
+        # activate editing session
+        self.iface.actionToggleEditing().trigger()
+
+
+    def actionToggleEditingTriggered(self, checked):
+        """
+        Signal handler activated when editing action is triggered on GEOM_FAB10K_MODIF layer
+        it manage when truly editing is terminated after rollback. Rollback qgis managing 
+        result in emitting a train of signal and the last one is actionToggleEditing().triggered()
+        This callback is tegistered only when GEOM_FAB10K_MODIF has been modifed and before saving changes
+        """
+        QgsLogger.debug("actionToggleEditingTriggered entered with checked: %s" % str(checked),2 )
+        try:
+            self.iface.actionToggleEditing().triggered.disconnect(self.actionToggleEditingTriggered)
+        except:
+            pass
+        self.iface.actionToggleEditing().trigger()
+
+        # apply only on GEOM_FAB10K_MODIF layer
+        layer = self.iface.activeLayer()
+        if not layer or self._getLayerId(layer) != GeosismaWindow.VLID_GEOM_FAB10K_MODIF:
+            self.btnModifyAggregatiGeometry.setChecked(False)
+            return
+        
+        # import lib to manage geoarchive
+        from GeoArchiveManager import GeoArchiveManager
+
+        # manage modified polygons basing on this cases
+        # 1) removed polygons are simply set to noll it's geometry
+        # 2) added polygons are managed as in createNewAggregatiGeometry
+        # 3) if multy-polygon is modifed but still the same part numbers
+        # 4) if multy-polygon has changed it's parts => create new records
+        #    assigning identif derived from the original polygon
+        
+        # 1) removed polygons are simply set to empty geometry QgsGeometry()
+        for local_gid in self.deletedFeatureIds:
+            # I can modify only deature belonging to my team and not already uploaded
+            feat = layer.getFeatures(QgsFeatureRequest(local_gid))
+            feat = feat.next()
+            if not self.checkCanModifyAggregato(feat):
+                continue
+            
+            # use direct sql instead of data provider due to lock problems
+            QgsLogger.debug("Set geometry to NULL in %s with local_id %i" % (GeosismaWindow.TABLE_GEOM_FAB10K_MODIF, local_gid) ,2 )
+            feat.setGeometry( QgsGeometry() )
+            GeoArchiveManager.instance().updateFab10kModifications(feat) # mod date is updated inside
+            
+        # 2) added polygons are managed as in createNewAggregatiGeometry
+        # try to avoid adding features... should be done using "nuova" button
+        
+        # 3) if polygon is modifed but still the same part numbers => simply modify of the current polygon
+        # this could create a problem in case splitting and removing parts...
+        # 4) if multy-polygon has changed it's parts => create new records
+        #    assigning identif derived from the original polygon
+        for local_id, geom in self.changedGeometries.items():
+            # I can modify only feature belonging to my team and not already uploaded
+            feat = layer.getFeatures(QgsFeatureRequest(local_id))
+            feat = feat.next()
+            if not self.checkCanModifyAggregato(feat):
+                continue
+            
+            # if equal discard
+            if geom.isGeosEqual(feat.geometry()):
+                QgsLogger.debug("Unmodified geometry for in %s with local_id %i" % (GeosismaWindow.TABLE_GEOM_FAB10K_MODIF, local_id) ,2 )
+                continue
+            
+            parts = geom.asMultiPolygon()
+            if parts == None or len(parts) == 0:
+                message = self.tr(u"Aggregato con local_id: %i non è multiplygon" % str(feat["local_id"]))
+                self.showMessage(message, QgsMessageLog.WARNING)
+                QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+                continue
+            
+            # TODO: better check on parts modification because thy can have same part number but different geometry due the fact
+            # that combining splitting and deleting operations
+            # In this case probably there is only a change in shape of their parts
+            originalParts = feat.geometry().asMultiPolygon()
+            if (len(parts) == len(originalParts)):
+                QgsLogger.debug("Modify geometry in %s with id %i" % (GeosismaWindow.TABLE_GEOM_FAB10K_MODIF, local_id) ,2 )
+                feat.setGeometry( geom )
+                GeoArchiveManager.instance().updateFab10kModifications(feat) # mod date is updated inside
+                continue
+            
+            # TODO: better check on parts modification because thy can have same part number but different geometry due the fact
+            # that combining splitting and deleting operations
+            if (len(parts) != len(originalParts)):
+                # create features basing on parts and remove origin record
+                for index, part in enumerate(parts):
+                    partGeom = QgsGeometry.fromPolygon(part)
+                    if not partGeom.convertToMultiType():
+                        message = self.tr(u"Problemi convertendo in multiplygon una parte della geometria con local_id: %i" % str(feat["local_id"]))
+                        self.showMessage(message, QgsMessageLog.WARNING)
+                        QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+                        continue
+                    
+                    aggregatoModificato = self.initNewAggregatiDict()
+                    newIdentif = "%s%02d" % (feat["identif"], index+1)
+                    aggregatoModificato["identif"] =  newIdentif
+                    aggregatoModificato["fab_10k_gid"] = feat["fab_10k_gid"]
+                    aggregatoModificato["the_geom"] = partGeom.exportToWkt()
+                    
+                    # save new aggregato
+                    GeoArchiveManager.instance().archiveFab10kModifications(aggregatoModificato)
+                    
+                    aggregatoModificato["local_id"] = GeoArchiveManager.instance().getLastRowId()
+                    message = self.tr("Inserito aggregato modificato con local_id %s e identif %s" % (aggregatoModificato["local_id"], aggregatoModificato["identif"]))
+                    self.showMessage(message, QgsMessageLog.INFO)
+                
+                # then remove source aggregato
+                GeoArchiveManager.instance().deleteFab10kModifications(local_id)
+                #layer.dataProvider().deleteFeatures([local_id])
+        
+        # commit all changes in DB
+        GeoArchiveManager.instance().commit()
+        
+        # redraw layer to update their status
+        self.iface.mapCanvas().refresh()
+        
+    def actionToggleEditingChanged(self):
+        """
+        Signal handler activated when editing action is toggled on GEOM_FAB10K_MODIF layer
+        This is useful to rollback modification before to programmatically do other actions
+        """
+        QgsLogger.debug("actionToggleEditingChanged entered",2 )
+        if self.iface.actionToggleEditing().isChecked():
+            return
+
+        # apply only on GEOM_FAB10K_MODIF layer
+        layer = self.iface.activeLayer()
+        if not layer or self._getLayerId(layer) != GeosismaWindow.VLID_GEOM_FAB10K_MODIF:
+            self.btnModifyAggregatiGeometry.setChecked(False)
+            return
+        
+        # check if layer has been modified
+        if not layer.isModified():
+            self.btnModifyAggregatiGeometry.setChecked(False)
+            return
+        
+        # check if want to commit changes
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText(self.tr("Vuoi salvare i cambiamenti nel layer %s ?" % GeosismaWindow.LAYER_GEOM_FAB10K_MODIF) )
+        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        msgBox.setButtonText(QMessageBox.Cancel, self.tr("Chiudi senza salvare"))
+        msgBox.setButtonText(QMessageBox.Yes, self.tr("Salva"))
+        ret = msgBox.exec_()
+         
+        if ret == QMessageBox.Cancel:
+            layer.rollBack()
+            layer.commitChanges()
+            self.iface.actionToggleEditing().trigger()
+            return
+        
+        # before apply all change copy editing buffer and rollback all modifications
+        # on fab_10k_mod so I can control all geometry modification
+        # programmatically
+        # they are saved as instance variable to be used to another callback activated when
+        # editing is really termionated
+        self.deletedFeatureIds = layer.editBuffer().deletedFeatureIds()
+        self.changedGeometries = layer.editBuffer().changedGeometries()
+        
+        # register callback to manage modification after effective editing end
+        try:
+            self.iface.actionToggleEditing().triggered.disconnect(self.actionToggleEditingTriggered)
+        except:
+            pass
+        self.iface.actionToggleEditing().triggered.connect(self.actionToggleEditingTriggered)
+        
+        # discard all changes
+        layer.rollBack()
+        layer.commitChanges()
+
+
+    def checkCanModifyAggregato(self, feat):
+        if feat["upload_time"] != None :
+            message = self.tr(u"Aggregato con local_id: %i giá caricato sul server. Crea un nuovo aggregato a partire dall'originale" % str(feat["local_id"]))
+            self.showMessage(message, QgsMessageLog.WARNING)
+            QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            return False
+        if str(feat["team_id"]) != self.teamComboBox.currentText():
+            message = self.tr(u"Aggregato con local_id: %i appartiene al team %s non al team corrente" % (str(feat["local_id"]), str(feat["team_id"])))
+            self.showMessage(message, QgsMessageLog.WARNING)
+            QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            return False
+        
+        return True
+    
+    def registerAggregatiEditingSignals(self):
+        """
+        Add signals to manage editing of an existing Aggregato modificato
+        This assume that original Aggregato has been copied as GEOM_FAB10K_MODIF 
+        """
+        QgsLogger.debug("registerAggregatiEditingSignals entered",2 )
+
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K_MODIF )
+        if layer == None:
+            return
+
+        try:
+            self.iface.actionToggleEditing().changed.disconnect(self.actionToggleEditingChanged)
+        except:
+            pass
+        self.iface.actionToggleEditing().changed.connect(self.actionToggleEditingChanged)
+
+    
+    def registerAggregatiEditingSignals___APPPP(self):
+        """
+        add signals to manage editing of an existing Aggregato
+        """
+        QgsLogger.debug("registerAggregatiEditingSignals___APPPP entered",2 )
+        
+        self.editingStated = False
+        
+        def editingStarted():
+            print "editingStarted"
+        def editingStopped ():
+            print "editingStopped "
+        def layerModified():
+            print "layerModified"
+        def beforeCommitChanges ():
+            print "beforeCommitChanges "
+        def beforeRollBack():
+            print "beforeRollBack"
+        def featureAdded(fid):
+            print "featureAdded"
+        def featureDeleted(fid):
+            print "featureDeleted"
+        def updatedFields():
+            print "updatedFields"
+        def geometryChanged(fid, geom):
+            print "geometryChanged"
+        def editCommandStarted():
+            print "editCommandStarted"
+        def editCommandEnded():
+            print "editCommandEnded"
+        def editCommandDestroyed():
+            print "editCommandDestroyed"
+        def actionToggleEditingtriggered(checked):
+            print "actionToggleEditingtriggered checked: ", checked
+        def actionToggleEditingchanged():
+            print "actionToggleEditingchanged"
+        def actionToggleEditingtoggled():
+            print "actionToggleEditingtoggled..."
+#             if self.iface.actionToggleEditing().isChecked():
+#                 return
+#             print "self.editingStated", self.editingStated
+#             if not self.editingStated:
+#                 return
+#             layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
+#             if len(layers) > 0:
+#                 layer = layers[0]
+#                 print "modified", layer.isModified()
+#                 msgBox = QMessageBox()
+#                 msgBox.setIcon(QMessageBox.Warning)
+#                 msgBox.setText(self.tr("pippo"))
+#                 msgBox.setInformativeText(self.tr("Aggiornare il record ?"))
+#                 msgBox.setStandardButtons(QMessageBox.YesAll | QMessageBox.Yes | QMessageBox.Cancel)
+#                 msgBox.setButtonText(QMessageBox.YesAll, self.tr("Chiudi senza salvare"))
+#                 msgBox.setButtonText(QMessageBox.Yes, self.tr("Salva modifiche"))
+#                 msgBox.setButtonText(QMessageBox.Cancel, self.tr("Continua"))
+#                 ret = msgBox.exec_()
+#                 
+#                 if ret == QMessageBox.Cancel:
+#                     print "cancel"
+#                 if ret == QMessageBox.YesAll:
+#                     print "yes all"
+#                 if ret == QMessageBox.Yes:
+#                     print "-----------yes"
+#                     editBuffer = copy.copy( layer.editBuffer() )
+#                     layer.rollBack()
+#                     for key, geom in editBuffer.changedGeometries().iteritems():
+#                         print "nmodified id", key
+#                         feat = layer.getFeatures(QgsFeatureRequest(key))
+#                         feat=feat.next()
+#                         oldgeom = feat.geometry()
+#                         print "new geom = ", geom.exportToWkt()
+#                         print "old geom = ", oldgeom.exportToWkt()
+
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K_MODIF )
+        if layer == None:
+            return 
+        try:
+            self.iface.actionToggleEditing().triggered.disconnect(actionToggleEditingtriggered)
+            self.iface.actionToggleEditing().changed.disconnect(actionToggleEditingchanged)
+            self.iface.actionToggleEditing().toggled.disconnect(actionToggleEditingtoggled)
+        except:
+            pass
+        self.iface.actionToggleEditing().triggered.connect(actionToggleEditingtriggered)
+        self.iface.actionToggleEditing().changed.connect(actionToggleEditingchanged)
+        self.iface.actionToggleEditing().toggled.connect(actionToggleEditingtoggled)
+        layer.editingStarted.connect(editingStarted)
+        layer.editingStopped.connect(editingStopped)
+        layer.layerModified.connect(layerModified)
+        layer.beforeCommitChanges.connect(beforeCommitChanges)
+        layer.beforeRollBack.connect(beforeRollBack)
+        layer.featureAdded.connect(featureAdded)
+        layer.featureDeleted.connect(featureDeleted)
+        layer.updatedFields.connect(updatedFields)
+        layer.geometryChanged.connect(geometryChanged)
+        layer.editCommandStarted.connect(editCommandStarted)
+        layer.editCommandEnded.connect(editCommandEnded)
+        layer.editCommandDestroyed.connect(editCommandDestroyed)
+        #layer.editingStopped.connect(self.emitSafetyGeometryUpdate)
+
+    
     ###############################################################
     ###### static methods
     ###############################################################
     @classmethod
     def _getLayerId(self, layer):
+        if layer == None:
+            return None
         if hasattr(layer, 'id'):
             return layer.id()
         return layer.getLayerID() 
 
     @classmethod
     def _getRendererCrs(self, renderer):
+        if renderer == None:
+            return None
         if hasattr(renderer, 'destinationCrs'):
             return renderer.destinationCrs()
         return renderer.destinationSrs()
 
     @classmethod
     def _setRendererCrs(self, renderer, crs):
+        if renderer == None:
+            return None
         if hasattr(renderer, 'setDestinationCrs'):
             return renderer.setDestinationCrs( crs )
         return renderer.setDestinationSrs( crs )
 
     @classmethod
     def _addMapLayer(self, layer):
+        if layer == None:
+            return None
         if hasattr(QgsMapLayerRegistry.instance(), 'addMapLayers'):
             return QgsMapLayerRegistry.instance().addMapLayers( [layer] )
         return QgsMapLayerRegistry.instance().addMapLayer(layer)
 
     @classmethod
     def _removeMapLayer(self, layer):
+        if layer == None:
+            return None
         if hasattr(QgsMapLayerRegistry.instance(), 'removeMapLayers'):
             return QgsMapLayerRegistry.instance().removeMapLayers( [layer] )
         return QgsMapLayerRegistry.instance().removeMapLayer(layer)
