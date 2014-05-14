@@ -8,7 +8,7 @@
 rt_geosisma_offline.zip
 
 # sqlites db
-*.sqlite
+offlinedata/dbs/geosisma_geo.sqlite
 
 # cache
 offlinedata/layers/*png
