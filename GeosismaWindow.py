@@ -382,11 +382,18 @@ class GeosismaWindow(QDockWidget):
     def reloadCrs(self):
         #self.srid = self.getSridFromDb()
         self.srid = self.DEFAULT_SRID
-        srs = QgsCoordinateReferenceSystem( self.srid, QgsCoordinateReferenceSystem.EpsgCrsId )
-        renderer = self.canvas.mapRenderer()
-        self._setRendererCrs(renderer, srs)
-        renderer.setMapUnits( srs.mapUnits() if srs.mapUnits() != QGis.UnknownUnit else QGis.Meters )
-        renderer.setProjectionsEnabled(True)
+        crs = QgsCoordinateReferenceSystem( self.srid, QgsCoordinateReferenceSystem.EpsgCrsId )
+        # manage deprecated api using newest. If it's not available then use deprecated one
+        try:
+            mapSettings = self.canvas.mapSettings()
+            mapSettings.setDestinationCrs(crs)
+            mapSettings.setMapUnits( crs.mapUnits() if crs.mapUnits() != QGis.UnknownUnit else QGis.Meters )
+            self.iface.mapCanvas().setCrsTransformEnabled(True)
+        except:
+            renderer = self.canvas.mapRenderer()
+            self._setRendererCrs(renderer, crs)
+            renderer.setMapUnits( crs.mapUnits() if crs.mapUnits() != QGis.UnknownUnit else QGis.Meters )
+            renderer.setProjectionsEnabled(True)
 
     def setProjectDefaultSetting(self):
         project = QgsProject.instance()
