@@ -65,9 +65,9 @@ class GeosismaWindow(QDockWidget):
 
     # nomi dei layer in TOC
     LAYER_GEOM_ORIG = "Catasto"
-    LAYER_GEOM_MODIF = "Schede"
-    LAYER_GEOM_FAB10K = "Aggregati"
-    LAYER_GEOM_FAB10K_MODIF = "Aggregati modificati"
+    LAYER_GEOM_MODIF = "Schede sopralluoghi"
+    LAYER_GEOM_FAB10K = "Fabbricati 10k"
+    LAYER_GEOM_FAB10K_MODIF = "Fabbricati 10k modificati"
     LAYER_FOTO = "Foto Edifici"
 
     # stile per i layer delle geometrie
