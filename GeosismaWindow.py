@@ -299,7 +299,7 @@ class GeosismaWindow(QDockWidget):
 
         text = u"Download"
         self.btnDownload = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
-        self.btnDownload.setToolTip( "Download Richieste di sopralluogo e Aggregati modificati" )
+        self.btnDownload.setToolTip( "Download Richieste di sopralluogo e %s" % self.LAYER_GEOM_FAB10K_MODIF )
         gridLayout.addWidget(self.btnDownload, 3, 0, 1, 2)
 
         text = u"Reset"
@@ -351,7 +351,7 @@ class GeosismaWindow(QDockWidget):
         self.btnManageAttachments.setToolTip( text )
         gridLayout.addWidget(self.btnManageAttachments, 3, 0, 1, 3)
 
-        group = QGroupBox( "Geometrie Aggregati", child )
+        group = QGroupBox( "Geometrie %s" % self.LAYER_GEOM_FAB10K_MODIF, child )
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
@@ -362,7 +362,7 @@ class GeosismaWindow(QDockWidget):
 
         text = u"Nuova"
         self.btnNewAggregatiGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        self.btnNewAggregatiGeometry.setToolTip( u"Disegna un nuovo aggregato" )
+        self.btnNewAggregatiGeometry.setToolTip( u"Disegna un nuovo record %s" % self.LAYER_GEOM_FAB10K )
         self.btnNewAggregatiGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnNewAggregatiGeometry, 0, 2, 1, 1)
 
@@ -665,9 +665,6 @@ class GeosismaWindow(QDockWidget):
             # set custom property
             vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_FAB10K_MODIF" )
             
-            # add signal to manage editing of the this layer integrating with qgis editing tools 
-            #self.registerAggregatiEditingSignals()
-            
         return True
 
     def showMessage(self, message, messagetype):
@@ -834,7 +831,7 @@ class GeosismaWindow(QDockWidget):
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         else:
-            message = self.tr("Scaricate %s schede soralluoghi" % self.downloadedRequests.__len__())
+            message = self.tr("Scaricate %s richieste sopralluogo" % self.downloadedRequests.__len__())
             self.showMessage(message, QgsMessageLog.INFO)
             QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
 
@@ -899,11 +896,11 @@ class GeosismaWindow(QDockWidget):
 
         QApplication.restoreOverrideCursor()
         if not success:
-            message = self.tr("Fallito lo scaricamento delle Modifiche agli Aggregati. Controlla il Log")
+            message = self.tr("Fallito lo scaricamento di %s. Controlla il Log" % self.LAYER_GEOM_FAB10K_MODIF)
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         else:
-            message = self.tr("Scaricate %s modifiche dei Aggregati" % self.fab10kModifications.__len__())
+            message = self.tr("Scaricati %s reocrd di %s" % (self.fab10kModifications.__len__(), self.LAYER_GEOM_FAB10K_MODIF) )
             self.showMessage(message, QgsMessageLog.INFO)
             QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
 
@@ -931,7 +928,7 @@ class GeosismaWindow(QDockWidget):
             except:
                 pass
             GeoArchiveManager.instance().close() # to avoid locking
-            message = self.tr("Fallito l'archiviazione delle modifiche agli Aggregati")
+            message = self.tr("Fallito l'archiviazione delle modifiche a %s" % self.LAYER_GEOM_FAB10K_MODIF)
             self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
@@ -2047,7 +2044,7 @@ class GeosismaWindow(QDockWidget):
             GeoArchiveManager.instance().commit()
             
             newAggregato["local_gid"] = GeoArchiveManager.instance().getLastRowId()
-            message = self.tr("Inserito nuovo aggregato con id %s" % newAggregato["local_gid"])
+            message = self.tr("Inserito nuovo record %s con id %s" % ( self.LAYER_GEOM_FAB10K_MODIF ,newAggregato["local_gid"]) )
             self.showMessage(message, QgsMessageLog.INFO)
             
         except Exception as ex:
@@ -2055,7 +2052,7 @@ class GeosismaWindow(QDockWidget):
                 traceback.print_exc()
             except:
                 pass
-            message = self.tr(u"Fallito il salvataggio del nuovo aggregato %s" % newidentif)
+            message = self.tr(u"Fallito il salvataggio del nuovo record %s con identificativo %s" % (self.LAYER_GEOM_FAB10K_MODIF, newidentif) )
             self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
@@ -2094,7 +2091,7 @@ class GeosismaWindow(QDockWidget):
         geoDbCrs = QgsCoordinateReferenceSystem(self.GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
         xform = QgsCoordinateTransform(defaultCrs, geoDbCrs)
         if polygon.transform(xform):
-            QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione del poligono al CRS degli aggregati: %d" % self.GEODBDEFAULT_SRID) )
+            QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione del poligono al CRS di %s: %d" % (self.LAYER_GEOM_FAB10K, self.GEODBDEFAULT_SRID) ))
             return None
         
         # could be implemented getting nearest point to polygon, than intersect this point
@@ -2168,7 +2165,7 @@ class GeosismaWindow(QDockWidget):
             GeoArchiveManager.instance().commit()
             
             aggregatoModificato["local_id"] = GeoArchiveManager.instance().getLastRowId()
-            message = self.tr("Inserito aggregato modificato con local_id %s" % aggregatoModificato["local_id"])
+            message = self.tr("Inserito record %s con local_id %s" % (self.LAYER_GEOM_FAB10K_MODIF, aggregatoModificato["local_id"]) )
             self.showMessage(message, QgsMessageLog.INFO)
             
         except Exception as ex:
@@ -2176,7 +2173,7 @@ class GeosismaWindow(QDockWidget):
                 traceback.print_exc()
             except:
                 pass
-            message = self.tr(u"Fallito il salvataggio dell'aggregato modificato %s" % featOrig["identif"] )
+            message = self.tr(u"Fallito il salvataggio del record %s con identificativo %s" % (self.LAYER_GEOM_FAB10K_MODIF, featOrig["identif"]) )
             self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         finally:
@@ -2261,7 +2258,7 @@ class GeosismaWindow(QDockWidget):
             
             parts = geom.asMultiPolygon()
             if parts == None or len(parts) == 0:
-                message = self.tr(u"Aggregato con local_id: %i non è multiplygon" % str(feat["local_id"]))
+                message = self.tr(u"Record %s con local_id: %s non è multiplygon" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_id"]) ))
                 self.showMessage(message, QgsMessageLog.WARNING)
                 QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
                 continue
@@ -2298,7 +2295,7 @@ class GeosismaWindow(QDockWidget):
                     GeoArchiveManager.instance().archiveFab10kModifications(aggregatoModificato)
                     
                     aggregatoModificato["local_id"] = GeoArchiveManager.instance().getLastRowId()
-                    message = self.tr("Inserito aggregato modificato con local_id %s e identif %s" % (aggregatoModificato["local_id"], aggregatoModificato["identif"]))
+                    message = self.tr("Inserito record %s con local_id %s e identificativo %s" % (self.LAYER_GEOM_FAB10K_MODIF, aggregatoModificato["local_id"], aggregatoModificato["identif"]))
                     self.showMessage(message, QgsMessageLog.INFO)
                 
                 # then remove source aggregato
@@ -2368,12 +2365,12 @@ class GeosismaWindow(QDockWidget):
 
     def checkCanModifyAggregato(self, feat):
         if feat["upload_time"] != None :
-            message = self.tr(u"Aggregato con local_id: %i giá caricato sul server. Crea un nuovo aggregato a partire dall'originale" % str(feat["local_id"]))
+            message = self.tr(u"Record %s con local_id: %s giá caricato sul server. Crea un nuovo aggregato a partire dall'originale" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_id"]) ))
             self.showMessage(message, QgsMessageLog.WARNING)
             QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return False
         if str(feat["team_id"]) != self.teamComboBox.currentText():
-            message = self.tr(u"Aggregato con local_id: %i appartiene al team %s non al team corrente" % (str(feat["local_id"]), str(feat["team_id"])))
+            message = self.tr(u"Record %s con local_id: %s appartiene al team %s, non al team corrente" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_id"]), str(feat["team_id"])))
             self.showMessage(message, QgsMessageLog.WARNING)
             QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return False

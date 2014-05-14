@@ -61,7 +61,7 @@ class DownloadRequests(DlgWaiting):
             
             # init progress bar
             self.reset()
-            self.setWindowTitle( self.tr("Scarica le schede Sopralluogo del Team") )
+            self.setWindowTitle( self.tr("Scarica le Richieste di sopralluogo del Team") )
             self.setRange( 0, numDownload )
             QApplication.setOverrideCursor(Qt.WaitCursor)
 

@@ -52,7 +52,7 @@ class DownloadFab10kModifications(DlgWaiting):
         try:
             # init progress bar
             self.reset()
-            self.setWindowTitle( self.tr("Scarica le modifiche agli Aggregati") )
+            self.setWindowTitle( self.tr("Scarica le modifiche a %s" % gw.instance().LAYER_GEOM_FAB10K ))
             self.setRange( 0, 1 )
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
@@ -110,7 +110,7 @@ class DownloadFab10kModifications(DlgWaiting):
         self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
 
         # for each request api
-        message = self.tr("Download Aggregati modificati")
+        message = self.tr("Download %s" % gw.instance().LAYER_GEOM_FAB10K_MODIF )
         self.message.emit(message, QgsMessageLog.INFO)
         
         request = QNetworkRequest()
