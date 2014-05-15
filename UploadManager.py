@@ -119,9 +119,11 @@ class UploadManager(DlgWaiting):
                 if "team_id" in safety:
                     safetyToUpload["team"] = self.teamUrl + str(safety["team_id"]) + "/"
                     safetyToUpload.pop("team_id")
-                if "request_id" in safety:
+                if "request_id" in safety and safety["request_id"] != "":
                     safetyToUpload["request"] = self.requestUrl + str(safety["request_id"]) + "/"
                     safetyToUpload.pop("request_id")
+                else:
+                    safetyToUpload["request"] = None
                 
                 # set semaphore status for a single safety management
                 self.singleSafetyUploadFinished = False
