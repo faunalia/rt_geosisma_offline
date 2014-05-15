@@ -250,21 +250,27 @@ class UploadManager(DlgWaiting):
             QApplication.restoreOverrideCursor()
     
     def setSingleSafetyUploadFinished(self, success):
+        QgsLogger.debug("setSingleSafetyUploadFinished finished with %s" % success, 2 )
         self.singleSafetyUploadFinished = True
 
     def setSingleAttachmentUploadFinished(self, success):
+        QgsLogger.debug("setSingleAttachmentUploadFinished finished with %s" % success, 2 )
         self.singleAttachmentUploadFinished = True
 
     def setSingleSafetyDownloadFinished(self, success):
+        QgsLogger.debug("setSingleSafetyDownloadFinished finished with %s" % success, 2 )
         self.singleSafetyDownloadFinished = True
 
     def setSingleSopralluoghiDownloadFinished(self, success):
+        QgsLogger.debug("setSingleSopralluoghiDownloadFinished finished with %s" % success, 2 )
         self.singleSopralluoghiDownloadFinished = True
 
     def setSingleSopralluoghiUpdateFinished(self, success):
+        QgsLogger.debug("setSingleSopralluoghiUpdateFinished finished with %s" % success, 2 )
         self.singleSopralluoghiUpdateFinished = True
 
     def setAllFinished(self, success):
+        QgsLogger.debug("setAllFinished finished with %s" % success, 2 )
         self.allFinished = True
 
     def uploadSafety(self, safety):
