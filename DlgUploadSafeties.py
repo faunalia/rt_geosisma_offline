@@ -26,10 +26,10 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from collections import OrderedDict
 
-from dlgSelectSafety_ui import Ui_Dialog
+from dlgUploadSafeties_ui import Ui_Dialog
 from ArchiveManager import ArchiveManager
 
-class DlgSelectSafety(QDialog, Ui_Dialog):
+class DlgUploadSafeties(QDialog, Ui_Dialog):
 
 	# signals
 	loadTeamsDone = pyqtSignal()
@@ -47,15 +47,14 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		self.setAttribute(Qt.WA_DeleteOnClose)
 		self.setupUi(self)
 		self.buttonBox.button(QDialogButtonBox.Close).setText(self.tr("Ignora"))
-		#self.buttonBox.button(QDialogButtonBox.Save).setText(self.tr("Upload"))
-		#self.buttonBox.button(QDialogButtonBox.SaveAll).setText(self.tr("Upload tutte"))
+		self.buttonBox.button(QDialogButtonBox.Save).setText(self.tr("Upload"))
+		self.buttonBox.button(QDialogButtonBox.SaveAll).setText(self.tr("Upload tutte"))
 
 		self.loadTeamsDone.connect(self.updateButtonsState)
 		self.loadTeamsDone.connect(self.loadTable)
 		self.safetyTableWidget.itemSelectionChanged.connect(self.updateButtonsState)
 		self.loadTableDone.connect(self.selectCurrentSafety)
-		self.buttonBox.button(QDialogButtonBox.Ok).clicked.connect(self.setCurrentSafetyId)
-		#self.buttonBox.button(QDialogButtonBox.Save).clicked.connect(self.setCurrentSafetyId)
+		self.buttonBox.button(QDialogButtonBox.Save).clicked.connect(self.setCurrentSafetyId)
 		self.buttonBox.clicked.connect(self.setCurrentClicked)
 		
 		self.loadSafeties()
@@ -106,7 +105,7 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		header = self.safetyTableWidget.horizontalHeader()
 		header.setResizeMode(QHeaderView.ResizeToContents)
 		
-		# fill tha table
+		# fill the table
 		self.safetyTableWidget.setHorizontalHeaderLabels( [val[0] for val in columns.values()] )
 		for row, record in enumerate(self.records):
 			for column, columnKey in enumerate(columns.keys()):
@@ -167,14 +166,12 @@ class DlgSelectSafety(QDialog, Ui_Dialog):
 		if len(self.safetyTableWidget.selectedItems()) == 0:
 			enabled = False
 		
-		self.buttonBox.button(QDialogButtonBox.Ok).setEnabled(enabled)
+		self.buttonBox.button(QDialogButtonBox.Save).setEnabled(enabled)
 			
 	def setCurrentClicked(self, button):
-		if (button is self.buttonBox.button(QDialogButtonBox.Ok)):
-			self.buttonSelected = "Ok"
-		#if (button is self.buttonBox.button(QDialogButtonBox.Save)):
-		#	self.buttonSelected = "Save"
-		#if (button is self.buttonBox.button(QDialogButtonBox.SaveAll)):
-		#	self.buttonSelected = "SaveAll"
+		if (button is self.buttonBox.button(QDialogButtonBox.Save)):
+			self.buttonSelected = "Save"
+		if (button is self.buttonBox.button(QDialogButtonBox.SaveAll)):
+			self.buttonSelected = "SaveAll"
 		if (button is self.buttonBox.button(QDialogButtonBox.Cancel)):
 			self.buttonSelected = "Cancel"

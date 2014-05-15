@@ -50,13 +50,17 @@ class GeosismaOffline:
     
     def initGui(self):
         #self.action = QAction(QIcon(":/plugins/geosismaoffline/icon.png"), "&RT Geosisma Offline", self.iface.mainWindow())
-        self.action = QAction(QIcon(":/icons/icon.png"), "&RT Geosisma Offline", self.iface.mainWindow())
+        self.action = QAction(QIcon(":/icons/icon.png"), "RT Geosisma Offline", self.iface.mainWindow())
+        self.resetAction = QAction(QIcon(""), "Reset DB", self.iface.mainWindow())
+        self.resetAction.triggered.connect(self.resetDb)
         QObject.connect(self.action, SIGNAL("activated()"), self.run) 
-        self.iface.addPluginToMenu("RT Geosisma Offline", self.action)
+        self.iface.addPluginToMenu("&RT Geosisma Offline", self.action)
+        self.iface.addPluginToMenu("&RT Geosisma Offline", self.resetAction)
         self.iface.addToolBarIcon(self.action)
 
     def unload(self):
         self.iface.removePluginMenu("RT Geosisma Offline",self.action)
+        self.iface.removePluginMenu("RT Geosisma Offline",self.resetAction)
         self.iface.removeToolBarIcon(self.action)
 
     def run(self):
@@ -85,6 +89,12 @@ class GeosismaOffline:
             pass
         self.dlg = None
 
-
+    def resetDb(self):
+        if self.dlg == None:
+            message = "Avviare prima RT GEosisma Offline prima di fare il reset"
+            QMessageBox.information(self.iface.mainWindow(), GeosismaWindow.MESSAGELOG_CLASS, message)
+            return
+        self.dlg.reset()
+        
 if __name__ == "__main__":
     pass

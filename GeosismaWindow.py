@@ -208,12 +208,12 @@ class GeosismaWindow(QDockWidget):
         QObject.connect(self.newSafetyGeometryDrawer, SIGNAL("geometryEmitted"), self.createNewSafetyGeometry)
 
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
-        self.connect(self.btnModifyCurrentSafety, SIGNAL("clicked()"), self.updateSafetyForm)
-        self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
         self.connect(self.btnSelectSafety, SIGNAL("clicked()"), self.selectSafety)
+        self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
+        self.connect(self.btnUploadSafeties, SIGNAL("clicked()"), self.uploadAllSafeties)
         self.connect(self.btnSelectRequest, SIGNAL("clicked()"), self.selectRequest)
         self.connect(self.btnDownload, SIGNAL("clicked()"), self.downloadTeams) # ends emitting downloadTeamsDone
-        self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
+        #self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
         
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
         self.connect(self.btnListLinkedSafeties, SIGNAL("clicked()"), self.listLinkedSafeties)
@@ -254,121 +254,120 @@ class GeosismaWindow(QDockWidget):
 
     def setupUi(self):
         self.setObjectName( "rt_geosisma_dockwidget" )
-        self.setWindowTitle( "Geosisma Offline RT" )
+        self.setWindowTitle( self.tr("Geosisma Offline RT") )
 
         child = QWidget()
         vLayout = QVBoxLayout( child )
 
 
-        group = QGroupBox( "Schede Sopralluoghi", child )
+        group = QGroupBox( self.tr("Schede Sopralluoghi"), child )
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
-        text = u"Nuova"
+        text = self.tr(u"Nuova")
         self.btnNewSafety = QPushButton( QIcon(":/icons/nuova_scheda.png"), text, group )
         #text = u"Identifica la geometria per la creazione di una nuova scheda edificio"
-        text = u"Crea una nuova scheda sopralluogo"
+        text = self.tr(u"Crea una nuova scheda sopralluogo")
         self.btnNewSafety.setToolTip( text )
         #self.btnNewSafety.setCheckable(True)
         gridLayout.addWidget(self.btnNewSafety, 0, 0, 1, 1)
 
-        text = u"Modifica"
-        self.btnModifyCurrentSafety = QPushButton( QIcon(":/icons/modifica_scheda.png"), text, group )
-        #text = u"Identifica la geometria per l'apertura di una scheda gia' esistente su di essa"
-        text = u"Modifica scheda sopralluogo corrente"
-        self.btnModifyCurrentSafety.setToolTip( text )
-        #self.btnModifyCurrentSafety.setCheckable(True)
-        gridLayout.addWidget(self.btnModifyCurrentSafety, 0, 1, 1, 1)
+        text = self.tr(u"Apri")
+        self.btnSelectSafety = QPushButton( QIcon(":/icons/modifica_scheda.png"), text, group )
+        text = self.tr(u"Seleziona e modifica una scheda sopralluogo")
+        self.btnSelectSafety.setToolTip( text )
+        gridLayout.addWidget(self.btnSelectSafety, 0, 1, 1, 1)
 
-        text = u"Elimina"
+        text = self.tr(u"Elimina")
         self.btnDeleteCurrentSafety = QPushButton( QIcon(":/icons/cancella_scheda.png"), text, group )
-        text = u"Elimina scheda sopralluogo"
+        text = self.tr(u"Elimina scheda sopralluogo")
         self.btnDeleteCurrentSafety.setToolTip( text )
         #self.btnDeleteCurrentSafety.setCheckable(True)
         gridLayout.addWidget(self.btnDeleteCurrentSafety, 0, 2, 1, 1)
 
-        text = u"Seleziona Scheda"
-        self.btnSelectSafety = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
-        self.btnSelectSafety.setToolTip( text )
-        gridLayout.addWidget(self.btnSelectSafety, 1, 0, 1, 3)
+        text = self.tr(u"Upload")
+        self.btnUploadSafeties = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
+        text = self.tr(u"Upload delle schede sopralluogo")
+        self.btnUploadSafeties.setToolTip( text )
+        gridLayout.addWidget(self.btnUploadSafeties, 1, 0, 1, 3)
 
-        text = u"Seleziona Richiesta"
+        text = self.tr(u"Seleziona Richiesta")
         self.btnSelectRequest = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
         self.btnSelectRequest.setToolTip( text )
         gridLayout.addWidget(self.btnSelectRequest, 2, 0, 1, 3)
 
-        text = u"Download"
+        text = self.tr(u"Dowload")
         self.btnDownload = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
         self.btnDownload.setToolTip( "Download Richieste di sopralluogo e %s" % self.LAYER_GEOM_FAB10K_MODIF )
-        gridLayout.addWidget(self.btnDownload, 3, 0, 1, 2)
+        gridLayout.addWidget(self.btnDownload, 3, 0, 1, 3)
 
-        text = u"Reset"
-        self.btnReset = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
-        self.btnReset.setToolTip( text )
-        gridLayout.addWidget(self.btnReset, 3, 2, 1, 1)
+        #text = self.tr(u"Reset")
+        #self.btnReset = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
+        #self.btnReset.setToolTip( text )
+        #gridLayout.addWidget(self.btnReset, 3, 2, 1, 1)
 
 
-        group = QGroupBox( "Geometrie Sopralluoghi e allegati", child )
+        group = QGroupBox( self.tr(u"Geometrie Sopralluoghi e allegati"), child )
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
-        text = u"Nuova"
+        text = self.tr(u"Nuova")
         self.btnNewSafetyGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Disegna un poligono da associare alla scheda"
+        text = self.tr(u"Disegna un poligono da associare alla scheda")
         self.btnNewSafetyGeometry.setToolTip( text )
         self.btnNewSafetyGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnNewSafetyGeometry, 0, 0, 1, 2)
 
-        text = u"Zoom"
+        text = self.tr(u"Zoom")
         self.btnZoomToSafety = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Zoom al poligono della scheda"
+        text = self.tr(u"Zoom al poligono della scheda")
         self.btnZoomToSafety.setToolTip( text )
         gridLayout.addWidget(self.btnZoomToSafety, 0, 2, 1, 1)
 
-        text = u"Associa"
+        text = self.tr(u"Associa")
         self.btnLinkSafetyGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Seleziona una particella da associare alla scheda"
+        text = self.tr(u"Seleziona una particella da associare alla scheda")
         self.btnLinkSafetyGeometry.setToolTip( text )
         self.btnLinkSafetyGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnLinkSafetyGeometry, 1, 0, 1, 1)
 
-        text = u"Elenco"
+        text = self.tr(u"Elenco")
         self.btnListLinkedSafeties = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Elencare le scehde associate a una particella"
+        text = self.tr(u"Elencare le scehde associate a una particella")
         self.btnListLinkedSafeties.setToolTip( text )
         self.btnListLinkedSafeties.setCheckable(True)
         gridLayout.addWidget(self.btnListLinkedSafeties, 1, 1, 1, 1)
 
-        text = u"Ripulisci"
+        text = self.tr(u"Ripulisci")
         self.btnCleanUnlinkedSafeties = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Elimina schede non associate a nessuna particella"
+        text = self.tr(u"Elimina schede non associate a nessuna particella")
         self.btnCleanUnlinkedSafeties.setToolTip( text )
         gridLayout.addWidget(self.btnCleanUnlinkedSafeties, 1, 2, 1, 1)
 
-        text = u"Gestisci allegati"
+        text = self.tr(u"Gestisci allegati")
         self.btnManageAttachments = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        text = u"Aggiuinta e rimozione degli allegati alla scheda corrente"
+        text = self.tr(u"Aggiuinta e rimozione degli allegati alla scheda corrente")
         self.btnManageAttachments.setToolTip( text )
         gridLayout.addWidget(self.btnManageAttachments, 3, 0, 1, 3)
 
-        group = QGroupBox( "Geometrie %s" % self.LAYER_GEOM_FAB10K_MODIF, child )
+        group = QGroupBox( self.tr("Geometrie %s" % self.LAYER_GEOM_FAB10K_MODIF), child )
         vLayout.addWidget( group )
         gridLayout = QGridLayout( group )
 
-        label = QLabel( "Team", group )
+        label = QLabel( self.tr("Team"), group )
         gridLayout.addWidget(label, 0, 0, 1, 1)
         self.teamComboBox = QComboBox( group )
         gridLayout.addWidget(self.teamComboBox, 0, 1, 1, 1)
 
-        text = u"Nuova"
+        text = self.tr(u"Nuova")
         self.btnNewAggregatiGeometry = QPushButton( QIcon(":/icons/crea_geometria.png"), text, group )
-        self.btnNewAggregatiGeometry.setToolTip( u"Disegna un nuovo record %s" % self.LAYER_GEOM_FAB10K )
+        self.btnNewAggregatiGeometry.setToolTip( self.tr(u"Disegna un nuovo record %s" % self.LAYER_GEOM_FAB10K) )
         self.btnNewAggregatiGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnNewAggregatiGeometry, 0, 2, 1, 1)
 
-        text = u"Modifica"
+        text = self.tr(u"Modifica")
         self.btnModifyAggregatiGeometry = QPushButton( QIcon(":/icons/modifica_scheda.png"), text, group )
-        self.btnModifyAggregatiGeometry.setToolTip( u"Copia e modifica un Aggregato esistente" )
+        self.btnModifyAggregatiGeometry.setToolTip( self.tr(u"Copia e modifica un Aggregato esistente") )
         self.btnModifyAggregatiGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnModifyAggregatiGeometry, 0, 3, 1, 1)
 
@@ -995,7 +994,7 @@ class GeosismaWindow(QDockWidget):
         from DlgSelectSafety import DlgSelectSafety
         dlg = DlgSelectSafety(currentSafetyId=local_id, gid=gid)
 
-        # delete because no results to show
+        # cancel because no results to show
         if len(dlg.records) == 0 :
             if gid:
                 message = u"Nessuna scheda associata alla particella"
@@ -1024,35 +1023,62 @@ class GeosismaWindow(QDockWidget):
                 # get selected request
                 self.currentSafety = dlg.currentSafety
                 self.updatedCurrentSafety.emit()
-                
-            elif (dlg.buttonSelected == "Save"): # Means Upload current safety
+    
+    def uploadAllSafeties(self, gid=None):
+        # get id of the current selected safety
+        local_id = None
+        if self.currentSafety is not None and not gid:
+            local_id = self.currentSafety["local_id"]
+            
+        from DlgUploadSafeties import DlgUploadSafeties
+        dlg = DlgUploadSafeties(currentSafetyId=local_id, gid=gid)
+
+        # cancel because no results to show
+        if len(dlg.records) == 0 :
+            if gid:
+                message = u"Nessuna scheda associata alla particella"
+            elif local_id:
+                message = u"Nessuna scheda con local_id %" % local_id
+            else:
+                message = u"Nessuna scheda disponibile"
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Information)
+            msgBox.setText("RT Geosisma")
+            msgBox.setInformativeText(self.tr( message ))
+            msgBox.setStandardButtons(QMessageBox.Yes)
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Ok"))
+            msgBox.exec_()
+            dlg.deleteLater()
+            return
+
+        ret = dlg.exec_()
+        
+        # check if result set
+        if ret != 0:
+            safetyToUpload = []
+            if (dlg.buttonSelected == "Save"): # Means Upload the selected safety
                 if dlg.currentSafety is None:
                     return
-                # get selected request
-                self.safeties = dlg.records
-                self.currentSafety = dlg.currentSafety
-                self.updatedCurrentSafety.emit()
                 
-                # now upload currentSafety if not already uploaded
-                if str(self.currentSafety["id"]) == "-1":
-                    self.uploadSafeties([self.currentSafety])
-                else:
-                    message = self.tr("Scheda %s gia' archiviata con il numero: %s" % (self.currentSafety["local_id"], self.currentSafety["number"]))
+                # check if selected safeties has been already uploaded
+                if str(dlg.currentSafety["id"]) != "-1":
+                    message = self.tr("Scheda %s gia' archiviata con il numero: %s" % (dlg.currentSafety["local_id"], dlg.currentSafety["number"]))
                     self.showMessage(message, QgsMessageLog.WARNING)
                     QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
-    
-            elif (dlg.buttonSelected == "SaveAll"): # means upload all safeties
-                self.safeties = dlg.records
+                    return
                 
+                safetyToUpload.append( dlg.currentSafety )
+     
+            elif (dlg.buttonSelected == "SaveAll"): # means upload all safeties
                 # add to the list only safety to be uploaded
-                safetyToUpload = []
-                for safety in self.safeties:
+                for safety in dlg.records:
                     if str(safety["id"]) != "-1":
                         continue
                     safetyToUpload.append(safety)
-                    
-                self.uploadSafeties(safetyToUpload)
-
+            
+            # then upload
+            self.uploadSafeties( safetyToUpload )
+        
     def openCurrentSafety(self):
         QgsLogger.debug("openCurrentSafety entered",2 )
         if self.currentSafety == None:
@@ -1310,9 +1336,8 @@ class GeosismaWindow(QDockWidget):
 
     def manageGuiStatus(self):
         if self.currentSafety == None:
+            self.btnDeleteCurrentSafety.setText("Elimina [%s]" % "--")
             self.btnDeleteCurrentSafety.setEnabled(False)
-            self.btnModifyCurrentSafety.setEnabled(False)
-            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % "--")
             
             self.btnLinkSafetyGeometry.setEnabled(False)
             #self.btnListLinkedSafeties.setEnabled(False)
@@ -1320,9 +1345,9 @@ class GeosismaWindow(QDockWidget):
             self.btnZoomToSafety.setEnabled(False)
             self.btnManageAttachments.setEnabled(False)
         else:
+            self.btnDeleteCurrentSafety.setText("Elimina [%s]" % self.currentSafety["number"])
             self.btnDeleteCurrentSafety.setEnabled(True)
-            self.btnModifyCurrentSafety.setEnabled(True)
-            self.btnSelectSafety.setText("Seleziona Scheda [%s]" % self.currentSafety["number"])
+            #self.btnSelectSafety.setText("Apri [%s]" % self.currentSafety["number"])
         
             self.btnLinkSafetyGeometry.setEnabled(True)
             #self.btnListLinkedSafeties.setEnabled(True)
