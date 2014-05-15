@@ -185,7 +185,6 @@ class DownloadFab10kModifications(DlgWaiting):
 
         from json import loads
         raw = reply.readAll()
-        print raw
         try:
             json = loads(raw.data())
         except Exception as e:
