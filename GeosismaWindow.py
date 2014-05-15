@@ -880,10 +880,20 @@ class GeosismaWindow(QDockWidget):
         if not success:
             return
         
+        # get extent of the fab10k layer
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K )
+        if layer == None:
+            message = self.tr("Non posso determinare l'extent del layer: %s non verranno scaricato %s" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_FAB10K_MODIF ))
+            self.showMessage(message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            
+            self.downloadFab10kModificationsDone.emit(False)
+            return
+        
         # download all requests
         self.fab10kModifications = []
         from DownloadFab10kModifications import DownloadFab10kModifications
-        self.downloadFab10kModificationsDlg = DownloadFab10kModifications()
+        self.downloadFab10kModificationsDlg = DownloadFab10kModifications( bbox=layer.extent() )
         self.downloadFab10kModificationsDlg.done.connect( self.manageEndDownloadFab10kModificationsDlg )
         self.downloadFab10kModificationsDlg.message.connect(self.showMessage)
         self.downloadFab10kModificationsDlg.exec_()

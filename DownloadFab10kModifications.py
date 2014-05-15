@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os, json, traceback, time
 from qgis.core import *
 from PyQt4.QtCore import *
@@ -23,7 +24,7 @@ class DownloadFab10kModifications(DlgWaiting):
         self.allFinished = True
         
         self.jsonFab10kModifications = None
-        self.bbox = bbox
+        self.bbox = bbox # as QgsRectangle
         
         self.manager = QgsNetworkAccessManager.instance()
         # clean listeners to avoid overlap 
@@ -107,22 +108,25 @@ class DownloadFab10kModifications(DlgWaiting):
         
         # get connection conf
         settings = QSettings()
+        fab10kmodUrl = settings.value("/rt_geosisma_offline/fab10kmodUrl", "/api/v1/fab10kmod/")
         self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
 
+        # create json parametr for the bbox... without using geojson pytion module to avoid dependency
+        geojsonbbox = """{type: "Polygon", coordinates: [[[%(minx)s, %(miny)s], [%(minx)s, %(maxy)s], [%(maxy)s, %(maxy)s], [%(maxx)s, %(miny)s]]], crs: {"type": "name", "properties": {"name": "EPSG:%(srid)s"}}}"""
+        geojsonbbox = geojsonbbox % { "minx":self.bbox.xMinimum(), "miny":self.bbox.yMinimum(), "maxx":self.bbox.xMaximum(), "maxy":self.bbox.yMaximum(), "srid":gw.instance().DEFAULT_SRID }
+
+        print geojsonbbox
+
         # for each request api
-        message = self.tr("Download %s" % gw.instance().LAYER_GEOM_FAB10K_MODIF )
-        self.message.emit(message, QgsMessageLog.INFO)
-        
         request = QNetworkRequest()
-        url = QUrl(self.baseApiUrl + "fab10kmods")
-        if self.bbox != None:
-            url.addQueryItem("minX", self.bbox.xMinimum())
-            url.addQueryItem("minY", self.bbox.yMinimum())
-            url.addQueryItem("maxX", self.bbox.xMaximum())
-            url.addQueryItem("maxY", self.bbox.yMaximum())
+        url = QUrl(self.baseApiUrl + fab10kmodUrl)
+        url.addQueryItem("poly__contains", geojsonbbox )
         url.addQueryItem("format", "json")
         request.setUrl(url)
         
+        message = self.tr("Download %s with query: %s and bbox: %s" % (gw.instance().LAYER_GEOM_FAB10K_MODIF, url.toString(), geojsonbbox ) )
+        self.message.emit(message, QgsMessageLog.INFO)
+
         # start download
         self.manager.get(request)
         
@@ -181,8 +185,9 @@ class DownloadFab10kModifications(DlgWaiting):
 
         from json import loads
         raw = reply.readAll()
+        print raw
         try:
-            self.jsonFab10kModifications = loads(raw.data())
+            json = loads(raw.data())
         except Exception as e:
             try:
                 traceback.print_exc()
