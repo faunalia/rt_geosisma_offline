@@ -55,7 +55,8 @@ class GeosismaWindow(QDockWidget):
     selectRequestDone = pyqtSignal()
     updatedCurrentSafety = pyqtSignal()
     initNewCurrentSafetyDone = pyqtSignal()
-
+    uploadFab10kmodDone = pyqtSignal(bool)
+    
     # static global vars
     MESSAGELOG_CLASS = "rt_geosisma_offline"
     GEOSISMA_DBNAME = "geosismadb.sqlite"
@@ -210,7 +211,7 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
         self.connect(self.btnSelectSafety, SIGNAL("clicked()"), self.selectSafety)
         self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
-        self.connect(self.btnUploadSafeties, SIGNAL("clicked()"), self.uploadAllSafeties)
+        self.connect(self.btnUploadSafeties, SIGNAL("clicked()"), self.selectSafetiesToUpload)
         self.connect(self.btnSelectRequest, SIGNAL("clicked()"), self.selectRequest)
         self.connect(self.btnDownload, SIGNAL("clicked()"), self.downloadTeams) # ends emitting downloadTeamsDone
         #self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
@@ -221,7 +222,8 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.btnZoomToSafety, SIGNAL("clicked()"), self.zoomToSafety)
         self.connect(self.btnCleanUnlinkedSafeties, SIGNAL("clicked()"), self.cleanUnlinkedSafeties)
         self.connect(self.btnManageAttachments, SIGNAL("clicked()"), self.manageAttachments)
-
+        
+        # managing of fab_10k_mod (Fabbricati 10k modificati)
         self.newAggregatiDrawer = PolygonDrawer()
         self.newAggregatiDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
         QObject.connect(self.newAggregatiDrawer, SIGNAL("geometryEmitted"), self.createNewAggregatiGeometry)
@@ -230,6 +232,8 @@ class GeosismaWindow(QDockWidget):
         self.modifyAggregatiEmitter = FeatureFinder()
         self.modifyAggregatiEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
         self.connect(self.btnModifyAggregatiGeometry, SIGNAL("clicked()"), self.modifyAggregatiGeometry)
+        
+        self.connect(self.btnUploadModifiedAggregati, SIGNAL("clicked()"), self.selectFab10kmodToUpload)
         
         # custom signals
         self.downloadTeamsDone.connect(self.archiveTeams) # ends emitting archiveTeamsDone
@@ -370,6 +374,11 @@ class GeosismaWindow(QDockWidget):
         self.btnModifyAggregatiGeometry.setToolTip( self.tr(u"Copia e modifica un Aggregato esistente") )
         self.btnModifyAggregatiGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnModifyAggregatiGeometry, 0, 3, 1, 1)
+
+        text = self.tr(u"Upload", )
+        self.btnUploadModifiedAggregati = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
+        self.btnUploadModifiedAggregati.setToolTip( self.tr(u"Upload di %s" % self.LAYER_GEOM_FAB10K_MODIF ) )
+        gridLayout.addWidget(self.btnUploadModifiedAggregati, 1, 0, 1, 4)
 
 #         text = u"About"
 #         self.btnAbout = QPushButton( QIcon(":/icons/about.png"), text, child )
@@ -1034,7 +1043,7 @@ class GeosismaWindow(QDockWidget):
                 self.currentSafety = dlg.currentSafety
                 self.updatedCurrentSafety.emit()
     
-    def uploadAllSafeties(self, gid=None):
+    def selectSafetiesToUpload(self, gid=None):
         # get id of the current selected safety
         local_id = None
         if self.currentSafety is not None and not gid:
@@ -2015,6 +2024,81 @@ class GeosismaWindow(QDockWidget):
     ###############################################################
     ###### section to manage Aggregati creation and modification
     ###############################################################
+
+    def selectFab10kmodToUpload(self):
+        from DlgUploadFab10kmod import DlgUploadFab10kmod
+        dlg = DlgUploadFab10kmod( teamId=self.teamComboBox.currentText() )
+
+        # cancel because no results to show
+        if len(dlg.records) == 0 :
+            message = self.tr( u"Nessun record %s disponibile" % self.LAYER_GEOM_FAB10K_MODIF )
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Information)
+            msgBox.setText(message)
+            msgBox.setStandardButtons(QMessageBox.Yes)
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Ok"))
+            msgBox.exec_()
+            dlg.deleteLater()
+            return
+
+        ret = dlg.exec_()
+        
+        # check if result set
+        if ret != 0:
+            recordsToUpload = []
+            if (dlg.buttonSelected == "Save"): # Means Upload the selected fab10kmod records
+                if dlg.selected is None or len(dlg.selected) == 0:
+                    return
+                
+                recordsToUpload = dlg.selected
+     
+            elif (dlg.buttonSelected == "SaveAll"): # means upload all safeties
+                # add to the list only safety to be uploaded
+                for record in dlg.records:
+                    if str(record["gid"]) != "-1":
+                        continue
+                    recordsToUpload.append(record)
+            
+            # then upload
+            self.uploadFab10kmod( recordsToUpload )
+
+    def uploadFab10kmod(self, records):
+        if records is None or len(records) == 0:
+            return
+        from UploadManagerFab10kModifications import UploadManagerFab10kModifications
+        self.UploadManagerFab10kModificationsDlg = UploadManagerFab10kModifications()
+        self.UploadManagerFab10kModificationsDlg.initRecords(records)
+        self.UploadManagerFab10kModificationsDlg.done.connect( self.manageEndUploadFasb10kmodDlg )
+        self.UploadManagerFab10kModificationsDlg.message.connect(self.showMessage)
+        self.UploadManagerFab10kModificationsDlg.exec_()
+
+    def manageEndUploadFasb10kmodDlg(self, success):
+        if self.UploadManagerFab10kModificationsDlg is None:
+            return
+        self.UploadManagerFab10kModificationsDlg.hide()
+
+        QApplication.restoreOverrideCursor()
+        if not success:
+            message = self.tr("Fallito l'Upload dei record %s. Controlla il Log" % self.LAYER_GEOM_FAB10K_MODIF)
+            self.showMessage(message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        else:
+            message = self.tr("Upload avvenuto con successo")
+            self.showMessage(message, QgsMessageLog.INFO)
+            QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        
+        # get updated safeties
+        updatedRecords = self.UploadManagerFab10kModificationsDlg.updatedRecords
+
+        for modifiedRecord in updatedRecords:
+            self.updateFab10kModifications(modifiedRecord)
+            
+        # notify end of download
+        self.uploadFab10kmodDone.emit(success)
+        
+        if self.UploadManagerFab10kModificationsDlg:
+            self.UploadManagerFab10kModificationsDlg.deleteLater()
+        self.UploadManagerFab10kModificationsDlg = None
 
     def createNewAggregatiGeometry(self, polygon=None):
         QgsLogger.debug("createNewAggregatiGeometry entered",2 )
