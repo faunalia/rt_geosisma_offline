@@ -180,7 +180,7 @@ class UploadManager(DlgWaiting):
                 # now download geometry to allow it's update... I can't use
                 # HTTP patch to update field because seems it's not supported by QNetworkAccessManager
                 # do this only if the_geom  is not None
-                if the_geom != None:
+                if the_geom != None and the_geom != "":
                     self.downloadRemoteSopralluoghi(safety["id"])
     
                     # wait end of single request
