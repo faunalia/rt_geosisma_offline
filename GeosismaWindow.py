@@ -289,21 +289,10 @@ class GeosismaWindow(QDockWidget):
         #self.btnDeleteCurrentSafety.setCheckable(True)
         gridLayout.addWidget(self.btnDeleteCurrentSafety, 0, 2, 1, 1)
 
-        text = self.tr(u"Upload")
-        self.btnUploadSafeties = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
-        text = self.tr(u"Upload delle schede sopralluogo")
-        self.btnUploadSafeties.setToolTip( text )
-        gridLayout.addWidget(self.btnUploadSafeties, 1, 0, 1, 3)
-
         text = self.tr(u"Seleziona Richiesta")
         self.btnSelectRequest = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
         self.btnSelectRequest.setToolTip( text )
         gridLayout.addWidget(self.btnSelectRequest, 2, 0, 1, 3)
-
-        text = self.tr(u"Dowload")
-        self.btnDownload = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
-        self.btnDownload.setToolTip( "Download Richieste di sopralluogo e %s" % self.LAYER_GEOM_FAB10K_MODIF )
-        gridLayout.addWidget(self.btnDownload, 3, 0, 1, 3)
 
         #text = self.tr(u"Reset")
         #self.btnReset = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
@@ -375,10 +364,25 @@ class GeosismaWindow(QDockWidget):
         self.btnModifyAggregatiGeometry.setCheckable(True)
         gridLayout.addWidget(self.btnModifyAggregatiGeometry, 0, 3, 1, 1)
 
-        text = self.tr(u"Upload", )
+        group = QGroupBox( self.tr("Sincronizzazione"), child )
+        vLayout.addWidget( group )
+        gridLayout = QGridLayout( group )
+
+        text = self.tr(u"Dowload")
+        self.btnDownload = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
+        self.btnDownload.setToolTip( "Download Richieste di sopralluogo e %s" % self.LAYER_GEOM_FAB10K_MODIF )
+        gridLayout.addWidget(self.btnDownload, 0, 0, 1, 2)
+
+        text = self.tr(u"Upload Schede")
+        self.btnUploadSafeties = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
+        text = self.tr(u"Upload delle schede sopralluogo")
+        self.btnUploadSafeties.setToolTip( text )
+        gridLayout.addWidget(self.btnUploadSafeties, 1, 0, 1, 1)
+
+        text = self.tr(u"Upload Aggregati", )
         self.btnUploadModifiedAggregati = QPushButton( QIcon(":/icons/riepilogo_schede.png"), text, group )
         self.btnUploadModifiedAggregati.setToolTip( self.tr(u"Upload di %s" % self.LAYER_GEOM_FAB10K_MODIF ) )
-        gridLayout.addWidget(self.btnUploadModifiedAggregati, 1, 0, 1, 4)
+        gridLayout.addWidget(self.btnUploadModifiedAggregati, 1, 1, 1, 1)
 
 #         text = u"About"
 #         self.btnAbout = QPushButton( QIcon(":/icons/about.png"), text, child )
