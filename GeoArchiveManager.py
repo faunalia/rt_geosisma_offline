@@ -214,6 +214,46 @@ class GeoArchiveManager(QObject):
         '''
         return self.cursor.lastrowid
 
+    def loadFab10kmod(self, indexes=None):
+        '''
+        Method to a load fab10kmod from missions_safety table based on idexes
+        @param indexes: list of PK index to retrieve. If empty then retrieve all
+        @return fab10kmod: list of dict of the retrieved records
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "SELECT *, ST_AsText(the_geom) FROM %s " % gw.instance().TABLE_GEOM_FAB10K_MODIF
+        if (indexes != None) and (len(indexes) > 0):
+            sqlquery += "WHERE "
+            for index in indexes:
+                sqlquery += "local_id='%s' OR " % adapt(index)
+            sqlquery = sqlquery[0:-4] + " "
+        sqlquery += "ORDER BY gid;"
+        
+        QgsLogger.debug(self.tr("Recupera i record di %s con la query: %s" % (gw.instance().TABLE_GEOM_FAB10K_MODIF, sqlquery) ), 1 )
+        try:
+            self.cursor.execute(sqlquery)
+            columnNames = [descr[0] for descr in self.cursor.description]
+            # get index of the_geom and ST_AsText(the_geom)
+            geomIndex = columnNames.index("the_geom")
+            textGeomIndex = columnNames.index("ST_AsText(the_geom)")
+            
+            # modify column to erase binary the_geom and substitude with renamed ST_AsText(st_geom)
+            columnNames[textGeomIndex] = "the_geom" 
+            columnNames.pop(geomIndex)
+            
+            fab10kmod = []
+            for values in self.cursor:
+                listValues = [v for v in values]
+                listValues.pop(geomIndex)
+                fab10kmod.append( dict(zip(columnNames, listValues)) )
+            
+            return fab10kmod
+
+        except Exception as ex:
+            raise(ex)
+        
 #############################################################################
 # utility queries
 #############################################################################
@@ -221,7 +261,7 @@ class GeoArchiveManager(QObject):
     def locationDataByBelfiore(self, codiceBelfiore):
         '''
         Method to a load safeties from missions_safety related to catasto geometry
-        @param gid_catasto: index of catasto geometry
+        @param codiceBelfiore: Belfiore code to identify safeties
         @return safeties: list of dict of the retrieved records
         '''
         self.checkConnection()
