@@ -50,6 +50,7 @@ class GeosismaWindow(QDockWidget):
     archiveTeamsDone = pyqtSignal(bool)
     downloadRequestsDone = pyqtSignal(bool)
     archiveRequestsDone = pyqtSignal(bool)
+    downloadSopralluoghiDone = pyqtSignal(bool)
     downloadFab10kModificationsDone = pyqtSignal(bool)
     uploadSafetiesDone = pyqtSignal(bool)
     selectRequestDone = pyqtSignal()
@@ -67,6 +68,7 @@ class GeosismaWindow(QDockWidget):
     # nomi dei layer in TOC
     LAYER_GEOM_ORIG = "Catasto"
     LAYER_GEOM_MODIF = "Schede sopralluoghi"
+    LAYER_GEOM_SOPRALLUOGHI = "spralluoghi effettuati"
     LAYER_GEOM_FAB10K = "Fabbricati 10k"
     LAYER_GEOM_FAB10K_MODIF = "Fabbricati 10k modificati"
     LAYER_FOTO = "Foto Edifici"
@@ -74,6 +76,7 @@ class GeosismaWindow(QDockWidget):
     # stile per i layer delle geometrie
     STYLE_FOLDER = "styles"
     STYLE_GEOM_ORIG = "stile_geometrie_originali.qml"
+    STYLE_GEOM_SOPRALLUOGHI = "stile_sopralluoghi_effettuati.qml"
     STYLE_GEOM_MODIF = "stile_geometrie_modificate.qml"
     STYLE_GEOM_FAB10K = "stile_geometrie_aggregati.qml"
     STYLE_GEOM_FAB10K_MODIF = "stile_geometrie_aggregati_modificati.qml"
@@ -84,6 +87,7 @@ class GeosismaWindow(QDockWidget):
 
     # nomi tabelle contenenti le geometrie
     TABLE_GEOM_ORIG = "fab_catasto".lower()
+    TABLE_GEOM_SOPRALLUOGHI = "sopralluoghi".lower()
     TABLE_GEOM_MODIF = "missions_safety".lower()
     TABLE_GEOM_FAB10K = "fab_10k".lower()
     TABLE_GEOM_FAB10K_MODIF = "fab_10k_mod".lower()
@@ -91,6 +95,7 @@ class GeosismaWindow(QDockWidget):
     # ID dei layer contenenti geometrie e wms
     VLID_GEOM_ORIG = ''
     VLID_GEOM_MODIF = ''
+    VLID_GEOM_SOPRALLUOGHI = ''
     VLID_GEOM_FAB10K = ''
     VLID_GEOM_FAB10K_MODIF = ''
     VLID_FOTO = ''
@@ -240,7 +245,9 @@ class GeosismaWindow(QDockWidget):
         self.archiveTeamsDone.connect(self.downloadRequests) # ends emitting downloadRequestsDone
         self.archiveTeamsDone.connect(self.resetTeamComboBox)
         self.downloadRequestsDone.connect( self.archiveRequests ) # ends emitting archiveRequestsDone
-        self.archiveRequestsDone.connect( self.downloadFab10kModifications ) # ends emitting downloadFab10kModificationsDone
+        self.archiveRequestsDone.connect( self.downloadSopralluoghi ) # ends emitting downloadSopralluoghiDone
+        self.downloadSopralluoghiDone.connect( self.archiveSopralluoghi ) # ends emitting downloadFab10kModificationsDone
+        self.archiveSopralluoghiDone.connect( self.downloadFab10kModifications ) # ends emitting downloadFab10kModificationsDone
         self.downloadFab10kModificationsDone.connect( self.archiveFab10kModifications )
         self.updatedCurrentSafety.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateArchivedCurrentSafety)
@@ -442,6 +449,7 @@ class GeosismaWindow(QDockWidget):
         self.loadLayerGeomOrig()
         self.loadFab10kGeometries()
         self.loadFab10kModifiedGeometries()
+        self.loadSopralluoghiGeometries()
         self.loadSafetyGeometries()
         self.setProjectDefaultSetting()
         self.manageSafetyEditingSignals()
@@ -552,6 +560,48 @@ class GeosismaWindow(QDockWidget):
             vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_ORIG" )
         return True
     
+    def loadSopralluoghiGeometries(self):
+        # skip if already present
+        layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_SOPRALLUOGHI)
+        if len(layers) > 0:
+            # get id of the Geosisma layer
+            valid = False
+            for layer in layers:
+                prop = layer.customProperty( "loadedByGeosismaRTPlugin" )
+                if prop == "VLID_GEOM_SOPRALLUOGHI":
+                    valid = True
+                    GeosismaWindow.VLID_GEOM_SOPRALLUOGHI = self._getLayerId( layer )
+            if not valid:
+                message = self.tr("Manca il layer %s, ricaricando il plugin verrà caricato automaticamente" % self.LAYER_GEOM_SOPRALLUOGHI)
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            return
+        # carica il layer con le geometrie delle safety
+        if QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_SOPRALLUOGHI ) == None:
+            GeosismaWindow.VLID_GEOM_SOPRALLUOGHI = ''
+
+            uri = QgsDataSourceURI()
+            uri.setDatabase(self.DATABASE_OUTNAME)
+            uri.setDataSource('', self.TABLE_GEOM_SOPRALLUOGHI, 'the_geom')
+            vl = QgsVectorLayer( uri.uri(), self.LAYER_GEOM_SOPRALLUOGHI, "spatialite" )
+            if vl == None or not vl.isValid():
+                return False
+
+            # imposta lo stile del layer
+            style_path = os.path.join( currentPath, GeosismaWindow.STYLE_FOLDER, GeosismaWindow.STYLE_GEOM_SOPRALLUOGHI )
+            errorMsg, success= vl.loadNamedStyle( style_path )
+            if not success:
+                message = self.tr("Non posso caricare lo stile %s - %s: %s" % (GeosismaWindow.STYLE_GEOM_SOPRALLUOGHI, errorMsg, style_path) )
+                self.showMessage(message, QgsMessageLog.CRITICAL)
+                QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            self.iface.legendInterface().refreshLayerSymbology(vl)
+
+            GeosismaWindow.VLID_GEOM_SOPRALLUOGHI = self._getLayerId(vl)
+            self._addMapLayer(vl)
+            # set custom property
+            vl.setCustomProperty( "loadedByGeosismaRTPlugin", "VLID_GEOM_SOPRALLUOGHI" )
+        return True
+
     def loadSafetyGeometries(self):
         # skip if already present
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
@@ -729,6 +779,7 @@ class GeosismaWindow(QDockWidget):
         self.currentRequest = None
         self.downloadedTeams = []
         self.downloadedRequests = []
+        self.sopralluoghi = []
         self.fab10kModifications = []
         self.teams = None
         self.currentSafety = None
@@ -889,6 +940,79 @@ class GeosismaWindow(QDockWidget):
         # notify end of download
         self.archiveRequestsDone.emit(success)
 
+    def downloadSopralluoghi(self, success):
+        if not success:
+            return
+
+        # get extent of the fab10k layer
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_SOPRALLUOGHI )
+        if layer == None:
+            message = self.tr("Non posso determinare l'extent del layer: %s non verrà scaricato %s" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_SOPRALLUOGHI ))
+            self.showMessage(message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            
+            self.downloadSopralluoghiDone.emit(False)
+            return
+
+        # download all requests
+        self.sopralluoghi = []
+        from DownloadSopralluoghi import DownloadSopralluoghi
+        self.downloadSopralluoghiDlg = DownloadSopralluoghi( bbox=layer.extent() )
+        self.downloadSopralluoghiDlg.done.connect( self.manageEndDownloadSopralluoghiDlg )
+        self.downloadSopralluoghiDlg.message.connect(self.showMessage)
+        self.downloadSopralluoghiDlg.exec_()
+
+    def manageEndDownloadSopralluoghiDlg(self, success):
+        if self.downloadSopralluoghiDlg is None:
+            return
+        self.downloadSopralluoghiDlg.hide()
+
+        QApplication.restoreOverrideCursor()
+        if not success:
+            message = self.tr("Fallito lo scaricamento di %s. Controlla il Log" % self.LAYER_GEOM_SOPRALLUOGHI)
+            self.showMessage(message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+        else:
+            message = self.tr("Scaricati %s record di %s" % (self.sopralluoghi.__len__(), self.LAYER_GEOM_SOPRALLUOGHI) )
+            self.showMessage(message, QgsMessageLog.INFO)
+            QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+
+        # notify end of download
+        self.downloadSopralluoghiDone.emit(success)
+        
+        if self.downloadSopralluoghiDlg:
+            self.downloadSopralluoghiDlg.deleteLater()
+        self.downloadSopralluoghiDlg = None
+
+    def archiveSopralluoghi(self, success):
+        if not success:
+            return
+        success = True
+        
+        try:
+            from ArchiveManager import ArchiveManager # import here to avoid circular import
+            ArchiveManager.instance().deleteSopralluoghi()
+            for sopralluogo in self.sopralluoghi:
+                ArchiveManager.instance().archiveSopralluoghi(sopralluogo)
+            ArchiveManager.instance().commit()
+
+            
+        except Exception as ex:
+            try:
+                traceback.print_exc()
+            except:
+                pass
+            ArchiveManager.instance().close() # to avoid locking
+            message = self.tr("Fallito l'archiviazione delle richieste di sopralluogo")
+            self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
+            QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            success = False
+        finally:
+            ArchiveManager.instance().close() # to avoid locking
+
+        # notify end of download
+        self.archiveRequestsDone.emit(success)
+
     def downloadFab10kModifications(self, success):
         if not success:
             return
@@ -896,7 +1020,7 @@ class GeosismaWindow(QDockWidget):
         # get extent of the fab10k layer
         layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K )
         if layer == None:
-            message = self.tr("Non posso determinare l'extent del layer: %s non verranno scaricato %s" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_FAB10K_MODIF ))
+            message = self.tr("Non posso determinare l'extent del layer: %s non verrà scaricato %s" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_FAB10K_MODIF ))
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             
@@ -922,7 +1046,7 @@ class GeosismaWindow(QDockWidget):
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         else:
-            message = self.tr("Scaricati %s reocrd di %s" % (self.fab10kModifications.__len__(), self.LAYER_GEOM_FAB10K_MODIF) )
+            message = self.tr("Scaricati %s record di %s" % (self.fab10kModifications.__len__(), self.LAYER_GEOM_FAB10K_MODIF) )
             self.showMessage(message, QgsMessageLog.INFO)
             QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
 
@@ -940,9 +1064,13 @@ class GeosismaWindow(QDockWidget):
         #QgsLogger.debug(self.tr("Dump di Teams e Requests scaricate: %s" % json.dumps( self.downloadedTeams )), 2 )
         try:
             from GeoArchiveManager import GeoArchiveManager # import here to avoid circular import
+            # remove all local modification that has already been archived
+            GeoArchiveManager.instance().deleteArchivedFab10kModifications
+            
             for modification in self.fab10kModifications:
                 GeoArchiveManager.instance().archiveFab10kModifications(modification)
-                GeoArchiveManager.instance().commit()
+                
+            GeoArchiveManager.instance().commit()
 
         except Exception as ex:
             try:
@@ -2030,8 +2158,25 @@ class GeosismaWindow(QDockWidget):
     ###############################################################
 
     def selectFab10kmodToUpload(self):
+        # get TeamId from teamName
+        team_id = None
+        teamName = self.teamComboBox.currentText()
+        if teamName == "":
+            message = self.tr( u"Nessun team specificato a cui associare le modifiche al layer %s" % self.LAYER_GEOM_FAB10K_MODIF )
+            msgBox = QMessageBox()
+            msgBox.setIcon(QMessageBox.Information)
+            msgBox.setText(message)
+            msgBox.setStandardButtons(QMessageBox.Yes)
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Ok"))
+            msgBox.exec_()
+            return
+        for team in self.teams:
+            if str(team["name"]) == teamName:
+                team_id = team["id"]
+                break
+        
         from DlgUploadFab10kmod import DlgUploadFab10kmod
-        dlg = DlgUploadFab10kmod( teamId=self.teamComboBox.currentText() )
+        dlg = DlgUploadFab10kmod( teamId=team_id )
 
         # cancel because no results to show
         if len(dlg.records) == 0 :
@@ -2094,8 +2239,10 @@ class GeosismaWindow(QDockWidget):
         # get updated safeties
         updatedRecords = self.UploadManagerFab10kModificationsDlg.updatedRecords
 
+        from GeoArchiveManager import GeoArchiveManager
         for modifiedRecord in updatedRecords:
-            self.updateFab10kModifications(modifiedRecord)
+            GeoArchiveManager.instance().updateFab10kModifications(modifiedRecord)
+            GeoArchiveManager.instance().commit()
             
         # notify end of download
         self.uploadFab10kmodDone.emit(success)
@@ -2188,13 +2335,19 @@ class GeosismaWindow(QDockWidget):
 
 
     def initNewAggregatiDict(self):
+        teamName = self.teamComboBox.currentText()
+        for team in self.teams:
+            if str(team["name"]) == teamName:
+                team_id = team["id"]
+                break
+
         newAggregato = {}
         newAggregato["local_gid"] = None
         newAggregato["gid"] = -1 # <--- it's new so it's not yet archived on remote server
         newAggregato["identif"] = None
         newAggregato["fab_10k_gid"] = None
         newAggregato["mod_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        newAggregato["team_id"] = self.teamComboBox.currentText()
+        newAggregato["team_id"] = team_id
         newAggregato["upload_time"] = None
         newAggregato["the_geom"] = None
         
