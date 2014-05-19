@@ -752,6 +752,16 @@ class GeosismaWindow(QDockWidget):
 #         DlgAbout(self).exec_()
 
     def reset(self):
+        msgBox = QMessageBox()
+        msgBox.setIcon(QMessageBox.Warning)
+        msgBox.setText(self.tr("Sicuro di voler cancellare tutti i dati locali?") )
+        msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel)
+        msgBox.setButtonText(QMessageBox.Yes, self.tr("Si"))
+        msgBox.setButtonText(QMessageBox.Cancel, self.tr("No"))
+        ret = msgBox.exec_()
+        if ret == QMessageBox.Cancel:
+            return
+
         self.user = None
         self.pwd = None
         self.autenthicated = False
@@ -763,6 +773,8 @@ class GeosismaWindow(QDockWidget):
         
         # remove layer of safety geometrys and reload it
         self._removeMapLayer(self.VLID_GEOM_MODIF)
+        self._removeMapLayer(self.VLID_GEOM_SOPRALLUOGHI)
+        self._removeMapLayer(self.VLID_GEOM_FAB10K_MODIF)
         
         # now reset db
         from ResetDB import ResetDB
@@ -772,6 +784,7 @@ class GeosismaWindow(QDockWidget):
         
         # reload safety geometrys layer
         self.loadSafetyGeometries()
+        self.loadSopralluoghiGeometries()
         self.loadFab10kModifiedGeometries()
         
         # reset some important globals
@@ -787,7 +800,7 @@ class GeosismaWindow(QDockWidget):
 
         # cleanup some gui elements
         self.teamComboBox.clear()
-
+        
     def manageEndResetDbDlg(self, success):
         self.resetDbDlg.hide()
 
@@ -797,9 +810,9 @@ class GeosismaWindow(QDockWidget):
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         else:
-            message = self.tr("Reset avvenuto con successo")
-            self.showMessage(message, QgsMessageLog.INFO)
-            QMessageBox.information(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+            message = self.tr("Reset avvenuto con successo. !!! Ricorda di sincronizzare il DB con il Download !!!")
+            self.showMessage(message, QgsMessageLog.WARNING)
+            QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
 
         if self.resetDbDlg:
             self.resetDbDlg.deleteLater()
