@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 '''
 # -*- coding: utf-8 -*-
 # Copyright (C) 2013 Luigi Pirelli (luipir@gmail.com)
@@ -291,6 +292,7 @@ class UploadManager(DlgWaiting):
 
         # start upload
         self.singleSafetyUploadFinished = False
+        self.currentSafetyUploading = safety
         self.manager.post(request, json.dumps(safety) )
         QgsLogger.debug("uploadSafety to url %s with safety %s" % (url.toString(), json.dumps(safety)) ,2 )
 
@@ -445,8 +447,18 @@ class UploadManager(DlgWaiting):
         
         # received error
         if reply.error():
-            message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
+            # check if error is 299 in this case is IntegrityError due the fact that 
+            # number+date+team are not unique
+            if int(reply.error()) == 299:
+                message = self.tr(u"Errore di univocità la scheda con numero %d è già stata usata in questo giorno dallo stesso team") % self.currentSafetyUploading["number"]
+            else:
+                message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
             self.message.emit(message, QgsMessageLog.WARNING)
+
+            # better dump of error message
+            for headerName, rawData in reply.rawHeaderPairs():
+                QgsLogger.debug("Reply raw header[%s]: %s" % (headerName, rawData), 2)
+
             self.done.emit(False)
             return
         
