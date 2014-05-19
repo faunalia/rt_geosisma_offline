@@ -120,7 +120,7 @@ class DownloadFab10kModifications(DlgWaiting):
         # for each request api
         request = QNetworkRequest()
         url = QUrl(self.baseApiUrl + fab10kmodUrl)
-        url.addQueryItem("poly__contains", geojsonbbox )
+        url.addQueryItem("the_geom__contains", geojsonbbox )
         url.addQueryItem("format", "json")
         request.setUrl(url)
         
