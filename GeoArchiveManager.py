@@ -258,6 +258,24 @@ class GeoArchiveManager(QObject):
 # utility queries
 #############################################################################
 
+    def deleteArchivedFab10kModifications(self):
+        '''
+        Method to a remove already archived fab_10k_modifications records in fab_10k_mod table
+        '''
+        self.checkConnection()
+        
+        # create query
+        sqlquery = "DELETE FROM %s " % gw.instance().TABLE_GEOM_FAB10K_MODIF
+        sqlquery += "WHERE gid != -1"
+        
+        QgsLogger.debug(self.tr("Rimuovi il records in %s con la query: %s" % (gw.instance().TABLE_GEOM_FAB10K_MODIF, sqlquery) ), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            
+        except Exception as ex:
+            raise(ex)
+    
     def locationDataByBelfiore(self, codiceBelfiore):
         '''
         Method to a load safeties from missions_safety related to catasto geometry
