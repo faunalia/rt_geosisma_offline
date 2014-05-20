@@ -36,12 +36,12 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 	loadSafetiesDone = pyqtSignal()
 	loadTableDone = pyqtSignal()
 	
-	def __init__(self, currentSafetyId=None, gid=None, parent=None):
+	def __init__(self, currentRecordId=None, gid=None, parent=None):
 		QDialog.__init__(self, parent)
 		
-		self.currentSafetyId = currentSafetyId
+		self.currentRecordId = currentRecordId
 		self.currentGid = gid
-		self.currentSafety = {}
+		self.selected = []
 		self.buttonSelected = None
 		
 		self.setAttribute(Qt.WA_DeleteOnClose)
@@ -52,9 +52,10 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 
 		self.loadTeamsDone.connect(self.updateButtonsState)
 		self.loadTeamsDone.connect(self.loadTable)
-		self.safetyTableWidget.itemSelectionChanged.connect(self.updateButtonsState)
+		self.tableWidget.itemSelectionChanged.connect(self.checkSelectable)
+		self.tableWidget.itemSelectionChanged.connect(self.updateButtonsState)
 		self.loadTableDone.connect(self.selectCurrentSafety)
-		self.buttonBox.button(QDialogButtonBox.Save).clicked.connect(self.setCurrentSafetyId)
+		self.buttonBox.button(QDialogButtonBox.Save).clicked.connect(self.setSelectedRecords)
 		self.buttonBox.clicked.connect(self.setCurrentClicked)
 		
 		self.loadSafeties()
@@ -65,7 +66,7 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 
 		self.loadTeams()
 		self.loadTable()
-		self.safetyTableWidget.sortByColumn(0)
+		self.tableWidget.sortByColumn(0)
 		
 	def loadSafeties(self):
 		if self.currentGid:
@@ -79,7 +80,7 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 		self.loadTeamsDone.emit()
 		
 	def loadTable(self):
-		self.safetyTableWidget.setSortingEnabled(True)
+		self.tableWidget.setSortingEnabled(True)
 		
 		# organize colums
 		Hide = True
@@ -97,16 +98,16 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 		columns['the_geom'] = ( self.tr(u'the_geom'), Hide )
 		
 		# set table size
-		self.safetyTableWidget.clear()
-		self.safetyTableWidget.setRowCount( len(self.records) )
-		self.safetyTableWidget.setColumnCount( len(columns) )
+		self.tableWidget.clear()
+		self.tableWidget.setRowCount( len(self.records) )
+		self.tableWidget.setColumnCount( len(columns) )
 		
 		# resizing mode of column
-		header = self.safetyTableWidget.horizontalHeader()
+		header = self.tableWidget.horizontalHeader()
 		header.setResizeMode(QHeaderView.ResizeToContents)
 		
 		# fill the table
-		self.safetyTableWidget.setHorizontalHeaderLabels( [val[0] for val in columns.values()] )
+		self.tableWidget.setHorizontalHeaderLabels( [val[0] for val in columns.values()] )
 		for row, record in enumerate(self.records):
 			for column, columnKey in enumerate(columns.keys()):
 				if columnKey != "name":
@@ -126,44 +127,58 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 				if column == 0:
 					item.setData(Qt.UserRole, record)
 				
-				self.safetyTableWidget.setItem(row, column, item )
+				self.tableWidget.setItem(row, column, item )
 			
 				
 		# column to be shown
 		for index, key in enumerate(columns):
-			self.safetyTableWidget.setColumnHidden(index, columns[key][1])
+			self.tableWidget.setColumnHidden(index, columns[key][1])
 		
 		self.loadTableDone.emit()
 	
-	def selectCurrentSafety(self):
-		if self.currentSafetyId is None:
+	def setSelectedRecords(self):
+		selectedItems = self.tableWidget.selectedItems()
+		if len(selectedItems) == 0:
+			self.currentRecordId = None
+			self.selected = None
 			return
 		
-		for row in range( self.safetyTableWidget.rowCount() ):
-			item = self.safetyTableWidget.item(row, 0)
-			if str(self.currentSafetyId) == item.text():
-				self.safetyTableWidget.selectRow(row)
+		# get all selected records
+		self.selected = []
+		for selected in selectedItems:
+			row = selected.row()
+			item = self.tableWidget.item(row, 0)  # assume id is the first column
+			self.selected.append( item.data(Qt.UserRole) )
+
+	def selectCurrentSafety(self):
+		if self.currentRecordId is None:
+			return
+		
+		for row in range( self.tableWidget.rowCount() ):
+			item = self.tableWidget.item(row, 0)
+			if str(self.currentRecordId) == item.text():
+				self.tableWidget.selectRow(row)
 				break
 	
-	def setCurrentSafetyId(self):
-		selectedItems = self.safetyTableWidget.selectedItems()
+	def checkSelectable(self):
+		selectedItems = self.tableWidget.selectedItems()
 		if len(selectedItems) == 0:
-			self.currentSafetyId = None
-			self.currentSafety = None
 			return
 		
-		# assume that only one row is selected => get row from an element
-		row = selectedItems[0].row()
-		
-		item = self.safetyTableWidget.item(row, 0)  # assume id is the first column
-		self.currentSafetyId = item.text()
-		self.currentSafety = item.data(Qt.UserRole)
-	
+		for selected in selectedItems:
+			row = selected.row()
+			item = self.tableWidget.item(row, 0)  # assume id is the first column
+			record = item.data(Qt.UserRole)
+			if record["id"] != -1:
+				selected.setSelected(False)
+			if record["the_geom"] == None or record["the_geom"] == "":
+				selected.setSelected(False)
+
 	def updateButtonsState(self):
 		if len(self.records) > 0:
 			enabled = True
 		
-		if len(self.safetyTableWidget.selectedItems()) == 0:
+		if len(self.tableWidget.selectedItems()) == 0:
 			enabled = False
 		
 		self.buttonBox.button(QDialogButtonBox.Save).setEnabled(enabled)

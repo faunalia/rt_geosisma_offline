@@ -1196,7 +1196,7 @@ class GeosismaWindow(QDockWidget):
             local_id = self.currentSafety["local_id"]
             
         from DlgUploadSafeties import DlgUploadSafeties
-        dlg = DlgUploadSafeties(currentSafetyId=local_id, gid=gid)
+        dlg = DlgUploadSafeties(currentRecordId=local_id, gid=gid)
 
         # cancel because no results to show
         if len(dlg.records) == 0 :
@@ -1220,29 +1220,24 @@ class GeosismaWindow(QDockWidget):
         
         # check if result set
         if ret != 0:
-            safetyToUpload = []
-            if (dlg.buttonSelected == "Save"): # Means Upload the selected safety
-                if dlg.currentSafety is None:
+            recordsToUpload = []
+            if (dlg.buttonSelected == "Save"): # Means Upload the selected safeties records
+                if dlg.selected is None or len(dlg.selected) == 0:
                     return
                 
-                # check if selected safeties has been already uploaded
-                if str(dlg.currentSafety["id"]) != "-1":
-                    message = self.tr("Scheda %s gia' archiviata con il numero: %s" % (dlg.currentSafety["local_id"], dlg.currentSafety["number"]))
-                    self.showMessage(message, QgsMessageLog.WARNING)
-                    QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
-                    return
-                
-                safetyToUpload.append( dlg.currentSafety )
+                recordsToUpload = dlg.selected
      
             elif (dlg.buttonSelected == "SaveAll"): # means upload all safeties
                 # add to the list only safety to be uploaded
-                for safety in dlg.records:
-                    if str(safety["id"]) != "-1":
+                for record in dlg.records:
+                    if str(record["id"]) != "-1":
                         continue
-                    safetyToUpload.append(safety)
+                    if record["the_geom"] == None or record["the_geom"] == "":
+                        continue
+                    recordsToUpload.append(record)
             
             # then upload
-            self.uploadSafeties( safetyToUpload )
+            self.uploadSafeties( recordsToUpload )
         
     def openCurrentSafety(self):
         QgsLogger.debug("openCurrentSafety entered",2 )
