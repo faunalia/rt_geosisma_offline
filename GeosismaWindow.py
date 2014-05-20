@@ -1237,6 +1237,15 @@ class GeosismaWindow(QDockWidget):
                     recordsToUpload.append(record)
             
             # then upload
+            if len(recordsToUpload) == 0:
+                msgBox = QMessageBox()
+                msgBox.setIcon(QMessageBox.Information)
+                msgBox.setText(u"Non ci sono schede da caricare sul server")
+                msgBox.setStandardButtons(QMessageBox.Yes)
+                msgBox.setButtonText(QMessageBox.Yes, self.tr("Ok"))
+                msgBox.exec_()
+                return
+            
             self.uploadSafeties( recordsToUpload )
         
     def openCurrentSafety(self):
