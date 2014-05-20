@@ -1650,9 +1650,9 @@ class GeosismaWindow(QDockWidget):
             msgBox.setText("RT Geosisma")
             msgBox.setInformativeText(self.tr(u"Presenti geometrie Schede e Catasto su questo punto. Cosa vuoi fare?"))
             msgBox.setStandardButtons(QMessageBox.Yes | QMessageBox.Cancel | QMessageBox.Open)
-            msgBox.setButtonText(QMessageBox.Yes, self.tr("Copio dal Catasto"))
-            msgBox.setButtonText(QMessageBox.Open, self.tr("Copio da Geometria schede"))
-            msgBox.setButtonText(QMessageBox.Cancel, self.tr("Nulla, seleziono un'altra geometria"))
+            msgBox.setButtonText(QMessageBox.Yes, self.tr("Associa geometria catastale"))
+            msgBox.setButtonText(QMessageBox.Open, self.tr("Associa a una parte"))
+            msgBox.setButtonText(QMessageBox.Cancel, self.tr("Annulla, associo un'altra geometria"))
             ret = msgBox.exec_()
             if ret == QMessageBox.Cancel:
                 # continue on another geometry
