@@ -18,13 +18,14 @@ class DownloadFab10kModifications(DlgWaiting):
     singleDone = pyqtSignal(bool)
     message = pyqtSignal(str, int)
 
-    def __init__(self, parent=None, bbox=None):
+    def __init__(self, parent=None, bbox=None, srid=None):
         DlgWaiting.__init__(self, parent)
         self.singleFinished = True
         self.allFinished = True
         
         self.jsonFab10kModifications = None
         self.bbox = bbox # as QgsRectangle
+        self.srid = srid
         
         self.manager = QgsNetworkAccessManager.instance()
         # clean listeners to avoid overlap 
@@ -112,8 +113,8 @@ class DownloadFab10kModifications(DlgWaiting):
         self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
 
         # create json parametr for the bbox... without using geojson pytion module to avoid dependency
-        geojsonbbox = """{type: "Polygon", coordinates: [[[%(minx)s, %(miny)s], [%(minx)s, %(maxy)s], [%(maxy)s, %(maxy)s], [%(maxx)s, %(miny)s]]], crs: {"type": "name", "properties": {"name": "EPSG:%(srid)s"}}}"""
-        geojsonbbox = geojsonbbox % { "minx":self.bbox.xMinimum(), "miny":self.bbox.yMinimum(), "maxx":self.bbox.xMaximum(), "maxy":self.bbox.yMaximum(), "srid":gw.instance().DEFAULT_SRID }
+        geojsonbbox = """{"type": "Polygon", "coordinates": [[[%(minx)s, %(miny)s], [%(minx)s, %(maxy)s], [%(maxy)s, %(maxy)s], [%(maxx)s, %(miny)s], [%(minx)s, %(miny)s]]], "crs": {"type": "name", "properties": {"name": "EPSG:%(srid)s"}}}"""
+        geojsonbbox = geojsonbbox % { "minx":self.bbox.xMinimum(), "miny":self.bbox.yMinimum(), "maxx":self.bbox.xMaximum(), "maxy":self.bbox.yMaximum(), "srid":self.srid }
 
         print geojsonbbox
 
