@@ -230,6 +230,8 @@ class UploadManager(DlgWaiting):
                 if (self.allFinished):
                     break
                 
+                # if safety related to a request set it as done
+                
                 # notify successful upload of a safety
                 message = self.tr("Upload con successo della scheda con local_id: %s - Numero definitivo: %s" % (str(safety["local_id"]), str(safety["number"])))
                 self.message.emit(message, QgsMessageLog.CRITICAL)
