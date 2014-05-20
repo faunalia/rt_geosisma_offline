@@ -139,8 +139,12 @@ class DlgUploadFab10kmod(QDialog, Ui_Dialog):
 		
 		# get all selected records
 		self.selected = []
+		usedRows = []
 		for selected in selectedItems:
 			row = selected.row()
+			if row in usedRows:
+				continue
+			usedRows.append(row)
 			item = self.tableWidget.item(row, 0)  # assume id is the first column
 			self.selected.append( item.data(Qt.UserRole) )
 	
