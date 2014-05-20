@@ -51,6 +51,7 @@ class GeosismaWindow(QDockWidget):
     downloadRequestsDone = pyqtSignal(bool)
     archiveRequestsDone = pyqtSignal(bool)
     downloadSopralluoghiDone = pyqtSignal(bool)
+    archiveSopralluoghiDone = pyqtSignal(bool)
     downloadFab10kModificationsDone = pyqtSignal(bool)
     uploadSafetiesDone = pyqtSignal(bool)
     selectRequestDone = pyqtSignal()
@@ -68,7 +69,7 @@ class GeosismaWindow(QDockWidget):
     # nomi dei layer in TOC
     LAYER_GEOM_ORIG = "Catasto"
     LAYER_GEOM_MODIF = "Schede sopralluoghi"
-    LAYER_GEOM_SOPRALLUOGHI = "spralluoghi effettuati"
+    LAYER_GEOM_SOPRALLUOGHI = "Sopralluoghi effettuati"
     LAYER_GEOM_FAB10K = "Fabbricati 10k"
     LAYER_GEOM_FAB10K_MODIF = "Fabbricati 10k modificati"
     LAYER_FOTO = "Foto Edifici"
@@ -943,7 +944,7 @@ class GeosismaWindow(QDockWidget):
             except:
                 pass
             ArchiveManager.instance().close() # to avoid locking
-            message = self.tr("Fallito l'archiviazione delle richieste di sopralluogo")
+            message = self.tr(u"Fallito l'archiviazione delle richieste di sopralluogo")
             self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             success = False
@@ -958,9 +959,9 @@ class GeosismaWindow(QDockWidget):
             return
 
         # get extent of the fab10k layer
-        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_SOPRALLUOGHI )
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K )
         if layer == None:
-            message = self.tr("Non posso determinare l'extent del layer: %s non verrà scaricato %s" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_SOPRALLUOGHI ))
+            message = self.tr(u"Non posso determinare l'extent del layer: %s non verrà scaricato '%s'" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_SOPRALLUOGHI ))
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             
@@ -970,7 +971,7 @@ class GeosismaWindow(QDockWidget):
         # download all requests
         self.sopralluoghi = []
         from DownloadSopralluoghi import DownloadSopralluoghi
-        self.downloadSopralluoghiDlg = DownloadSopralluoghi( bbox=layer.extent() )
+        self.downloadSopralluoghiDlg = DownloadSopralluoghi( bbox=layer.extent(), srid=GeosismaWindow.GEODBDEFAULT_SRID )
         self.downloadSopralluoghiDlg.done.connect( self.manageEndDownloadSopralluoghiDlg )
         self.downloadSopralluoghiDlg.message.connect(self.showMessage)
         self.downloadSopralluoghiDlg.exec_()
@@ -982,7 +983,7 @@ class GeosismaWindow(QDockWidget):
 
         QApplication.restoreOverrideCursor()
         if not success:
-            message = self.tr("Fallito lo scaricamento di %s. Controlla il Log" % self.LAYER_GEOM_SOPRALLUOGHI)
+            message = self.tr(u"Fallito lo scaricamento di '%s'. Controlla il Log" % self.LAYER_GEOM_SOPRALLUOGHI)
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
         else:
@@ -1033,7 +1034,7 @@ class GeosismaWindow(QDockWidget):
         # get extent of the fab10k layer
         layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K )
         if layer == None:
-            message = self.tr("Non posso determinare l'extent del layer: %s non verrà scaricato %s" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_FAB10K_MODIF ))
+            message = self.tr(u"Non posso determinare l'extent del layer: %s non verrà scaricato '%s'" % ( GeosismaWindow.LAYER_GEOM_FAB10K,GeosismaWindow.LAYER_GEOM_FAB10K_MODIF ))
             self.showMessage(message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             
@@ -1043,7 +1044,7 @@ class GeosismaWindow(QDockWidget):
         # download all requests
         self.fab10kModifications = []
         from DownloadFab10kModifications import DownloadFab10kModifications
-        self.downloadFab10kModificationsDlg = DownloadFab10kModifications( bbox=layer.extent() )
+        self.downloadFab10kModificationsDlg = DownloadFab10kModifications( bbox=layer.extent(), srid=GeosismaWindow.GEODBDEFAULT_SRID )
         self.downloadFab10kModificationsDlg.done.connect( self.manageEndDownloadFab10kModificationsDlg )
         self.downloadFab10kModificationsDlg.message.connect(self.showMessage)
         self.downloadFab10kModificationsDlg.exec_()
