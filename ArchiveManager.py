@@ -75,12 +75,13 @@ class ArchiveManager(QObject):
                 self.close()
         self.connect()
     
-    def checkConnection(self):
+    def checkConnection(self, leaveOpened=False):
         if not self.isOpen():
             self.connect()
         else:
-            self.close()
-            self.connect()
+            if not leaveOpened:
+                self.close()
+                self.connect()
     
     def isOpen(self):
         try:
@@ -598,11 +599,11 @@ class ArchiveManager(QObject):
         QgsLogger.debug(self.tr("Rimozione attachments con la query: %s" % sqlquery), 1 )
         self.cursor.execute(sqlquery)
 
-    def archiveSopralluoghi(self, recordDict):
+    def archiveSopralluoghi(self, recordDict, commitLater=False):
         '''
         Method to a archive sopralluoghi in sopralluoghi table
         '''
-        self.checkConnection()
+        self.checkConnection(commitLater)
         
         # preare dictionary to be used for DB
         recordOdered = self.prepareSopralluoghiDict(recordDict)
@@ -618,7 +619,7 @@ class ArchiveManager(QObject):
                 if v == None:
                     sqlquery += "NULL, "
                 else:
-                    sqlquery += "GeomFromText('%s',%d), " % ( v, gw.instance().DEFAULT_SRID )
+                    sqlquery += "GeomFromText('%s',%d), " % ( v, gw.instance().GEODBDEFAULT_SRID )
                 continue
             sqlquery += "%s, " % adapt(v)
                 
@@ -648,12 +649,12 @@ class ArchiveManager(QObject):
 
         return safetyOdered
     
-    def deleteSopralluoghi(self, indexes=None):
+    def deleteSopralluoghi(self, indexes=None, commitLater=False):
         '''
         Method to a delete sopralluoghi from sopralluoghi table based on idexes
         @param indexes: indexes of attachments to delete
         '''
-        self.checkConnection()
+        self.checkConnection(commitLater)
     
         # create query
         sqlquery = "DELETE FROM %s " % gw.instance().TABLE_GEOM_SOPRALLUOGHI
