@@ -60,31 +60,4 @@ CREATE INDEX "missions_safety_792812e8" ON "missions_safety" ("request_id");
 CREATE INDEX "missions_safety_fcf8ac47" ON "missions_safety" ("team_id");
 CREATE INDEX "organization_team_e9b82f95" ON "organization_team" ("event_id");
 
---
--- CREATE TABLE FOR SOPRALLUOGHI
---
-CREATE TABLE "sopralluoghi" (
-  "gid" integer NOT NULL PRIMARY KEY,
-  "foglio" text,
-  "codice" varchar(4),
-  "record" float,
-  "topon" varchar(50),
-  "area" float,
-  "identif" varchar(10),
-  "id_hist" integer,
-  "time_start" datetime,
-  "time_end" datetime,
-  "id_scheda" integer,
-  "aggregato" text,
-  "edificio" integer,
-  "esito" varchar(1),
-  "id_evento" integer,
-  "controllo" boolean,
-  "data" date
-);
-SELECT AddGeometryColumn( 'sopralluoghi', 'the_geom', 32632, 'MULTIPOLYGON', 'XY');
-SELECT CreateSpatialIndex('sopralluoghi', 'the_geom');
-
-CREATE INDEX "sopralluoghi_401bf584" ON "sopralluoghi" ("gid");
-
 COMMIT;
