@@ -81,6 +81,10 @@ class ResetDB(DlgWaiting):
             geosismadb_schema += fs.read()
         self.onProgress()
         # connect spatialite db
+        try:
+            os.remove(self.DATABASE_OUTNAME)
+        except:
+            pass
         conn = db.connect(self.DATABASE_OUTNAME)
         # create DB
         try:
