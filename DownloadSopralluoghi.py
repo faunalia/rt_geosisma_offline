@@ -26,6 +26,7 @@ class DownloadSopralluoghi(DlgWaiting):
         self.jsonSopralluoghi = None
         self.bbox = bbox # as QgsRectangle
         self.srid = srid
+        self.total_count = None
         
         self.manager = QgsNetworkAccessManager.instance()
         # clean listeners to avoid overlap 
@@ -55,7 +56,7 @@ class DownloadSopralluoghi(DlgWaiting):
             # init progress bar
             self.reset()
             self.setWindowTitle( self.tr("Scarica  i record del layer '%s'" % gw.instance().LAYER_GEOM_SOPRALLUOGHI ))
-            self.setRange( 0, 1 )
+            #self.setRange( 0, 1 )
             QApplication.setOverrideCursor(Qt.WaitCursor)
 
             # set semaphores
@@ -116,16 +117,15 @@ class DownloadSopralluoghi(DlgWaiting):
         geojsonbbox = """{"type": "Polygon", "coordinates": [[[%(minx)s, %(miny)s], [%(minx)s, %(maxy)s], [%(maxy)s, %(maxy)s], [%(maxx)s, %(miny)s], [%(minx)s, %(miny)s]]], "crs": {"type": "name", "properties": {"name": "EPSG:%(srid)s"}}}"""
         geojsonbbox = geojsonbbox % { "minx":self.bbox.xMinimum(), "miny":self.bbox.yMinimum(), "maxx":self.bbox.xMaximum(), "maxy":self.bbox.yMaximum(), "srid":self.srid }
 
-        print geojsonbbox
-
         # for each request api
         request = QNetworkRequest()
         url = QUrl(self.baseApiUrl + sopralluoghiUrl)
-        url.addQueryItem("the_geom__contained", geojsonbbox )
+        #url.addQueryItem("the_geom__contained", geojsonbbox )
         url.addQueryItem("format", "json")
         request.setUrl(url)
         
         message = self.tr("Download %s with query: %s and bbox: %s" % (gw.instance().LAYER_GEOM_SOPRALLUOGHI, url.toString(), geojsonbbox ) )
+        message = self.tr("Download %s with query: %s" % (gw.instance().LAYER_GEOM_SOPRALLUOGHI, url.toString() ) )
         self.message.emit(message, QgsMessageLog.INFO)
 
         # start download
@@ -183,7 +183,8 @@ class DownloadSopralluoghi(DlgWaiting):
         # well authenticated :)
         gw.instance().autenthicated = True
         gw.instance().authenticationRetryCounter = 0
-
+        
+        # gets elements
         from json import loads
         raw = reply.readAll()
         try:
@@ -195,6 +196,14 @@ class DownloadSopralluoghi(DlgWaiting):
                 pass
             self.done.emit(False)
             return
+
+        # count how many to download
+        if "meta" in json:
+            if "total_count" in json["meta"]:
+                if not self.total_count:
+                    self.total_count = json["meta"]["total_count"]
+                    self.setRange( 0, self.total_count )
+        
         # check if return more than 20 elements (e.g. for the super user)
         if "objects" in json:
             jsonSopralluoghi = json["objects"] # get array of dicts
@@ -202,6 +211,7 @@ class DownloadSopralluoghi(DlgWaiting):
             jsonSopralluoghi = [json]
         for record in jsonSopralluoghi:
             gw.instance().sopralluoghi.append(record)
+            self.onProgress()
         
         # manage get of other elements if available 
         if "meta" in json:
@@ -209,11 +219,11 @@ class DownloadSopralluoghi(DlgWaiting):
                 nextUrl = json["meta"]["next"]
                 if nextUrl:
                     self.message.emit(nextUrl, QgsMessageLog.INFO)
-                    
+                     
                     request = QNetworkRequest()
                     url = QUrl(self.baseApiUrl + nextUrl)
                     request.setUrl(url)
-                    
+                     
                     self.manager.get(request)
                     return
 
