@@ -121,11 +121,12 @@ class DownloadFab10kModifications(DlgWaiting):
         # for each request api
         request = QNetworkRequest()
         url = QUrl(self.baseApiUrl + fab10kmodUrl)
-        url.addQueryItem("the_geom__contains", geojsonbbox )
+        #url.addQueryItem("the_geom__contains", geojsonbbox )
         url.addQueryItem("format", "json")
         request.setUrl(url)
         
-        message = self.tr("Download %s with query: %s and bbox: %s" % (gw.instance().LAYER_GEOM_FAB10K_MODIF, url.toString(), geojsonbbox ) )
+        #message = self.tr("Download %s with query: %s and bbox: %s" % (gw.instance().LAYER_GEOM_FAB10K_MODIF, url.toString(), geojsonbbox ) )
+        message = self.tr("Download %s with query: %s" % (gw.instance().LAYER_GEOM_FAB10K_MODIF, url.toString()) )
         self.message.emit(message, QgsMessageLog.INFO)
 
         # start download
