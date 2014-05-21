@@ -582,7 +582,7 @@ class GeosismaWindow(QDockWidget):
             GeosismaWindow.VLID_GEOM_SOPRALLUOGHI = ''
 
             uri = QgsDataSourceURI()
-            uri.setDatabase(self.DATABASE_OUTNAME)
+            uri.setDatabase(self.GEODATABASE_OUTNAME)
             uri.setDataSource('', self.TABLE_GEOM_SOPRALLUOGHI, 'the_geom')
             vl = QgsVectorLayer( uri.uri(), self.LAYER_GEOM_SOPRALLUOGHI, "spatialite" )
             if vl == None or not vl.isValid():
@@ -1004,28 +1004,52 @@ class GeosismaWindow(QDockWidget):
         success = True
         
         try:
-            from ArchiveManager import ArchiveManager # import here to avoid circular import
-            ArchiveManager.instance().deleteSopralluoghi()
+#            geomToExclude = QgsGeometry.fromWkt("MULTIPOLYGON (((1.0000000000000000 0.0000000000000000, 1.0000000000000000 1.0000000000000000, 0.0000000000000000 1.0000000000000000, 0.0000000000000000 0.0000000000000000, 1.0000000000000000 0.0000000000000000)))")
+            from GeoArchiveManager import GeoArchiveManager # import here to avoid circular import
+            GeoArchiveManager.instance().deleteSopralluoghi()
             for sopralluogo in self.sopralluoghi:
-                ArchiveManager.instance().archiveSopralluoghi(sopralluogo)
-            ArchiveManager.instance().commit()
-
+                
+                # check if Sopralluogo has a valid geometry
+                # there's no way to validate geometry... but there are default record 
+                # that are set with geometry as: 
+                # MULTIPOLYGON (((1.0000000000000000 0.0000000000000000, 1.0000000000000000 1.0000000000000000, 
+                #                 0.0000000000000000 1.0000000000000000, 0.0000000000000000 0.0000000000000000, 
+                #                 1.0000000000000000 0.0000000000000000)))
+#                 try:
+#                     geom = QgsGeometry.fromWkt( sopralluogo["the_geom"] )
+#                     if not geom.isGeosValid():
+#                         message = self.tr(u"Non archiviato Sopralluogo con gid: %d perchè ha una geometria invalida %s" % (sopralluogo["gid"], sopralluogo["the_geom"]))
+#                         self.showMessage(message, QgsMessageLog.CRITICAL)
+#                         continue
+#                     
+#                     if geom.isGeosEqual(geomToExclude):
+#                         message = self.tr(u"Non archiviato Sopralluogo con gid: %d perchè ha una geometria invalida %s" % (sopralluogo["gid"], sopralluogo["the_geom"]))
+#                         self.showMessage(message, QgsMessageLog.CRITICAL)
+#                         continue
+# 
+#                 except Exception as ex:
+#                     message = self.tr(u"Non archiviato Sopralluogo con gid: %d perchè ha una geometria invalida %s" % (sopralluogo["gid"], sopralluogo["the_geom"]))
+#                     self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
+#                     continue
+                
+                GeoArchiveManager.instance().archiveSopralluoghi(sopralluogo)
+            GeoArchiveManager.instance().commit()
             
         except Exception as ex:
             try:
                 traceback.print_exc()
             except:
                 pass
-            ArchiveManager.instance().close() # to avoid locking
+            GeoArchiveManager.instance().close() # to avoid locking
             message = self.tr("Fallito l'archiviazione delle richieste di sopralluogo")
             self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
             QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             success = False
         finally:
-            ArchiveManager.instance().close() # to avoid locking
+            GeoArchiveManager.instance().close() # to avoid locking
 
         # notify end of download
-        self.archiveRequestsDone.emit(success)
+        self.archiveSopralluoghiDone.emit(success)
 
     def downloadFab10kModifications(self, success):
         if not success:
@@ -1079,8 +1103,7 @@ class GeosismaWindow(QDockWidget):
         try:
             from GeoArchiveManager import GeoArchiveManager # import here to avoid circular import
             # remove all local modification that has already been archived
-            GeoArchiveManager.instance().deleteArchivedFab10kModifications
-            
+            GeoArchiveManager.instance().deleteArchivedFab10kModifications()
             for modification in self.fab10kModifications:
                 GeoArchiveManager.instance().archiveFab10kModifications(modification)
                 
