@@ -94,4 +94,12 @@ class ResetDB(DlgWaiting):
         except db.Error as e:
             self.resetMessage.emit(e.message, QgsMessageLog.CRITICAL)
             raise e
+        conn.close()
+        
+        # remove archived sopralluoghi
+        from GeoArchiveManager import GeoArchiveManager # import here to avoid circular import
+        GeoArchiveManager.instance().deleteSopralluoghi()
+        GeoArchiveManager.instance().commit()
+        self.onProgress()
+         
         self.onProgress(-1)
