@@ -254,6 +254,75 @@ class GeoArchiveManager(QObject):
         except Exception as ex:
             raise(ex)
         
+    def archiveSopralluoghi(self, recordDict):
+        '''
+        Method to a archive sopralluoghi in sopralluoghi table
+        '''
+        self.checkConnection()
+        
+        # preare dictionary to be used for DB
+        recordOdered = self.prepareSopralluoghiDict(recordDict)
+
+        # create query
+        sqlquery = "INSERT INTO %s " % gw.instance().TABLE_GEOM_SOPRALLUOGHI
+        sqlquery += "( "+",".join(recordOdered.keys()) + " ) VALUES ( "
+        for k,v in recordOdered.items():
+            if v == None and k != "the_geom":
+                sqlquery += "NULL, "
+                continue
+            if k == "the_geom":
+                if v == None:
+                    sqlquery += "NULL, "
+                else:
+                    sqlquery += "GeomFromText('%s',%d), " % ( v, gw.instance().GEODBDEFAULT_SRID )
+                continue
+            sqlquery += "%s, " % adapt(v)
+                
+        sqlquery = sqlquery[0:-2] + " );"
+        
+        QgsLogger.debug(self.tr("Inserisce sopralluoghi con la query: %s" % sqlquery), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            
+        except Exception as ex:
+            raise(ex)
+    
+    def prepareSopralluoghiDict(self, recordDict):
+        '''
+        Method to adapt safety dictionary to be the same to db missions_safety table
+        @param recordDict: sopralluoghi dictiionary - keys have to be the same key of Db
+        @return: an orderedDict of the key values of the record 
+        '''
+        # create ordered Dict from dict to be sure of the order of the fields
+        skipThisKeys = []
+        safetyOdered = OrderedDict()
+        for k,v in recordDict.items():
+            if k in skipThisKeys: # skip keys that are not present in DB schema
+                continue
+            safetyOdered[k]=v
+
+        return safetyOdered
+    
+    def deleteSopralluoghi(self, indexes=None):
+        '''
+        Method to a delete sopralluoghi from sopralluoghi table based on idexes
+        @param indexes: indexes of attachments to delete
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "DELETE FROM %s " % gw.instance().TABLE_GEOM_SOPRALLUOGHI
+        if (indexes != None) and (len(indexes) > 0):
+            sqlquery += "WHERE "
+            for index in indexes:
+                sqlquery += "id=%s OR " % adapt(index)
+            sqlquery = sqlquery[0:-4]
+        sqlquery += ";"
+        
+        QgsLogger.debug(self.tr("Rimozione sopralluoghi con la query: %s" % sqlquery), 1 )
+        self.cursor.execute(sqlquery)
+
 #############################################################################
 # utility queries
 #############################################################################
