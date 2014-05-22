@@ -149,7 +149,16 @@ class GeosismaWindow(QDockWidget):
                 self.iface.actionToggleEditing().triggered.disconnect(self.actionToggleEditingTriggered)
             except:
                 pass
-        
+            
+        try:
+            self.linkSafetyGeometryEmitter.deleteLater()
+            self.lookForSafetiesEmitter.deleteLater()
+            self.newSafetyGeometryDrawer.deleteLater()
+            self.newAggregatiDrawer.deleteLater()
+            self.modifyAggregatiEmitter.deleteLater()
+        except:
+            pass
+
         # reset singleton
         try:
             GeosismaWindow._instance = None
