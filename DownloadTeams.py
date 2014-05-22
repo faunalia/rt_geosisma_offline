@@ -7,9 +7,6 @@ from PyQt4.QtNetwork import *
 from DlgWaiting import DlgWaiting
 from GeosismaWindow import GeosismaWindow as gw
 
-# SpatiaLite imports
-from pyspatialite import dbapi2 as db
-
 class DownloadTeams(DlgWaiting):
     
     # signals
