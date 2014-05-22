@@ -85,9 +85,9 @@ class ArchiveManager(QObject):
     
     def isOpen(self):
         try:
-            self.conn.execute("SELECT 1 FROM missions_request LIMIT 1;")
+            self.conn.execute("SELECT 1;")
             return True
-        except db.ProgrammingError as dbe:
+        except db.ProgrammingError:
             return False
     
     def commit(self):
