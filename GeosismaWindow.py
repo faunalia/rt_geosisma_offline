@@ -2688,7 +2688,15 @@ class GeosismaWindow(QDockWidget):
             self.showMessage(message, QgsMessageLog.WARNING)
             QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return False
-        if str(feat["team_id"]) != self.teamComboBox.currentText():
+
+        # get current TeamId
+        team_id = None
+        for team in self.teams:
+            if str(team["name"]) == self.teamComboBox.currentText():
+                team_id = team["id"]
+                break
+
+        if str(feat["team_id"]) != str(team_id):
             message = self.tr(u"Record %s con local_gid: %s appartiene al team %s, non al team corrente" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_gid"]), str(feat["team_id"])))
             self.showMessage(message, QgsMessageLog.WARNING)
             QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
