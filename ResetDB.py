@@ -99,6 +99,7 @@ class ResetDB(DlgWaiting):
         # remove archived sopralluoghi
         from GeoArchiveManager import GeoArchiveManager # import here to avoid circular import
         GeoArchiveManager.instance().deleteSopralluoghi()
+        GeoArchiveManager.instance().deleteFab10kModifications()
         GeoArchiveManager.instance().commit()
         self.onProgress()
          
