@@ -53,6 +53,7 @@ class GeosismaWindow(QDockWidget):
     downloadSopralluoghiDone = pyqtSignal(bool)
     archiveSopralluoghiDone = pyqtSignal(bool)
     downloadFab10kModificationsDone = pyqtSignal(bool)
+    archiveFab10kModificationsDone = pyqtSignal(bool)
     uploadSafetiesDone = pyqtSignal(bool)
     selectRequestDone = pyqtSignal()
     updatedCurrentSafety = pyqtSignal()
@@ -258,7 +259,10 @@ class GeosismaWindow(QDockWidget):
         self.archiveRequestsDone.connect( self.downloadSopralluoghi ) # ends emitting downloadSopralluoghiDone
         self.downloadSopralluoghiDone.connect( self.archiveSopralluoghi ) # ends emitting downloadFab10kModificationsDone
         self.archiveSopralluoghiDone.connect( self.downloadFab10kModifications ) # ends emitting downloadFab10kModificationsDone
-        self.downloadFab10kModificationsDone.connect( self.archiveFab10kModifications )
+        self.downloadFab10kModificationsDone.connect( self.archiveFab10kModifications ) # end emitting archiveFab10kModificationsDone
+        # at the end onf download refresh canvas
+        self.archiveFab10kModificationsDone.connect(self.refreshCanvas)
+        
         self.updatedCurrentSafety.connect(self.updateSafetyForm)
         self.updatedCurrentSafety.connect(self.updateArchivedCurrentSafety)
         self.updatedCurrentSafety.connect(self.repaintSafetyGeometryLayer)
@@ -468,6 +472,11 @@ class GeosismaWindow(QDockWidget):
         #self.registerAggregatiEditingSignals___APPPP()
         
         return True
+
+    def refreshCanvas(self):
+        print "refreshCanvas"
+        self.iface.mapCanvas().refresh()
+        self.canvas.refresh()
 
     def resetTeamComboBox(self):
         from ArchiveManager import ArchiveManager
@@ -1119,8 +1128,10 @@ class GeosismaWindow(QDockWidget):
                 GeoArchiveManager.instance().archiveFab10kModifications(modification)
                 
             GeoArchiveManager.instance().commit()
+            success = True
 
         except Exception as ex:
+            success = False
             try:
                 traceback.print_exc()
             except:
@@ -1132,6 +1143,7 @@ class GeosismaWindow(QDockWidget):
         finally:
             GeoArchiveManager.instance().close() # to avoid locking
 
+        self.archiveFab10kModificationsDone.emit(success)
     
     def selectRequest(self):
         from DlgSelectRequest import DlgSelectRequest
