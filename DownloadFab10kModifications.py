@@ -116,8 +116,6 @@ class DownloadFab10kModifications(DlgWaiting):
         geojsonbbox = """{"type": "Polygon", "coordinates": [[[%(minx)s, %(miny)s], [%(minx)s, %(maxy)s], [%(maxy)s, %(maxy)s], [%(maxx)s, %(miny)s], [%(minx)s, %(miny)s]]], "crs": {"type": "name", "properties": {"name": "EPSG:%(srid)s"}}}"""
         geojsonbbox = geojsonbbox % { "minx":self.bbox.xMinimum(), "miny":self.bbox.yMinimum(), "maxx":self.bbox.xMaximum(), "maxy":self.bbox.yMaximum(), "srid":self.srid }
 
-        print geojsonbbox
-
         # for each request api
         request = QNetworkRequest()
         url = QUrl(self.baseApiUrl + fab10kmodUrl)
@@ -126,7 +124,6 @@ class DownloadFab10kModifications(DlgWaiting):
         request.setUrl(url)
         
         message = self.tr("Download %s with query: %s and bbox: %s" % (gw.instance().LAYER_GEOM_FAB10K_MODIF, url.toString(), geojsonbbox ) )
-        #message = self.tr("Download %s with query: %s" % (gw.instance().LAYER_GEOM_FAB10K_MODIF, url.toString()) )
         self.message.emit(message, QgsMessageLog.INFO)
 
         # start download

@@ -125,7 +125,6 @@ class DownloadSopralluoghi(DlgWaiting):
         request.setUrl(url)
         
         message = self.tr("Download %s with query: %s and bbox: %s" % (gw.instance().LAYER_GEOM_SOPRALLUOGHI, url.toString(), geojsonbbox ) )
-        #message = self.tr("Download %s with query: %s" % (gw.instance().LAYER_GEOM_SOPRALLUOGHI, url.toString() ) )
         self.message.emit(message, QgsMessageLog.INFO)
 
         # start download
