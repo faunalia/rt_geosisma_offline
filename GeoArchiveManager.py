@@ -175,16 +175,16 @@ class GeoArchiveManager(QObject):
             raise(ex)
         
         
-    def deleteFab10kModifications(self, local_id):
+    def deleteFab10kModification(self, local_gid):
         '''
         Method to a remove a fab_10k_modifications record in fab_10k_mod table
-        @param local_id: id of the record to delete
+        @param local_gid: id of the record to delete
         '''
         self.checkConnection()
         
         # create query
         sqlquery = "DELETE FROM %s " % gw.instance().TABLE_GEOM_FAB10K_MODIF
-        sqlquery += "WHERE local_gid=%s" % adapt(local_id)
+        sqlquery += "WHERE local_gid=%s" % adapt(local_gid)
         
         QgsLogger.debug(self.tr("Rimuovi il record in %s con la query: %s" % (gw.instance().TABLE_GEOM_FAB10K_MODIF, sqlquery) ), 1 )
         try:
@@ -194,6 +194,30 @@ class GeoArchiveManager(QObject):
         except Exception as ex:
             raise(ex)
     
+    def deleteFab10kModifications(self, indexes=None):
+        '''
+        Method to a delete records from fab_10k_mod table based on idexes
+        @param indexes: indexes of attachments to delete
+        '''
+        self.checkConnection()
+    
+        # create query
+        sqlquery = "DELETE FROM %s " % gw.instance().TABLE_GEOM_FAB10K_MODIF
+        if (indexes != None) and (len(indexes) > 0):
+            sqlquery += "WHERE "
+            for index in indexes:
+                sqlquery += "local_gid=%s OR " % adapt(index)
+            sqlquery = sqlquery[0:-4]
+        sqlquery += ";"
+
+        QgsLogger.debug(self.tr("Rimozione fab_10k_mod con la query: %s" % sqlquery), 1 )
+        try:
+            
+            self.cursor.execute(sqlquery)
+            
+        except Exception as ex:
+            raise(ex)
+
     def prepareFab10kModificationDict(self, modificationDict):
         '''
         Method to adapt team dictionary to be the same to db fab_10k_mod table
@@ -322,7 +346,12 @@ class GeoArchiveManager(QObject):
         sqlquery += ";"
         
         QgsLogger.debug(self.tr("Rimozione sopralluoghi con la query: %s" % sqlquery), 1 )
-        self.cursor.execute(sqlquery)
+        try:
+            
+            self.cursor.execute(sqlquery)
+            
+        except Exception as ex:
+            raise(ex)
 
 #############################################################################
 # utility queries

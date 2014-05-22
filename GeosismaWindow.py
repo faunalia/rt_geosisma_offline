@@ -2618,7 +2618,7 @@ class GeosismaWindow(QDockWidget):
                     self.showMessage(message, QgsMessageLog.INFO)
                 
                 # then remove source aggregato
-                GeoArchiveManager.instance().deleteFab10kModifications(local_gid)
+                GeoArchiveManager.instance().deleteFab10kModification(local_gid)
                 #layer.dataProvider().deleteFeatures([local_gid])
         
         # commit all changes in DB
