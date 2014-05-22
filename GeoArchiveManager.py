@@ -79,15 +79,16 @@ class GeoArchiveManager(QObject):
     
     def isOpen(self):
         try:
-            self.conn.execute("SELECT 1 FROM istat_comuni LIMIT 1;")
+            self.conn.execute("SELECT 1;")
             return True
         except db.ProgrammingError:
             return False
     
     def commit(self):
-        self.conn.commit()
-        # close to be sure to avoid locking
-        self.close()
+        if self.isOpen():
+            self.conn.commit()
+            # close to be sure to avoid locking
+            self.close()
         
     def close(self):
         self.conn.close()
