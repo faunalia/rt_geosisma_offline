@@ -130,8 +130,6 @@ class UploadManagerFab10kModifications(DlgWaiting):
                 self.saved_id = None
                 fab10kmodToUpload["upload_time"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 
-                print fab10kmodToUpload
-                
                 self.uploadFab10kmod(fab10kmodToUpload)
             
                 # wait end of single request
