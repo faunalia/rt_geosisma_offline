@@ -771,6 +771,8 @@ class GeosismaWindow(QDockWidget):
         # close Archive db is opened
         from ArchiveManager import ArchiveManager
         ArchiveManager.instance().cleanUp()
+        from GeoArchiveManager import GeoArchiveManager
+        GeoArchiveManager.instance().cleanUp()
         
         # remove layer of safety geometrys and reload it
         self._removeMapLayer(self.VLID_GEOM_MODIF)
@@ -2561,21 +2563,21 @@ class GeosismaWindow(QDockWidget):
         # this could create a problem in case splitting and removing parts...
         # 4) if multy-polygon has changed it's parts => create new records
         #    assigning identif derived from the original polygon
-        for local_id, geom in self.changedGeometries.items():
+        for local_gid, geom in self.changedGeometries.items():
             # I can modify only feature belonging to my team and not already uploaded
-            feat = layer.getFeatures(QgsFeatureRequest(local_id))
+            feat = layer.getFeatures(QgsFeatureRequest(local_gid))
             feat = feat.next()
             if not self.checkCanModifyAggregato(feat):
                 continue
             
             # if equal discard
             if geom.isGeosEqual(feat.geometry()):
-                QgsLogger.debug("Unmodified geometry for in %s with local_id %i" % (GeosismaWindow.TABLE_GEOM_FAB10K_MODIF, local_id) ,2 )
+                QgsLogger.debug("Unmodified geometry for in %s with local_gid %i" % (GeosismaWindow.TABLE_GEOM_FAB10K_MODIF, local_gid) ,2 )
                 continue
             
             parts = geom.asMultiPolygon()
             if parts == None or len(parts) == 0:
-                message = self.tr(u"Record %s con local_id: %s non è multiplygon" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_id"]) ))
+                message = self.tr(u"Record %s con local_gid: %s non è multiplygon" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_gid"]) ))
                 self.showMessage(message, QgsMessageLog.WARNING)
                 QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
                 continue
@@ -2585,7 +2587,7 @@ class GeosismaWindow(QDockWidget):
             # In this case probably there is only a change in shape of their parts
             originalParts = feat.geometry().asMultiPolygon()
             if (len(parts) == len(originalParts)):
-                QgsLogger.debug("Modify geometry in %s with id %i" % (GeosismaWindow.TABLE_GEOM_FAB10K_MODIF, local_id) ,2 )
+                QgsLogger.debug("Modify geometry in %s with id %i" % (GeosismaWindow.TABLE_GEOM_FAB10K_MODIF, local_gid) ,2 )
                 feat.setGeometry( geom )
                 GeoArchiveManager.instance().updateFab10kModifications(feat) # mod date is updated inside
                 continue
@@ -2597,7 +2599,7 @@ class GeosismaWindow(QDockWidget):
                 for index, part in enumerate(parts):
                     partGeom = QgsGeometry.fromPolygon(part)
                     if not partGeom.convertToMultiType():
-                        message = self.tr(u"Problemi convertendo in multiplygon una parte della geometria con local_id: %i" % str(feat["local_id"]))
+                        message = self.tr(u"Problemi convertendo in multiplygon una parte della geometria con local_gid: %i" % str(feat["local_gid"]))
                         self.showMessage(message, QgsMessageLog.WARNING)
                         QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
                         continue
@@ -2611,13 +2613,13 @@ class GeosismaWindow(QDockWidget):
                     # save new aggregato
                     GeoArchiveManager.instance().archiveFab10kModifications(aggregatoModificato)
                     
-                    aggregatoModificato["local_id"] = GeoArchiveManager.instance().getLastRowId()
-                    message = self.tr("Inserito record %s con local_id %s e identificativo %s" % (self.LAYER_GEOM_FAB10K_MODIF, aggregatoModificato["local_id"], aggregatoModificato["identif"]))
+                    aggregatoModificato["local_gid"] = GeoArchiveManager.instance().getLastRowId()
+                    message = self.tr("Inserito record %s con local_gid %s e identificativo %s" % (self.LAYER_GEOM_FAB10K_MODIF, aggregatoModificato["local_gid"], aggregatoModificato["identif"]))
                     self.showMessage(message, QgsMessageLog.INFO)
                 
                 # then remove source aggregato
-                GeoArchiveManager.instance().deleteFab10kModifications(local_id)
-                #layer.dataProvider().deleteFeatures([local_id])
+                GeoArchiveManager.instance().deleteFab10kModifications(local_gid)
+                #layer.dataProvider().deleteFeatures([local_gid])
         
         # commit all changes in DB
         GeoArchiveManager.instance().commit()
@@ -2682,12 +2684,12 @@ class GeosismaWindow(QDockWidget):
 
     def checkCanModifyAggregato(self, feat):
         if feat["upload_time"] != None :
-            message = self.tr(u"Record %s con local_id: %s giá caricato sul server. Crea un nuovo aggregato a partire dall'originale" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_id"]) ))
+            message = self.tr(u"Record %s con local_gid: %s giá caricato sul server. Crea un nuovo aggregato a partire dall'originale" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_gid"]) ))
             self.showMessage(message, QgsMessageLog.WARNING)
             QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return False
         if str(feat["team_id"]) != self.teamComboBox.currentText():
-            message = self.tr(u"Record %s con local_id: %s appartiene al team %s, non al team corrente" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_id"]), str(feat["team_id"])))
+            message = self.tr(u"Record %s con local_gid: %s appartiene al team %s, non al team corrente" % (self.LAYER_GEOM_FAB10K_MODIF, str(feat["local_gid"]), str(feat["team_id"])))
             self.showMessage(message, QgsMessageLog.WARNING)
             QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
             return False
