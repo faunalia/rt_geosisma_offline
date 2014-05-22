@@ -120,12 +120,12 @@ class DownloadSopralluoghi(DlgWaiting):
         # for each request api
         request = QNetworkRequest()
         url = QUrl(self.baseApiUrl + sopralluoghiUrl)
-        #url.addQueryItem("the_geom__contained", geojsonbbox )
+        url.addQueryItem("the_geom__contained", geojsonbbox )
         url.addQueryItem("format", "json")
         request.setUrl(url)
         
         message = self.tr("Download %s with query: %s and bbox: %s" % (gw.instance().LAYER_GEOM_SOPRALLUOGHI, url.toString(), geojsonbbox ) )
-        message = self.tr("Download %s with query: %s" % (gw.instance().LAYER_GEOM_SOPRALLUOGHI, url.toString() ) )
+        #message = self.tr("Download %s with query: %s" % (gw.instance().LAYER_GEOM_SOPRALLUOGHI, url.toString() ) )
         self.message.emit(message, QgsMessageLog.INFO)
 
         # start download
@@ -219,9 +219,9 @@ class DownloadSopralluoghi(DlgWaiting):
                 nextUrl = json["meta"]["next"]
                 if nextUrl:
                     self.message.emit(nextUrl, QgsMessageLog.INFO)
-                     
+                    
                     request = QNetworkRequest()
-                    url = QUrl(self.baseApiUrl + nextUrl)
+                    url = QUrl.fromEncoded(self.baseApiUrl + nextUrl)
                     request.setUrl(url)
                      
                     self.manager.get(request)
