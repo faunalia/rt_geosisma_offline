@@ -32,6 +32,7 @@ from ArchiveManager import ArchiveManager
 class DlgUploadSafeties(QDialog, Ui_Dialog):
 
 	# signals
+	loadRequestsDone = pyqtSignal()
 	loadTeamsDone = pyqtSignal()
 	loadSafetiesDone = pyqtSignal()
 	loadTableDone = pyqtSignal()
@@ -50,6 +51,7 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 		self.buttonBox.button(QDialogButtonBox.Save).setText(self.tr("Upload"))
 		self.buttonBox.button(QDialogButtonBox.SaveAll).setText(self.tr("Upload tutte"))
 
+		self.loadRequestsDone.connect(self.loadTeams)
 		self.loadTeamsDone.connect(self.updateButtonsState)
 		self.loadTeamsDone.connect(self.loadTable)
 		self.tableWidget.itemSelectionChanged.connect(self.checkSelectable)
@@ -63,10 +65,15 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 		# check if safeties are available
 		if len(self.records) == 0:
 			return
-
-		self.loadTeams()
-		self.loadTable()
+		
+		self.loadRequests()
+		#self.loadTeams()
+		#self.loadTable()
 		self.tableWidget.sortByColumn(0)
+		
+	def loadRequests(self):
+		self.requests = ArchiveManager.instance().loadRequests()
+		self.loadRequestsDone.emit()
 		
 	def loadSafeties(self):
 		if self.currentGid:
@@ -110,18 +117,23 @@ class DlgUploadSafeties(QDialog, Ui_Dialog):
 		self.tableWidget.setHorizontalHeaderLabels( [val[0] for val in columns.values()] )
 		for row, record in enumerate(self.records):
 			for column, columnKey in enumerate(columns.keys()):
-				if columnKey != "name":
-					item = QTableWidgetItem()
+				item = QTableWidgetItem()
+				if columnKey == "request_id":
+					for request in self.requests:
+						if str(request["id"]) == str(record[columnKey]):
+							item.setData(Qt.DisplayRole, int(request["number"]))
+							break						
+				elif columnKey == "name":
+					# look for name in teams
+					for team in self.teams:
+						if team["id"] == record["team_id"]:
+							item = QTableWidgetItem( str(team["name"]) )
+				else:
 					try:
 						value = int(record[columnKey])
 					except:
 						value = str(record[columnKey])
 					item.setData(Qt.DisplayRole, value)
-				else:
-					# look for name in teams
-					for team in self.teams:
-						if team["id"] == record["team_id"]:
-							item = QTableWidgetItem( str(team["name"]) )
 				
 				# add record in the first "local_id" colum
 				if column == 0:
