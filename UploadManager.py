@@ -290,7 +290,10 @@ class UploadManager(DlgWaiting):
         self.singleSafetyUploadFinished = False
         self.currentSafetyUploading = safety
         self.manager.post(request, json.dumps(safety) )
+        
         QgsLogger.debug("uploadSafety to url %s with safety %s" % (url.toString(), json.dumps(safety)) ,2 )
+        for headerName in request.rawHeaderList():
+            QgsLogger.debug("Request header %s = %s" % (headerName, request.rawHeader(headerName)) ,2 )
 
     def downloadRemoteSafety(self, safety_id):
         # register response manager
@@ -312,6 +315,8 @@ class UploadManager(DlgWaiting):
         self.singleSafetyDownloadFinished = False
         self.manager.get(request)
         QgsLogger.debug("downloadRemoteSafety from url %s" % url.toString() ,2 )
+        for headerName in request.rawHeaderList():
+            QgsLogger.debug("Request header %s = %s" % (headerName, request.rawHeader(headerName)) ,2 )
 
     def downloadRemoteSopralluoghi(self, safety_id):
         # register response manager
@@ -334,6 +339,8 @@ class UploadManager(DlgWaiting):
         self.singleSopralluoghiDownloadFinished = False
         self.manager.get(request)
         QgsLogger.debug("downloadRemoteSopralluoghi from url %s" % url.toString() ,2 )
+        for headerName in request.rawHeaderList():
+            QgsLogger.debug("Request header %s = %s" % (headerName, request.rawHeader(headerName)) ,2 )
 
     def updateSopralluoghi(self, sopralluoghi):
         request = QNetworkRequest()
@@ -350,6 +357,8 @@ class UploadManager(DlgWaiting):
         sopralluoghi.pop("gid")
         self.manager.put(request, json.dumps(sopralluoghi) )
         QgsLogger.debug("updateSopralluoghi to url %s with sopralluoghi %s" % (url.toString(), json.dumps(sopralluoghi)) ,2 )
+        for headerName in request.rawHeaderList():
+            QgsLogger.debug("Request header %s = %s" % (headerName, request.rawHeader(headerName)) ,2 )
 
     def uploadAttachment(self, safetyRemoteId, attachment):
         
@@ -411,11 +420,18 @@ class UploadManager(DlgWaiting):
         self.singleAttachmentUploadFinished = False
         self.manager.post(request, datas)
         QgsLogger.debug("uploadAttachment to url %s with datas %s" % (url.toString(), str(datas)) ,2 )
+        for headerName in request.rawHeaderList():
+            QgsLogger.debug("Request header %s = %s" % (headerName, request.rawHeader(headerName)) ,2 )
         
     def replyUploadSafetyFinished(self, reply):
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyUploadSafetyFinished)
         
+        # dump headers
+        headerKeys = reply.rawHeaderList()
+        for headerName in headerKeys:
+            QgsLogger.debug("Response header %s = %s" % (headerName, reply.rawHeader(headerName)) ,2 )
+
         # received error
         if reply.error():
             # check if error is 299 in this case is IntegrityError due the fact that 
@@ -437,8 +453,6 @@ class UploadManager(DlgWaiting):
         gw.instance().autenthicated = True
         gw.instance().authenticationRetryCounter = 0
 
-        #print reply.rawHeader()
-        headerKeys = reply.rawHeaderList()
         if not ("Location" in headerKeys):
             message = self.tr("Errore nella HTTP reply header. Location is not set" )
             self.message.emit(message, QgsMessageLog.CRITICAL)
@@ -465,6 +479,11 @@ class UploadManager(DlgWaiting):
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyDownloadSafetyFinished)
         
+        # dump headers
+        headerKeys = reply.rawHeaderList()
+        for headerName in headerKeys:
+            QgsLogger.debug("Response header %s = %s" % (headerName, reply.rawHeader(headerName)) ,2 )
+
         # received error
         if reply.error():
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
@@ -475,6 +494,7 @@ class UploadManager(DlgWaiting):
         gw.instance().autenthicated = True
         gw.instance().authenticationRetryCounter = 0
 
+        # parse return json
         from json import loads
         raw = reply.readAll()
         try:
@@ -502,6 +522,11 @@ class UploadManager(DlgWaiting):
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyDownloadSopralluoghiFinished)
         
+        # dump headers
+        headerKeys = reply.rawHeaderList()
+        for headerName in headerKeys:
+            QgsLogger.debug("Response header %s = %s" % (headerName, reply.rawHeader(headerName)) ,2 )
+
         # received error
         if reply.error():
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
@@ -513,6 +538,7 @@ class UploadManager(DlgWaiting):
         gw.instance().autenthicated = True
         gw.instance().authenticationRetryCounter = 0
 
+        # parse json return
         from json import loads
         raw = reply.readAll()
         try:
@@ -552,6 +578,11 @@ class UploadManager(DlgWaiting):
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyUpdateSopralluoghiFinished)
         
+        # dump headers
+        headerKeys = reply.rawHeaderList()
+        for headerName in headerKeys:
+            QgsLogger.debug("Response header %s = %s" % (headerName, reply.rawHeader(headerName)) ,2 )
+
         # received error
         if reply.error():
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
@@ -570,6 +601,11 @@ class UploadManager(DlgWaiting):
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyUploadAttachmentFinished)
         
+        # dump headers
+        headerKeys = reply.rawHeaderList()
+        for headerName in headerKeys:
+            QgsLogger.debug("Response header %s = %s" % (headerName, reply.rawHeader(headerName)) ,2 )
+
         # received error
         if reply.error():
             message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
@@ -581,7 +617,6 @@ class UploadManager(DlgWaiting):
         gw.instance().autenthicated = True
         gw.instance().authenticationRetryCounter = 0
         
-        headerKeys = reply.rawHeaderList()
         if not ("Location" in headerKeys):
             message = self.tr("Errore nella HTTP reply header. Location is not set" )
             self.message.emit(message, QgsMessageLog.CRITICAL)
