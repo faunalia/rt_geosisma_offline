@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import os, json, traceback, time
+import json, traceback, time
 from qgis.core import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -7,9 +7,6 @@ from PyQt4.QtNetwork import *
 
 from DlgWaiting import DlgWaiting
 from GeosismaWindow import GeosismaWindow as gw
-
-# SpatiaLite imports
-from pyspatialite import dbapi2 as db
 
 class DownloadFab10kModifications(DlgWaiting):
     
@@ -30,23 +27,17 @@ class DownloadFab10kModifications(DlgWaiting):
         self.manager = QgsNetworkAccessManager.instance()
         # clean listeners to avoid overlap 
         try:
-            self.manager.authenticationRequired.disconnect()
-        except:
-            pass
-        try:
             self.manager.finished.disconnect()
         except:
             pass
         # add new listeners
         self.manager.finished.connect(self.replyFinished)
-        self.manager.authenticationRequired.connect(self.authenticationRequired)
 
         #self.setWindowModality(Qt.ApplicationModal)
     
     def __del__(self):
         try:
             self.manager.finished.disconnect(self.replyFinished)
-            self.manager.authenticationRequired.disconnect(self.authenticationRequired)
         except Exception:
             pass
     
@@ -132,34 +123,6 @@ class DownloadFab10kModifications(DlgWaiting):
         # wait request finish to go to the next
         self.singleFinished = False
 
-    def authenticationRequired(self, reply, authenticator ):
-        if self is None:
-            return
-        # check if reached mas retry
-        gw.instance().authenticationRetryCounter += 1
-        if (gw.instance().authenticationRetryCounter % gw.instance().maxAuthenticationError) == 0:
-            gw.instance().authenticationRetryCounter = 0 # reset counter
-            message = self.tr("Autenticazione fallita piu' di %d volte" % gw.instance().maxAuthenticationError)
-            self.message.emit(message, QgsMessageLog.CRITICAL)
-            QMessageBox.critical(self, gw.MESSAGELOG_CLASS, message)
-            # abort continuing request
-            reply.abort()
-            self.done.emit(False)
-            return
-        # if not authenticated ask credentials
-        if not gw.instance().autenthicated:
-            (ok, gw.instance().user, gw.instance().pwd) = QgsCredentials.instance().get("", gw.instance().user, gw.instance().pwd, self.tr("Inserisci User e PWD della tua utenza Geosisma"))
-            if not ok: # MEANS PRESED CANCEL
-                gw.instance().authenticationRetryCounter = 0
-                reply.abort()
-                message = self.tr("Mancata autenticazione")
-                self.message.emit(message, QgsMessageLog.WARNING)
-                self.done.emit(False)
-                return
-        # do authentication
-        authenticator.setUser(gw.instance().user)
-        authenticator.setPassword(gw.instance().pwd)
-
     def replyFinished(self, reply):
         if self is None:
             return
@@ -167,8 +130,9 @@ class DownloadFab10kModifications(DlgWaiting):
         # need auth
         if reply.error() == QNetworkReply.AuthenticationRequiredError:
             gw.instance().autenthicated = False
-            # do again until authenticated or reached max retry
-            self.manager.get(reply.request())
+            message = self.tr(u"Autenticazione fallita")
+            self.message.emit(message, QgsMessageLog.WARNING)
+            self.done.emit(False)
             return
         
         # received error
@@ -186,7 +150,7 @@ class DownloadFab10kModifications(DlgWaiting):
         raw = reply.readAll()
         try:
             json = loads(raw.data())
-        except Exception as e:
+        except Exception:
             try:
                 traceback.print_exc()
             except:

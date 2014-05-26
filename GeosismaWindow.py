@@ -26,7 +26,6 @@ import json # used to dump dicts in strings
 import ast # used to convert string indict because json.loads could fail
 import inspect
 import copy
-import time
 from datetime import date, datetime
 from psycopg2.extensions import adapt
 
@@ -474,7 +473,7 @@ class GeosismaWindow(QDockWidget):
         return True
 
     def refreshCanvas(self):
-        print "refreshCanvas"
+        # seems it doesn't work :(
         self.iface.mapCanvas().refresh()
         self.canvas.refresh()
 

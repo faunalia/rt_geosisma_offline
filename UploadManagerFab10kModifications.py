@@ -22,15 +22,14 @@ import traceback
 import json
 import time
 import os
-from datetime import date, datetime
-from qgis.core import QgsLogger, QgsMessageLog, QgsCredentials
+from datetime import datetime
+from qgis.core import QgsLogger, QgsMessageLog
 from qgis.core import QgsNetworkAccessManager
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtNetwork import *
 
 from GeosismaWindow import GeosismaWindow as gw
-from GeoArchiveManager import GeoArchiveManager
 from DlgWaiting import DlgWaiting
 
 class UploadManagerFab10kModifications(DlgWaiting):
@@ -48,44 +47,14 @@ class UploadManagerFab10kModifications(DlgWaiting):
         self.manager = QgsNetworkAccessManager.instance();
         # clean listeners to avoid overlap 
         try:
-            self.manager.authenticationRequired.disconnect()
-        except:
-            pass
-        try:
             self.manager.finished.disconnect()
         except:
             pass
-        # add new listeners
-        self.manager.authenticationRequired.connect(self.authenticationRequired)
         # get connection conf
         settings = QSettings()
         self.fab10kmodUrl = settings.value("/rt_geosisma_offline/fab10kmodUrl", "/api/v1/fab10kmod/")
         self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
         #self.teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
-
-    def authenticationRequired(self, reply, authenticator ):
-        # check if reached mas retry
-        gw.instance().authenticationRetryCounter += 1
-        if (gw.instance().authenticationRetryCounter % gw.instance().maxAuthenticationError) == 0:
-            gw.instance().authenticationRetryCounter = 0 # reset counter
-            message = self.tr("Autenticazione fallita piu' di %d volte" % gw.instance().maxAuthenticationError)
-            self.message.emit(message, QgsMessageLog.CRITICAL)
-            QMessageBox.critical(self, gw.MESSAGELOG_CLASS, message)
-            # abort continuing request
-            reply.abort()
-            self.done.emit(False)
-            return
-        # if not authenticated ask credentials
-        if not gw.instance().autenthicated:
-            (ok, gw.instance().user, gw.instance().pwd) = QgsCredentials.instance().get("", gw.instance().user, gw.instance().pwd, self.tr("Inserisci User e PWD della tua utenza Geosisma"))
-            if not ok: # MEANS PRESSED CANCEL
-                gw.instance().authenticationRetryCounter = 0
-                reply.abort()
-                self.done.emit(False)
-                return
-        # do authentication
-        authenticator.setUser(gw.instance().user)
-        authenticator.setPassword(gw.instance().pwd)
 
     def initRecords(self, records):
         self.records = records
@@ -188,12 +157,6 @@ class UploadManagerFab10kModifications(DlgWaiting):
         
         request.setUrl(url)
         
-        # register response manager
-#         try:
-#             self.manager.authenticationRequired.disconnect()
-#         except:
-#             pass
-#         self.manager.authenticationRequired.connect(self.authenticationRequired)
         # add new listeners
         try:
             self.manager.finished.disconnect()
