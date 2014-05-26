@@ -32,6 +32,7 @@ from ArchiveManager import ArchiveManager
 class DlgSelectRequest(QDialog, Ui_Dialog):
 
 	# signals
+	loadTeamsDone = pyqtSignal()
 	loadRequestsDone = pyqtSignal()
 	loadTableDone = pyqtSignal()
 	
@@ -46,13 +47,18 @@ class DlgSelectRequest(QDialog, Ui_Dialog):
 		self.buttonBox.button(QDialogButtonBox.Close).setText(self.tr("Ignora"))
 
 		self.loadRequestsDone.connect(self.updateButtonsState)
-		self.loadRequestsDone.connect(self.loadTable)
+		self.loadRequestsDone.connect(self.loadTeams)
+		self.loadTeamsDone.connect(self.loadTable)
 		self.requestsTableWidget.itemSelectionChanged.connect(self.updateButtonsState)
 		self.loadTableDone.connect(self.selectCurrentRequest)
 		self.buttonBox.button(QDialogButtonBox.Ok).clicked.connect(self.setCurrentRequest)
 		
 		self.loadRequests()
-		self.loadTable()
+		#self.loadTable()
+		
+	def loadTeams(self):
+		self.teams = ArchiveManager.instance().loadTeams()
+		self.loadTeamsDone.emit()
 		
 	def loadRequests(self):
 		self.records = ArchiveManager.instance().loadRequests()
@@ -65,7 +71,7 @@ class DlgSelectRequest(QDialog, Ui_Dialog):
 		Hide = True
 		Show = False
 		columns = OrderedDict()
-		columns['id'] = ( self.tr(u'id'), Show )
+		columns['number'] = ( self.tr(u'Numero'), Show )
 		columns['event_id'] = ( self.tr(u'Evento'), Show )
 		columns['s1prov'] = ( self.tr(u'Provincia'), Show )
 		columns['s1com'] = ( self.tr(u'Comune'), Show )
@@ -75,8 +81,7 @@ class DlgSelectRequest(QDialog, Ui_Dialog):
 		columns['s1catpart1'] = ( self.tr(u'Particella'), Show )
 		columns['s1catfoglio'] = ( self.tr(u'Foglio'), Show )
 		columns['created'] = ( self.tr(u'Data di creazione'), Show )
-		columns['number'] = ( self.tr(u'Squadra'), Show )
-		columns['team_id'] = ( self.tr(u'Id della Squadra'), Hide )
+		columns['team_id'] = ( self.tr(u'Squadra'), Show )
 		columns['s1name'] = ( self.tr(u'Richiesto da'), Show )
 
 		# set table size
@@ -93,14 +98,20 @@ class DlgSelectRequest(QDialog, Ui_Dialog):
 		for row, record in enumerate(self.records):
 			for column, columnKey in enumerate(columns.keys()):
 				item = QTableWidgetItem()
-				try:
-					value = int(record[columnKey])
-				except:
-					value = str(record[columnKey])
-				item.setData(Qt.DisplayRole, value)
+				if columnKey == "team_id":
+					# look for name in teams
+					for team in self.teams:
+						if team["id"] == record["team_id"]:
+							item.setData(Qt.DisplayRole, str(team["name"]) )
+				else:
+					try:
+						value = int(record[columnKey])
+					except:
+						value = str(record[columnKey])
+					item.setData(Qt.DisplayRole, value)
 				
 				# add record in the first "id" colum
-				if columnKey == "id":
+				if columnKey == "number":
 					item.setData(Qt.UserRole, record)
 				
 				self.requestsTableWidget.setItem(row, column, item )
