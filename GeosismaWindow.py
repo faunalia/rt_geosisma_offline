@@ -1473,6 +1473,7 @@ class GeosismaWindow(QDockWidget):
         
         # get selected
         request_number = dlg.selectedRequestNumber
+        request_id = dlg.selectedRequestId
         team_name, team_id = dlg.selectedTeamNameAndId
         safety_number = dlg.selectedSafetyNumber
         
@@ -1494,7 +1495,7 @@ class GeosismaWindow(QDockWidget):
         self.requests = ArchiveManager.instance().loadRequests()
         
         for request in self.requests:
-            if str(request["id"]) != str(request_number):
+            if str(request["id"]) != str(request_id):
                 continue
             keys = ["s1prov", "s1com", "s1loc", "s1via", "s1civico", "s1catfoglio", "s1catpart1"]
             for k in keys:
@@ -1503,7 +1504,7 @@ class GeosismaWindow(QDockWidget):
             break
 
         safety = "%s" % json.dumps(subSafety)
-        self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_number, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
+        self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_id, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
         self.initNewCurrentSafetyDone.emit()
@@ -1572,7 +1573,7 @@ class GeosismaWindow(QDockWidget):
         if self.currentRequest == None:
             self.btnSelectRequest.setText("Seleziona Richiesta [%s]" % "--")
         else:
-            self.btnSelectRequest.setText("Seleziona Richiesta [%s]" % self.currentRequest["id"])
+            self.btnSelectRequest.setText("Seleziona Richiesta [%s]" % self.currentRequest["number"])
         
     @classmethod
     def checkActionScale(cls, actionName, maxScale):

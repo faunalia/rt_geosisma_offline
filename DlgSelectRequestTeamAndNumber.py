@@ -32,7 +32,8 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 	def __init__(self, selectedRequestId=None, selectedTeamId=None, parent=None):
 		QDialog.__init__(self, parent)
 		
-		self.selectedRequestNumber = selectedRequestId
+		self.selectedRequestId = selectedRequestId
+		self.selectedRequestNumber = None
 		self.selectedTeamId = selectedTeamId
 		self.selectedSafetyNumber = None
 		
@@ -51,7 +52,7 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 		
 		# init gui basing on value
 		for request in self.requests:
-			self.requestNumberComboBox.addItem(str(request["id"]))
+			self.requestNumberComboBox.addItem(str(request["number"]))
 		self.requestNumberComboBox.addItem("") # means no requesta ssociated
 		
 		for team_id in 	self.team_ids:
@@ -69,10 +70,13 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 		self.initDefault()
 		
 	def initDefault(self):
-		if self.selectedRequestNumber is not None:
-			index = self.requestNumberComboBox.findText( str(self.selectedRequestNumber) )
-			if index > -1:
-				self.requestNumberComboBox.setCurrentIndex(index)
+		if self.selectedRequestId is not None:
+			for request in self.requests:
+				if request["id"] ==  self.selectedRequestId:
+					index = self.requestNumberComboBox.findText( str(request["number"]) )
+					if index > -1:
+						self.requestNumberComboBox.setCurrentIndex(index)
+					break
 				
 		if self.selectedTeamId is not None:
 			index = self.teamIdComboBox.findData( str(self.selectedTeamId) )
@@ -80,7 +84,12 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 				self.teamIdComboBox.setCurrentIndex(index)
 
 	def setSelection(self):
+		# set request id
 		self.selectedRequestNumber = self.requestNumberComboBox.currentText()
+		self.selectedRequestId = None
+		for request in self.requests:
+			if str(request["number"]) == str(self.selectedRequestNumber):
+				self.selectedRequestId = request["id"]
 		
 		index = self.teamIdComboBox.currentIndex()
 		self.selectedTeamNameAndId = ( self.teamIdComboBox.itemText(index), self.teamIdComboBox.itemData(index) )
