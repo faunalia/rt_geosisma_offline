@@ -533,6 +533,10 @@ class GeosismaWindow(QDockWidget):
         QgsLogger.debug("manageSafetyEditingSignals entered",2 )
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
         if len(layers) > 0:
+            try:
+                layers[0].editingStopped.disconnect(self.emitSafetyGeometryUpdate)
+            except:
+                pass
             layers[0].editingStopped.connect(self.emitSafetyGeometryUpdate)
            
 
