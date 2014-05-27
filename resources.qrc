@@ -1,6 +1,5 @@
 <RCC>
-    <qresource prefix="/">
-        <file>icons/icon.png</file>
+    <qresource prefix="/icons">
         <file>icons/riepilogo_schede.png</file>
         <file>icons/nuova_scheda.png</file>
         <file>icons/modifica_scheda.png</file>
@@ -9,5 +8,6 @@
         <file>icons/ripulisci.png</file>
         <file>icons/crea_geometria.png</file>
         <file>icons/about.png</file>
+        <file>icons/icon.png</file>
     </qresource>
 </RCC>
