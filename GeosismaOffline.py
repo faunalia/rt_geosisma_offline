@@ -91,7 +91,7 @@ class GeosismaOffline:
 
     def resetDb(self):
         if self.dlg == None:
-            message = "Avviare prima RT GEosisma Offline prima di fare il reset"
+            message = "Avviare prima RT Geosisma Offline prima di fare il reset"
             QMessageBox.information(self.iface.mainWindow(), GeosismaWindow.MESSAGELOG_CLASS, message)
             return
         self.dlg.reset()
