@@ -345,7 +345,7 @@ class UploadManager(DlgWaiting):
     def updateSopralluoghi(self, sopralluoghi):
         request = QNetworkRequest()
         request.setRawHeader("Content-Type", "application/json");
-        url = QUrl(self.baseApiUrl + self.sopralluoghiUrl + str(sopralluoghi["gid"]))
+        url = QUrl(self.baseApiUrl + self.sopralluoghiUrl + str(sopralluoghi["gid"]) + "/")
         
         request.setUrl(url)
         
@@ -593,6 +593,11 @@ class UploadManager(DlgWaiting):
         # well authenticated :)
         gw.instance().autenthicated = True
         gw.instance().authenticationRetryCounter = 0
+        
+        # check status code
+        statusCode = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        reason = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+        QgsLogger.debug("Response status %s = %s" % (statusCode, reason) ,2 )
         
         # successfully end
         self.singleSopralluoghiUpdateDone.emit(True)
