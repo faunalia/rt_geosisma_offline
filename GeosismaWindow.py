@@ -1372,6 +1372,7 @@ class GeosismaWindow(QDockWidget):
             #modify safetyNumber of the record
             self.currentSafety["number"] = subSafetyDict["number"]
         
+        self.currentSafety["date"] = subSafetyDict["sdate"]
         self.currentSafety["safety"] = safetyDict["safety"]
         self.updatedCurrentSafety.emit()
         
