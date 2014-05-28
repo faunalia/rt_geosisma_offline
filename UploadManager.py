@@ -25,6 +25,7 @@ import time
 import os
 from qgis.core import QgsLogger, QgsMessageLog
 from qgis.core import QgsNetworkAccessManager
+from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem, QgsGeometry
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtNetwork import *
@@ -192,6 +193,21 @@ class UploadManager(DlgWaiting):
                     # some other emitted done signal
                     if (self.allFinished):
                         break
+                    
+                    # convert the_geom from default srid to geodb srid
+                    geom = QgsGeometry().fromWkt(the_geom)
+                    if not geom:
+                        message = self.tr(u"Errore nella conversione della WKT in geometria - %s" % the_geom)
+                        self.showMessage(message, QgsMessageLog.WARNING)
+                        return
+                    defaultCrs = QgsCoordinateReferenceSystem(gw.instance().DEFAULT_SRID)  # WGS 84 / UTM zone 33N
+                    geoDbCrs = QgsCoordinateReferenceSystem(gw.instance().GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
+                    xform = QgsCoordinateTransform(defaultCrs, geoDbCrs)
+                    if geom.transform(xform):
+                        message = self.tr(u"Errore nella conversione della geometria da SRID $d a SRID %d" % (gw.instance().DEFAULT_SRID, gw.instance().GEODBDEFAULT_SRID))
+                        self.showMessage(message, QgsMessageLog.WARNING)
+                        return
+                    the_geom = geom.exportToWkt()
                     
                     # now update geometry related to the saved safety (based on self.saved_id)
                     self.saved_sopralluoghi["the_geom"] = the_geom
