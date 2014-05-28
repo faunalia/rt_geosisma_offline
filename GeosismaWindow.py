@@ -1675,7 +1675,7 @@ class GeosismaWindow(QDockWidget):
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
 
     def linkSafetyGeometry(self, point=None, button=None):
-        self.linkSafetyGeometryEmitter.startCapture()
+        self.linkSafetyGeometryEmitter.stopCapture()
         
         if self.currentSafety == None:
             self.btnLinkSafetyGeometry.setChecked(False)
