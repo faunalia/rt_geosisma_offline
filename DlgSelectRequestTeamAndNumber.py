@@ -77,6 +77,12 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 					if index > -1:
 						self.requestNumberComboBox.setCurrentIndex(index)
 					break
+		else:
+			# select empty request
+			index = self.requestNumberComboBox.findText( "" )
+			if index > -1:
+				self.requestNumberComboBox.setCurrentIndex(index)
+			
 				
 		if self.selectedTeamId is not None:
 			index = self.teamIdComboBox.findData( str(self.selectedTeamId) )
