@@ -1676,7 +1676,6 @@ class GeosismaWindow(QDockWidget):
         
         # avoid if btnLinkSafetyGeometry is not checked
         if not self.btnLinkSafetyGeometry.isChecked():
-            print "not cheched"
             return
         
         action = self.btnLinkSafetyGeometry.toolTip()
