@@ -1674,6 +1674,11 @@ class GeosismaWindow(QDockWidget):
             self.btnLinkSafetyGeometry.setChecked(False)
             return
         
+        # avoid if btnLinkSafetyGeometry is not checked
+        if not self.btnLinkSafetyGeometry.isChecked():
+            print "not cheched"
+            return
+        
         action = self.btnLinkSafetyGeometry.toolTip()
         if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
             return self.linkSafetyGeometryEmitter.startCapture()
