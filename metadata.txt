@@ -10,7 +10,7 @@
 name=RE Geosisma Offline
 qgisMinimumVersion=2.0
 description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
-version=version 1.2.1
+version=version 1.2.2
 author=Luigi Pirelli (luipir@gmail.com)
 email=info@faunalia.eu
 
@@ -19,7 +19,9 @@ email=info@faunalia.eu
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=1.2.1
+changelog=1.2.2
+	Fix bug invio geometria sopralluoghi nello srid corretto 32632
+	1.2.1
 	Corretto aggiornamento della richiesta associata a una scheda #479
 	Corretta visualizzazione del numero della richiesta #489
 	Semplificazione del codice dell'autenticazione
