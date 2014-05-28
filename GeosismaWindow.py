@@ -1508,7 +1508,7 @@ class GeosismaWindow(QDockWidget):
             break
 
         safety = "%s" % json.dumps(subSafety)
-        self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_id, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateIso, "gid_catasto":"", "the_geom":None}
+        self.currentSafety = {"local_id":None, "id":-1, "created":dateIso, "request_id":request_id, "safety":safety, "team_id":team_id, "number":safety_number, "date":dateForForm, "gid_catasto":"", "the_geom":None}
         
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
         self.initNewCurrentSafetyDone.emit()
