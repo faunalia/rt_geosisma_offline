@@ -521,6 +521,8 @@ class GeosismaWindow(QDockWidget):
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
         if len(layers) > 0:
             layer = layers[0]
+            if not layer.isModified():
+                return
             features = layer.selectedFeatures()
             if len(features) == 0 or len(features) > 1:
                 message = self.tr(u"Nessuno o troppi [%d] record selezionati su %s" % (len(features), self.LAYER_GEOM_ORIG) )
