@@ -514,6 +514,9 @@ class GeosismaWindow(QDockWidget):
         project.writeEntry("Digitizing", "/LayerSnappingToleranceList", layerSnappingToleranceList)
 
     def emitSafetyGeometryUpdate(self):
+        # try to avoid enetering in this routine if plugin has reladed and self is changed but not layer reload
+        if QgsLogger == None:
+            return
         QgsLogger.debug("emitSafetyGeometryUpdate entered",2 )
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
         if len(layers) > 0:
