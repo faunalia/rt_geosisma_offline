@@ -152,10 +152,15 @@ class GeosismaWindow(QDockWidget):
             
         try:
             self.linkSafetyGeometryEmitter.deleteLater()
+            del self.linkSafetyGeometryEmitter
             self.lookForSafetiesEmitter.deleteLater()
+            del self.lookForSafetiesEmitter
             self.newSafetyGeometryDrawer.deleteLater()
+            del self.newSafetyGeometryDrawer
             self.newAggregatiDrawer.deleteLater()
+            del self.newAggregatiDrawer
             self.modifyAggregatiEmitter.deleteLater()
+            del self.modifyAggregatiEmitter
         except:
             pass
 
