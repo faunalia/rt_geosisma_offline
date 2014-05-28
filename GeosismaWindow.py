@@ -1670,6 +1670,8 @@ class GeosismaWindow(QDockWidget):
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
 
     def linkSafetyGeometry(self, point=None, button=None):
+        self.linkSafetyGeometryEmitter.startCapture()
+        
         if self.currentSafety == None:
             self.btnLinkSafetyGeometry.setChecked(False)
             return
@@ -1789,6 +1791,12 @@ class GeosismaWindow(QDockWidget):
 
 
     def listLinkedSafeties(self, point=None, button=None):
+        self.lookForSafetiesEmitter.stopCapture()
+        
+        # avoid if btnListLinkedSafeties is not checked
+        if not self.btnListLinkedSafeties.isChecked():
+            return
+        
         action = self.btnListLinkedSafeties.toolTip()
         if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
             return self.lookForSafetiesEmitter.startCapture()
