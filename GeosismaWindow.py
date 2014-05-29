@@ -526,18 +526,21 @@ class GeosismaWindow(QDockWidget):
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
         if len(layers) > 0:
             layer = layers[0]
-            if not layer.isModified():
-                return
             features = layer.selectedFeatures()
             if len(features) == 0 or len(features) > 1:
                 message = self.tr(u"Nessuno o troppi [%d] record selezionati su %s" % (len(features), self.LAYER_GEOM_ORIG) )
                 self.showMessage(message, QgsMessageLog.CRITICAL)
                 QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
                 return
-            # get updated geometry and update currentSafety
-            self.currentSafety["the_geom"] = features[0].geometry().exportToWkt()
             
-        self.updateArchivedCurrentSafety()
+            # get updated geometry and update currentSafety
+            newGeom = features[0].geometry().exportToWkt()
+            if self.currentSafety["the_geom"] == newGeom:
+                # no modification in geometry
+                return
+
+            self.currentSafety["the_geom"] = newGeom
+            self.updatedCurrentSafety.emit()
 
     def manageSafetyEditingSignals(self):
         QgsLogger.debug("manageSafetyEditingSignals entered",2 )
