@@ -101,7 +101,7 @@ class GeosismaWindow(QDockWidget):
     VLID_GEOM_FAB10K_MODIF = ''
     VLID_FOTO = ''
     RLID_WMS = {}
-
+    
     _instance = None
     
     # singleton interface
@@ -163,7 +163,7 @@ class GeosismaWindow(QDockWidget):
             del self.modifyAggregatiEmitter
         except:
             pass
-
+        
         # reset singleton
         try:
             GeosismaWindow._instance = None
@@ -181,6 +181,9 @@ class GeosismaWindow(QDockWidget):
         self.isApriScheda = True
         self.srid = GeosismaWindow.DEFAULT_SRID
 
+        # edit tools
+        self.panTool = QgsMapToolPan(self.canvas)
+        
         # get bds path
         self.settings = QSettings()
         dbsPath = self.settings.value("/rt_geosisma_offline/pathToDbs", "./offlinedata/dbs/")
@@ -215,7 +218,7 @@ class GeosismaWindow(QDockWidget):
         self.teams = None
         
         MapTool.canvas = self.canvas
-
+        
         self.linkSafetyGeometryEmitter = FeatureFinder()
         self.linkSafetyGeometryEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
         QObject.connect(self.linkSafetyGeometryEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
@@ -223,10 +226,6 @@ class GeosismaWindow(QDockWidget):
         self.lookForSafetiesEmitter = FeatureFinder()
         self.lookForSafetiesEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
         QObject.connect(self.lookForSafetiesEmitter, SIGNAL("pointEmitted"), self.listLinkedSafeties)
-
-        self.newSafetyGeometryDrawer = PolygonDrawer()
-        self.newSafetyGeometryDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
-        QObject.connect(self.newSafetyGeometryDrawer, SIGNAL("geometryEmitted"), self.createNewSafetyGeometry)
 
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
         self.connect(self.btnSelectSafety, SIGNAL("clicked()"), self.selectSafety)
@@ -238,15 +237,14 @@ class GeosismaWindow(QDockWidget):
         
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
         self.connect(self.btnListLinkedSafeties, SIGNAL("clicked()"), self.listLinkedSafeties)
+        self.newSafetyGeometryDrawer = None
         self.connect(self.btnNewSafetyGeometry, SIGNAL("clicked()"), self.createNewSafetyGeometry)
         self.connect(self.btnZoomToSafety, SIGNAL("clicked()"), self.zoomToSafety)
         self.connect(self.btnCleanUnlinkedSafeties, SIGNAL("clicked()"), self.cleanUnlinkedSafeties)
         self.connect(self.btnManageAttachments, SIGNAL("clicked()"), self.manageAttachments)
         
         # managing of fab_10k_mod (Fabbricati 10k modificati)
-        self.newAggregatiDrawer = PolygonDrawer()
-        self.newAggregatiDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
-        QObject.connect(self.newAggregatiDrawer, SIGNAL("geometryEmitted"), self.createNewAggregatiGeometry)
+        self.newAggregatiDrawer = None
         self.connect(self.btnNewAggregatiGeometry, SIGNAL("clicked()"), self.createNewAggregatiGeometry)
         
         self.modifyAggregatiEmitter = FeatureFinder()
@@ -1670,14 +1668,28 @@ class GeosismaWindow(QDockWidget):
             self.iface.setActiveLayer(layer)
 
         action = self.btnNewSafetyGeometry.toolTip()
-
         if not self.checkActionScale( action, self.SCALE_MODIFY ):
-            self.newSafetyGeometryDrawer.startCapture()
-            self.newSafetyGeometryDrawer.stopCapture()
+            if self.newSafetyGeometryDrawer:
+                self.newSafetyGeometryDrawer.deleteLater()
+                self.newSafetyGeometryDrawer = None
+                self.canvas.setMapTool(self.panTool)
             self.btnNewSafetyGeometry.setChecked(False)
             return
+        
+        # add new polygon drawer
+        if not self.newSafetyGeometryDrawer:
+            self.newSafetyGeometryDrawer = PolygonDrawer()
+            self.newSafetyGeometryDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
+            QObject.connect(self.newSafetyGeometryDrawer, SIGNAL("geometryEmitted"), self.createNewSafetyGeometry)
+            return self.newSafetyGeometryDrawer.startCapture()
+
         if polygon == None:
             return self.newSafetyGeometryDrawer.startCapture()
+        
+        # a polygon has been kept... remove drawer (and setting a new tool to avoid crash) 
+        self.newSafetyGeometryDrawer.deleteLater()
+        self.newSafetyGeometryDrawer = None
+        self.canvas.setMapTool(self.panTool)
         
         # try to convert to multypolygon to match DB constraint
         if not polygon.isMultipart():
@@ -2369,14 +2381,28 @@ class GeosismaWindow(QDockWidget):
             self.iface.setActiveLayer(currentActiveLayer)
         
         action = self.btnNewAggregatiGeometry.toolTip()
-
         if not self.checkActionScale( action, self.SCALE_MODIFY ):
-            self.newAggregatiDrawer.startCapture()
-            self.newAggregatiDrawer.stopCapture()
+            if self.newAggregatiDrawer:
+                self.newAggregatiDrawer.deleteLater()
+                self.newAggregatiDrawer = None
+                self.canvas.setMapTool(self.panTool)
             self.btnNewSafetyGeometry.setChecked(False)
             return
-        if polygon == None:
+
+        # add new polygon drawer
+        if not self.newAggregatiDrawer:
+            self.newAggregatiDrawer = PolygonDrawer()
+            self.newAggregatiDrawer.registerStatusMsg( u"Click sx per disegnare la nuova gemetria, click dx per chiuderla" )
+            QObject.connect(self.newAggregatiDrawer, SIGNAL("geometryEmitted"), self.createNewAggregatiGeometry)
             return self.newAggregatiDrawer.startCapture()
+
+        if polygon == None:
+            return self.newSafetyGeometryDrawer.startCapture()
+        
+        # a polygon has been kept... remove drawer (and setting a new tool to avoid crash) 
+        self.newAggregatiDrawer.deleteLater()
+        self.newAggregatiDrawer = None
+        self.canvas.setMapTool(self.panTool)
         
         # try to convert to polygon to match DB constraint
         # could be more efficiend usign dict compherension
@@ -2398,11 +2424,6 @@ class GeosismaWindow(QDockWidget):
         # new aggregato is specified as in specifiche aggregati.odt ​
         newidentif = nearestfeat["identif"]+"51"
         
-        # set team_id
-#         settings = QSettings()
-#         teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
-#         team_id = teamUrl + str(self.currentSafety["team_id"]) + "/"
-
         # build the new record
         if not polygon.convertToMultiType():
             message = self.tr(u"Problemi convertendo in multiplygon il nuovo poligono")
@@ -2493,7 +2514,7 @@ class GeosismaWindow(QDockWidget):
         
     def modifyAggregatiGeometry(self, point=None, button=None):
         """
-        function to manage action to modify an existing Aggregaty polygon
+        function to manage action to modify an existing Aggregati polygon
         using default qgis edit tools and intercepting standard edit events
         @param point: point on canvas to point the Aggregato to modify
         @param button: what buttn has been pressed
@@ -2787,6 +2808,19 @@ class GeosismaWindow(QDockWidget):
         self.iface.actionToggleEditing().changed.connect(self.actionToggleEditingChanged)
 
     
+    
+    def qgisToggleEditingControl(self, checked):
+        """
+        signal handler to manage editing start and stop usgin qgis tools
+        """
+        QgsLogger.debug("qgisToggleEditingControl entered with checked %s" % checked,2 )
+        # if stared editing
+        if checked:
+            pass
+        # if editing is finished
+        else:
+            pass                
+    
     def registerAggregatiEditingSignals___APPPP(self):
         """
         add signals to manage editing of an existing Aggregato
@@ -2860,7 +2894,7 @@ class GeosismaWindow(QDockWidget):
 #                         print "new geom = ", geom.exportToWkt()
 #                         print "old geom = ", oldgeom.exportToWkt()
 
-        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K_MODIF )
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
         if layer == None:
             return 
         try:
