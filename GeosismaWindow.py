@@ -533,8 +533,17 @@ class GeosismaWindow(QDockWidget):
                 QMessageBox.critical(self, GeosismaWindow.MESSAGELOG_CLASS, message)
                 return
             
+            # check if modifed geometry is related to the current safety geometry.
+            # if not do nothing
+            feature = features[0]
+            if feature["local_id"] != self.currentSafety["local_id"]:
+                message = self.tr(u"Hai editato il poligono della scheda %s non della scheda corrente %s" % (feature["number"], self.currentSafety["number"]) )
+                self.showMessage(message, QgsMessageLog.WARNING)
+                QMessageBox.warning(self, GeosismaWindow.MESSAGELOG_CLASS, message)
+                return
+            
             # get updated geometry and update currentSafety
-            newGeom = features[0].geometry().exportToWkt()
+            newGeom = features.geometry().exportToWkt()
             if self.currentSafety["the_geom"] == newGeom:
                 # no modification in geometry
                 return
