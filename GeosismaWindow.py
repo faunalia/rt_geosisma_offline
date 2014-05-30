@@ -523,6 +523,11 @@ class GeosismaWindow(QDockWidget):
         if QgsLogger == None:
             return
         QgsLogger.debug("emitSafetyGeometryUpdate entered",2 )
+
+        if not self.currentSafety:
+            QgsLogger.debug("No safety opened to be modfied",2 )
+            return
+        
         layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
         if len(layers) > 0:
             layer = layers[0]
