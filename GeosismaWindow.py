@@ -2808,19 +2808,6 @@ class GeosismaWindow(QDockWidget):
         self.iface.actionToggleEditing().changed.connect(self.actionToggleEditingChanged)
 
     
-    
-    def qgisToggleEditingControl(self, checked):
-        """
-        signal handler to manage editing start and stop usgin qgis tools
-        """
-        QgsLogger.debug("qgisToggleEditingControl entered with checked %s" % checked,2 )
-        # if stared editing
-        if checked:
-            pass
-        # if editing is finished
-        else:
-            pass                
-    
     def registerAggregatiEditingSignals___APPPP(self):
         """
         add signals to manage editing of an existing Aggregato
