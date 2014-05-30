@@ -219,14 +219,6 @@ class GeosismaWindow(QDockWidget):
         
         MapTool.canvas = self.canvas
         
-        self.linkSafetyGeometryEmitter = FeatureFinder()
-        self.linkSafetyGeometryEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
-        QObject.connect(self.linkSafetyGeometryEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
-
-        self.lookForSafetiesEmitter = FeatureFinder()
-        self.lookForSafetiesEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
-        QObject.connect(self.lookForSafetiesEmitter, SIGNAL("pointEmitted"), self.listLinkedSafeties)
-
         self.connect(self.btnNewSafety, SIGNAL("clicked()"), self.initNewCurrentSafety)
         self.connect(self.btnSelectSafety, SIGNAL("clicked()"), self.selectSafety)
         self.connect(self.btnDeleteCurrentSafety, SIGNAL("clicked()"), self.deleteCurrentSafety)
@@ -235,7 +227,9 @@ class GeosismaWindow(QDockWidget):
         self.connect(self.btnDownload, SIGNAL("clicked()"), self.downloadTeams) # ends emitting downloadTeamsDone
         #self.connect(self.btnReset, SIGNAL("clicked()"), self.reset)
         
+        self.linkSafetyGeometryEmitter = None
         self.connect(self.btnLinkSafetyGeometry, SIGNAL("clicked()"), self.linkSafetyGeometry)
+        self.lookForSafetiesEmitter = None
         self.connect(self.btnListLinkedSafeties, SIGNAL("clicked()"), self.listLinkedSafeties)
         self.newSafetyGeometryDrawer = None
         self.connect(self.btnNewSafetyGeometry, SIGNAL("clicked()"), self.createNewSafetyGeometry)
@@ -247,10 +241,8 @@ class GeosismaWindow(QDockWidget):
         self.newAggregatiDrawer = None
         self.connect(self.btnNewAggregatiGeometry, SIGNAL("clicked()"), self.createNewAggregatiGeometry)
         
-        self.modifyAggregatiEmitter = FeatureFinder()
-        self.modifyAggregatiEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
+        self.modifyAggregatiEmitter = None
         self.connect(self.btnModifyAggregatiGeometry, SIGNAL("clicked()"), self.modifyAggregatiGeometry)
-        
         self.connect(self.btnUploadModifiedAggregati, SIGNAL("clicked()"), self.selectFab10kmodToUpload)
         
         # custom signals
@@ -546,7 +538,7 @@ class GeosismaWindow(QDockWidget):
                 return
             
             # get updated geometry and update currentSafety
-            newGeom = features.geometry().exportToWkt()
+            newGeom = feature.geometry().exportToWkt()
             if self.currentSafety["the_geom"] == newGeom:
                 # no modification in geometry
                 return
@@ -1704,8 +1696,6 @@ class GeosismaWindow(QDockWidget):
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
 
     def linkSafetyGeometry(self, point=None, button=None):
-        self.linkSafetyGeometryEmitter.stopCapture()
-        
         if self.currentSafety == None:
             self.btnLinkSafetyGeometry.setChecked(False)
             return
@@ -1714,17 +1704,28 @@ class GeosismaWindow(QDockWidget):
         if not self.btnLinkSafetyGeometry.isChecked():
             return
         
+        # check if layers are available
+        layerModif = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
+        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        if layerOrig == None or layerModif == None:
+            self.btnLinkSafetyGeometry.setChecked(False)
+            return
+
+        # register point emitter to identify feature
+        if not self.linkSafetyGeometryEmitter:
+            self.linkSafetyGeometryEmitter = FeatureFinder()
+            self.linkSafetyGeometryEmitter.registerStatusMsg( u"Click per identificare la geometria da associare alla nuova scheda" )
+            QObject.connect(self.linkSafetyGeometryEmitter, SIGNAL("pointEmitted"), self.linkSafetyGeometry)
+            return self.linkSafetyGeometryEmitter.startCapture()
+
         action = self.btnLinkSafetyGeometry.toolTip()
         if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
             return self.linkSafetyGeometryEmitter.startCapture()
 
         if button != Qt.LeftButton:
-            self.btnLinkSafetyGeometry.setChecked(False)
-            return
-
-        layerModif = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
-        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
-        if layerOrig == None and layerModif == None:
+            self.linkSafetyGeometryEmitter.deleteLater()
+            self.linkSafetyGeometryEmitter = None
+            self.canvas.setMapTool(self.panTool)
             self.btnLinkSafetyGeometry.setChecked(False)
             return
 
@@ -1734,9 +1735,8 @@ class GeosismaWindow(QDockWidget):
         # if no features found... continue campturing mouse
         if featModif == None and featOrig == None:
             return self.linkSafetyGeometryEmitter.startCapture()
-            
         
-        # check whato to do
+        # check what to do
         getFromCatasto = False
         getFromSafety = False
         if featOrig != None and featModif == None:
@@ -1821,41 +1821,58 @@ class GeosismaWindow(QDockWidget):
             
         self.canvas.refresh()
         QApplication.restoreOverrideCursor()
+
+        # remove point emitter ans set panToolk to avoid crashing
+        self.linkSafetyGeometryEmitter.deleteLater()
+        self.linkSafetyGeometryEmitter = None
+        self.canvas.setMapTool(self.panTool)
         self.btnLinkSafetyGeometry.setChecked(False)
 
 
     def listLinkedSafeties(self, point=None, button=None):
-        self.lookForSafetiesEmitter.stopCapture()
-        
         # avoid if btnListLinkedSafeties is not checked
         if not self.btnListLinkedSafeties.isChecked():
             return
+        
+        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        if layerOrig == None:
+            self.btnListLinkedSafeties.setChecked(False)
+            return
+
+        # register point emitter
+        if not self.lookForSafetiesEmitter:
+            self.lookForSafetiesEmitter = FeatureFinder()
+            self.lookForSafetiesEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
+            QObject.connect(self.lookForSafetiesEmitter, SIGNAL("pointEmitted"), self.listLinkedSafeties)
+            return self.lookForSafetiesEmitter.startCapture()
         
         action = self.btnListLinkedSafeties.toolTip()
         if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
             return self.lookForSafetiesEmitter.startCapture()
 
         if button != Qt.LeftButton:
-            self.btnListLinkedSafeties.setChecked(False)
-            return
-
-        layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
-        if layerOrig == None:
+            self.lookForSafetiesEmitter.deleteLater()
+            self.lookForSafetiesEmitter = None
+            self.canvas.setMapTool(self.panTool)
             self.btnListLinkedSafeties.setChecked(False)
             return
 
         feat = self.lookForSafetiesEmitter.findAtPoint(layerOrig, point)
-        if feat != None:
-            # already get => unselect if
-            gid = feat["gid"]
-            layerOrig.deselect(gid)
+        if feat == None:
+            return self.lookForSafetiesEmitter.startCapture()
             
-            # show list of safeties related to gid
-            self.btnListLinkedSafeties.setChecked(False)
-            self.selectSafety(gid=gid)
-            
-        else:
-            self.lookForSafetiesEmitter.startCapture()
+        # remove emitter
+        self.lookForSafetiesEmitter.deleteLater()
+        self.lookForSafetiesEmitter = None
+        self.canvas.setMapTool(self.panTool)
+        self.btnListLinkedSafeties.setChecked(False)
+
+        # already get => unselect if
+        gid = feat["gid"]
+        layerOrig.deselect(gid)
+        
+        # show list of safeties related to gid
+        self.selectSafety(gid=gid)
 
     def cleanUnlinkedSafeties(self):
         QgsLogger.debug("cleanUnlinkedSafeties entered",2 )
@@ -2521,28 +2538,31 @@ class GeosismaWindow(QDockWidget):
         """
         QgsLogger.debug("modifyAggregatiGeometry entered",2 )
 
-        self.modifyAggregatiEmitter.stopCapture()
-        try:
-            QObject.disconnect(self.modifyAggregatiEmitter, SIGNAL("pointEmitted"), self.modifyAggregatiGeometry)
-        except:
-            traceback.print_exc()
-
-        action = self.btnModifyAggregatiGeometry.toolTip()
-        if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
-            QObject.connect(self.modifyAggregatiEmitter, SIGNAL("pointEmitted"), self.modifyAggregatiGeometry)
-            return self.modifyAggregatiEmitter.startCapture()
-
-        if button != Qt.LeftButton:
-            self.btnModifyAggregatiGeometry.setChecked(False)
-            return
-
         layerOrig = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_FAB10K )
         if layerOrig == None:
             self.btnModifyAggregatiGeometry.setChecked(False)
             return
 
+        # register point emitter
+        if not self.modifyAggregatiEmitter:
+            self.modifyAggregatiEmitter = FeatureFinder()
+            self.modifyAggregatiEmitter.registerStatusMsg( u"Click per identificare la geometria di cui cercare le schede" )
+            QObject.connect(self.modifyAggregatiEmitter, SIGNAL("pointEmitted"), self.modifyAggregatiGeometry)
+            return self.modifyAggregatiEmitter.startCapture()            
+
+        action = self.btnModifyAggregatiGeometry.toolTip()
+        if not self.checkActionScale( action, self.SCALE_IDENTIFY ) or point == None:
+            return self.modifyAggregatiEmitter.startCapture()
+
+        if button != Qt.LeftButton:
+            self.modifyAggregatiEmitter.deleteLater()
+            self.modifyAggregatiEmitter = None
+            self.canvas.setMapTool(self.panTool)
+            self.btnModifyAggregatiGeometry.setChecked(False)
+            return
+
         # if no features found... continue campturing mouse
-        featOrig = self.modifyAggregatiEmitter.findAtPoint(layerOrig, point) if layerOrig != None else None
+        featOrig = self.modifyAggregatiEmitter.findAtPoint(layerOrig, point)
         if featOrig == None:
             QObject.connect(self.modifyAggregatiEmitter, SIGNAL("pointEmitted"), self.modifyAggregatiGeometry)
             return self.modifyAggregatiEmitter.startCapture()
@@ -2553,6 +2573,9 @@ class GeosismaWindow(QDockWidget):
             layerOrig.deselect(gid)
         
         # stop capturing and reset interface
+        self.modifyAggregatiEmitter.deleteLater()
+        self.modifyAggregatiEmitter = None
+        self.canvas.setMapTool(self.panTool)
         self.btnModifyAggregatiGeometry.setChecked(False)
         
         ####################################
