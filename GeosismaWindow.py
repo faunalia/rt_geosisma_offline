@@ -411,37 +411,6 @@ class GeosismaWindow(QDockWidget):
         if not self.startPlugin():
             return False
         
-#         # load test data to test functions
-#         self.settings = QSettings()
-#         dbsPath = self.settings.value("/rt_geosisma_offline/pathToDbs", "./offlinedata/dbs/")
-#         path = dbsPath + '/../../doc/downloadedTeams+downloadedRequests.json'
-#         json_data=open(path)
-#         data = json.load(json_data)
-#         self.downloadedTeams = data
-#         self.archiveRequests(True)
-#         return
-#         from ArchiveManager import ArchiveManager # import here to avoid circular import
-#         req = ArchiveManager.instance().loadRequests([533, 554])
-#         print req
-#         return
-
-#         dbsPath = self.settings.value("/rt_geosisma_offline/pathToDbs", "./offlinedata/dbs/")
-#         path = dbsPath + '/../../doc/downloadedSafeties.json'
-#         with open(path,'r') as inf:
-#             dict_from_file = eval(inf.read())
-#         from ArchiveManager import ArchiveManager
-#         for safety in dict_from_file["objects"]:
-#             
-#             for k,v in safety.items():
-#                 print k,v
-#             print "------------------"
-#             ArchiveManager.instance().archiveSafety(None, "123", safety)
-#         ArchiveManager.instance().commit()
-#         return
-
-#         self.currentSafety = {u'created': u'2013-11-21', u'gid_catasto': None, u'number': 2, u'team_id': 123, u'safety': u'{"s1istatprov":"045","s1istatcom":"004","sdate":"21/11/2013","number":2,"s1catfoglio":"24","s1com":"Casola in Lunigiana","s1istatcens":"001","s1istatloc":"10003","s1istatreg":"009","s1loc":"Casola in Lunigiana","s1prov":"MS","s1catpart1":"966"}', u'request_id': 51, u'date': u'2013-11-21', u'the_geom': None, u'id': 2}
-#         self.updatedCurrentSafety.emit()
-#        return
         self.reloadCrs()
         
         # load all layers from db
