@@ -399,12 +399,6 @@ class GeosismaWindow(QDockWidget):
         self.btnUploadModifiedAggregati.setToolTip( self.tr(u"Upload di %s" % self.LAYER_GEOM_FAB10K_MODIF ) )
         gridLayout.addWidget(self.btnUploadModifiedAggregati, 1, 1, 1, 1)
 
-#         text = u"About"
-#         self.btnAbout = QPushButton( QIcon(":/icons/about.png"), text, child )
-#         self.btnAbout.setToolTip( text )
-#         vLayout.addWidget( self.btnAbout )
-#         #gridLayout.addWidget(self.btnAbout, 7, 1, 1, 1)
-
         self.setWidget(child)
 
     def exec_(self):
