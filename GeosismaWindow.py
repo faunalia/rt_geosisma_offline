@@ -268,9 +268,7 @@ class GeosismaWindow(QDockWidget):
         self.updatedCurrentSafety.connect(self.manageGuiStatus)
         
         self.manageGuiStatus()
-
-#         self.connect(self.iface, SIGNAL("newProjectCreated()"), self.close)
-
+        
     def setupUi(self):
         self.setObjectName( "rt_geosisma_dockwidget" )
         self.setWindowTitle( self.tr("Geosisma Offline RT") )
@@ -750,8 +748,6 @@ class GeosismaWindow(QDockWidget):
     def about(self):
         if self.canvas.isDrawing():
             return    # wait until the renderer ends
-#         from DlgAbout import DlgAbout
-#         DlgAbout(self).exec_()
 
     def reset(self):
         msgBox = QMessageBox()
@@ -934,7 +930,6 @@ class GeosismaWindow(QDockWidget):
             for team in self.downloadedTeams:
                 # get event_id and team_id from meta
                 team_id = team["id"]
-                #team_name = team["name"]
         
                 for request in team["downloadedRequests"].values():
                     ArchiveManager.instance().archiveRequest(team_id, request)
@@ -1011,30 +1006,6 @@ class GeosismaWindow(QDockWidget):
             from GeoArchiveManager import GeoArchiveManager # import here to avoid circular import
             GeoArchiveManager.instance().deleteSopralluoghi()
             for sopralluogo in self.sopralluoghi:
-                
-                # check if Sopralluogo has a valid geometry
-                # there's no way to validate geometry... but there are default record 
-                # that are set with geometry as: 
-                # MULTIPOLYGON (((1.0000000000000000 0.0000000000000000, 1.0000000000000000 1.0000000000000000, 
-                #                 0.0000000000000000 1.0000000000000000, 0.0000000000000000 0.0000000000000000, 
-                #                 1.0000000000000000 0.0000000000000000)))
-#                 try:
-#                     geom = QgsGeometry.fromWkt( sopralluogo["the_geom"] )
-#                     if not geom.isGeosValid():
-#                         message = self.tr(u"Non archiviato Sopralluogo con gid: %d perchè ha una geometria invalida %s" % (sopralluogo["gid"], sopralluogo["the_geom"]))
-#                         self.showMessage(message, QgsMessageLog.CRITICAL)
-#                         continue
-#                     
-#                     if geom.isGeosEqual(geomToExclude):
-#                         message = self.tr(u"Non archiviato Sopralluogo con gid: %d perchè ha una geometria invalida %s" % (sopralluogo["gid"], sopralluogo["the_geom"]))
-#                         self.showMessage(message, QgsMessageLog.CRITICAL)
-#                         continue
-# 
-#                 except Exception as ex:
-#                     message = self.tr(u"Non archiviato Sopralluogo con gid: %d perchè ha una geometria invalida %s" % (sopralluogo["gid"], sopralluogo["the_geom"]))
-#                     self.showMessage(message + ": "+ex.message, QgsMessageLog.CRITICAL)
-#                     continue
-                
                 GeoArchiveManager.instance().archiveSopralluoghi(sopralluogo)
             GeoArchiveManager.instance().commit()
             
@@ -2832,40 +2803,6 @@ class GeosismaWindow(QDockWidget):
             print "actionToggleEditingchanged"
         def actionToggleEditingtoggled():
             print "actionToggleEditingtoggled..."
-#             if self.iface.actionToggleEditing().isChecked():
-#                 return
-#             print "self.editingStated", self.editingStated
-#             if not self.editingStated:
-#                 return
-#             layers = QgsMapLayerRegistry.instance().mapLayersByName(self.LAYER_GEOM_MODIF)
-#             if len(layers) > 0:
-#                 layer = layers[0]
-#                 print "modified", layer.isModified()
-#                 msgBox = QMessageBox()
-#                 msgBox.setIcon(QMessageBox.Warning)
-#                 msgBox.setText(self.tr("pippo"))
-#                 msgBox.setInformativeText(self.tr("Aggiornare il record ?"))
-#                 msgBox.setStandardButtons(QMessageBox.YesAll | QMessageBox.Yes | QMessageBox.Cancel)
-#                 msgBox.setButtonText(QMessageBox.YesAll, self.tr("Chiudi senza salvare"))
-#                 msgBox.setButtonText(QMessageBox.Yes, self.tr("Salva modifiche"))
-#                 msgBox.setButtonText(QMessageBox.Cancel, self.tr("Continua"))
-#                 ret = msgBox.exec_()
-#                 
-#                 if ret == QMessageBox.Cancel:
-#                     print "cancel"
-#                 if ret == QMessageBox.YesAll:
-#                     print "yes all"
-#                 if ret == QMessageBox.Yes:
-#                     print "-----------yes"
-#                     editBuffer = copy.copy( layer.editBuffer() )
-#                     layer.rollBack()
-#                     for key, geom in editBuffer.changedGeometries().iteritems():
-#                         print "nmodified id", key
-#                         feat = layer.getFeatures(QgsFeatureRequest(key))
-#                         feat=feat.next()
-#                         oldgeom = feat.geometry()
-#                         print "new geom = ", geom.exportToWkt()
-#                         print "old geom = ", oldgeom.exportToWkt()
 
         layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_MODIF )
         if layer == None:
