@@ -377,9 +377,9 @@ class GeoArchiveManager(QObject):
     
     def locationDataByBelfiore(self, codiceBelfiore):
         '''
-        Method to a load safeties from missions_safety related to catasto geometry
+        Method to a load location data starting from Belfiore code
         @param codiceBelfiore: Belfiore code to identify safeties
-        @return safeties: list of dict of the retrieved records
+        @return locationData: list of dict of the retrieved records {codici_belfiore:.., istat_regioni:.., istat_province:.., istat_comuni:.. }
         '''
         self.checkConnection()
 
