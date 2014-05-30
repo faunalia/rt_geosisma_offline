@@ -1246,6 +1246,12 @@ class GeosismaWindow(QDockWidget):
                 msgBox.exec_()
                 return
             
+            # update safeties adding bbox
+            for index, safety in enumerate(recordsToUpload):
+                safety = self.updateBboxSafety(safety)
+                if safety:
+                    recordsToUpload[index] = safety
+            
             self.uploadSafeties( recordsToUpload )
         
     def openCurrentSafety(self):
@@ -1623,12 +1629,61 @@ class GeosismaWindow(QDockWidget):
                 QMessageBox.critical( self, "RT Geosisma", self.tr("Non posso convertire la geometria disegnata in Multipolygon") )
                 self.btnNewSafetyGeometry.setChecked(False)
                 return
-            
+        
+        # set geometry in currentSafety   
         self.currentSafety["the_geom"] = polygon.exportToWkt()
-        self.btnNewSafetyGeometry.setChecked(False)
+        
+        # set location data in the subSafety json to allow positioning and record creation triggering 
+        # after upload safety on the server: https://trac.faunalia.it/geosisma/ticket/454
+        # get s1prov e s1com from the nearest fab_10k polygon
+        nearestCatasto = self.getNearestCatasto(polygon)
+        from GeoArchiveManager import GeoArchiveManager
+        safetyLocationDataDict = GeoArchiveManager.instance().locationDataByBelfiore( nearestCatasto["belfiore"] )[0]
+        
+        # update safety json with catasto data (foglio and particella)
+        subSafetyDict = ast.literal_eval( self.currentSafety["safety"] )
+        
+        if "s1prov" not in subSafetyDict:
+            subSafetyDict["s1prov"] = safetyLocationDataDict["sigla"]
+            subSafetyDict["s1com"] = safetyLocationDataDict["toponimo"]
+            subSafetyDict["s1istatreg"] = safetyLocationDataDict["id_regione"]
+            subSafetyDict["s1istatprov"] = safetyLocationDataDict["id_provincia"]
+            subSafetyDict["s1istatcom"] = safetyLocationDataDict["id_comune"]
+            
+        # update safety record with updated subSafety 
+        self.currentSafety["safety"] = json.dumps(subSafetyDict)
 
+        self.btnNewSafetyGeometry.setChecked(False)
         self.updatedCurrentSafety.emit() # thi will save new safety on db and update gui
 
+    def getNearestCatasto(self, polygon):
+        """
+        find the nearest catasto to the input polygon
+        @param polygon: target polygon to measure nearest distance
+        @return feature: nearest feature
+        """
+        QgsLogger.debug("getNearestCatasto entered",2 )
+        
+        # tranform input polygon to VLID_GEOM_FAB10K crs
+        defaultCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        geoDbCrs = QgsCoordinateReferenceSystem(self.GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        xform = QgsCoordinateTransform(defaultCrs, geoDbCrs)
+        if polygon.transform(xform):
+            QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione del poligono al CRS di %s: %d" % (self.LAYER_GEOM_FAB10K, self.GEODBDEFAULT_SRID) ))
+            return None
+        
+        # could be implemented getting nearest point to polygon, than intersect this point
+        # with the feature and get this last feature. But I implemented a readable solution that
+        # shouldn't have performance problems
+        nearest = {"distance":999999999999999999999999999999999, "feature":None}
+        layer = QgsMapLayerRegistry.instance().mapLayer( GeosismaWindow.VLID_GEOM_ORIG )
+        for feat in layer.getFeatures():
+            distance = polygon.distance( feat.geometry() )
+            if distance != 0 and distance < nearest["distance"]:
+                nearest["distance"] = distance
+                nearest["feature"] = feat
+        return nearest["feature"]
+        
     def linkSafetyGeometry(self, point=None, button=None):
         if self.currentSafety == None:
             self.btnLinkSafetyGeometry.setChecked(False)
@@ -2168,6 +2223,39 @@ class GeosismaWindow(QDockWidget):
         self.currentSafety = tempSafety
         self.updatedCurrentSafety.emit()
     
+    def updateBboxSafety(self, safety):
+        '''
+        Method update s1map field in subSafety json
+        '''
+        QgsLogger.debug("updateBboxSafety entered",2 )
+        
+        if not safety or (safety["the_geom"] == None) or (safety["the_geom"] == ""):
+            return
+        
+        # update safety json with catasto data (foglio and particella)
+        subSafetyDict = ast.literal_eval( safety["safety"] )
+        
+        # update safety json with bbox of the current geometry
+        # tranform input polygon to GEODBDEFAULT_SRID crs
+        polygon = QgsGeometry.fromWkt(safety["the_geom"])
+        
+        defaultCrs = QgsCoordinateReferenceSystem(self.DEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        geoDbCrs = QgsCoordinateReferenceSystem(self.GEODBDEFAULT_SRID)  # WGS 84 / UTM zone 33N
+        xform = QgsCoordinateTransform(defaultCrs, geoDbCrs)
+        if polygon.transform(xform):
+            QMessageBox.critical( self, "RT Geosisma", self.tr("Errore nella conversione del poligono al CRS di %s: %d" % (self.LAYER_GEOM_FAB10K, self.GEODBDEFAULT_SRID) ))
+        
+        bbox = polygon.boundingBox()
+        subSafetyDict["s1maptop"] = u"%s" % bbox.yMaximum()
+        subSafetyDict["s1mapbottom"] = u"%s" % bbox.yMinimum()
+        subSafetyDict["s1mapleft"] = u"%s" % bbox.xMinimum()
+        subSafetyDict["s1mapright"] = u"%s" % bbox.xMaximum()
+        
+        # update safety record with updated subSafety 
+        safety["safety"] = json.dumps(subSafetyDict)
+        
+        return safety
+   
     def uploadSafeties(self, safeties):
         if safeties is None or len(safeties) == 0:
             return
