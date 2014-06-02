@@ -39,6 +39,7 @@ class UploadManager(DlgWaiting):
     # signals
     done = pyqtSignal(bool)
     singleSafetyUploadDone = pyqtSignal(bool)
+    singleSafetyDuplicationError = pyqtSignal()
     singleAttachmentUploadDone = pyqtSignal(bool)
     singleSafetyDownloadDone = pyqtSignal(bool)
     singleSopralluoghiDownloadDone = pyqtSignal(bool)
@@ -87,6 +88,7 @@ class UploadManager(DlgWaiting):
             # set semaphores
             self.done.connect(self.setAllFinished)
             self.singleSafetyUploadDone.connect(self.setSingleSafetyUploadFinished)
+            self.singleSafetyDuplicationError.connect(self.setSingleSafetyDuplicationError)
             self.singleAttachmentUploadDone.connect(self.setSingleAttachmentUploadFinished)
             self.singleSafetyDownloadDone.connect(self.setSingleSafetyDownloadFinished)
             self.singleSopralluoghiDownloadDone.connect(self.setSingleSopralluoghiDownloadFinished)
@@ -123,6 +125,7 @@ class UploadManager(DlgWaiting):
                 
                 # set semaphore status for a single safety management
                 self.singleSafetyUploadFinished = False
+                self.singleSafetyDuplicationErrorReceived = False
                 self.singleSafetyDownloadFinished = False
                 self.singleSopralluoghiDownloadFinished = False
                 self.singleSopralluoghiUpdateFinished = False
@@ -131,17 +134,33 @@ class UploadManager(DlgWaiting):
                 self.saved_id = None
                 self.saved_number = None
                 self.saved_sopralluoghi = None
-                self.uploadSafety(safetyToUpload)
-            
-                # wait end of single request
+                
                 while (not self.singleSafetyUploadFinished and not self.allFinished):
-                    qApp.processEvents()
-                    time.sleep(0.1)
+                    self.uploadSafety(safetyToUpload)
+                
+                    # wait end of single request
+                    # or error or dulication safety error
+                    while (not self.singleSafetyUploadFinished and not self.allFinished and not self.singleSafetyDuplicationErrorReceived):
+                        qApp.processEvents()
+                        time.sleep(0.1)
+                        
+                    # some other emitted done signal
+                    if (self.allFinished):
+                        break
                     
+                    # received a duplication error => remove safey number to allow server to set it then upload again
+                    if self.singleSafetyDuplicationErrorReceived:
+                        self.singleSafetyDuplicationErrorReceived = False
+                        
+                        # remove safety number
+                        safetyToUpload.pop("number")
+                        self.saved_id = None
+                        self.saved_number = None
+                
                 # some other emitted done signal
                 if (self.allFinished):
                     break
-                    
+                
                 if self.saved_id is None:
                     message = self.tr("Non riesco a determinare l'id della scheda appena caricata sul server - numero provvisorio: %d" % number)
                     self.message.emit(message, QgsMessageLog.CRITICAL)
@@ -267,6 +286,10 @@ class UploadManager(DlgWaiting):
     def setSingleSafetyUploadFinished(self, success):
         QgsLogger.debug("setSingleSafetyUploadFinished finished with %s" % success, 2 )
         self.singleSafetyUploadFinished = True
+
+    def setSingleSafetyDuplicationError(self):
+        QgsLogger.debug("setSingleSafetyDuplicationError", 2 )
+        self.singleSafetyDuplicationErrorReceived = True
 
     def setSingleAttachmentUploadFinished(self, success):
         QgsLogger.debug("setSingleAttachmentUploadFinished finished with %s" % success, 2 )
@@ -452,15 +475,19 @@ class UploadManager(DlgWaiting):
         if reply.error():
             # check if error is 299 in this case is IntegrityError due the fact that 
             # number+date+team are not unique
-            if int(reply.error()) == 299:
-                message = self.tr(u"Errore di univocità la scheda con numero %d è già stata usata in questo giorno dallo stesso team") % self.currentSafetyUploading["number"]
-            else:
-                message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
-            self.message.emit(message, QgsMessageLog.WARNING)
-
             # better dump of error message
             for headerName, rawData in reply.rawHeaderPairs():
                 QgsLogger.debug("Reply raw header[%s]: %s" % (headerName, rawData), 2)
+
+            if int(reply.error()) == 299:
+                message = self.tr(u"Errore di univocità la scheda con numero %d è già stata usata in questo giorno dallo stesso team") % self.currentSafetyUploading["number"]
+                
+                # successfully end
+                self.singleSafetyDuplicationError.emit()
+                return
+            else:
+                message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
+            self.message.emit(message, QgsMessageLog.WARNING)
 
             self.done.emit(False)
             return

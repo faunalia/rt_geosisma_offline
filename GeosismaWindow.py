@@ -2293,6 +2293,9 @@ class GeosismaWindow(QDockWidget):
                 if self.currentSafety["id"] == modSafety["id"]:
                     self.currentSafety = modSafety
                     currentModified = True
+                elif self.currentSafety["local_id"] == modSafety["local_id"]:
+                    self.currentSafety = modSafety
+                    currentModified = True
         
         if currentModified:
             self.updatedCurrentSafety.emit()
