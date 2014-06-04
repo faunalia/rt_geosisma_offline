@@ -1,5 +1,5 @@
 <!DOCTYPE qgis PUBLIC 'http://mrcc.com/qgis.dtd' 'SYSTEM'>
-<qgis version="2.3.0-Master" minimumScale="0" maximumScale="3000" simplifyDrawingHints="1" minLabelScale="0" maxLabelScale="1e+08" simplifyDrawingTol="1" simplifyMaxScale="1" hasScaleBasedVisibilityFlag="1" simplifyLocal="1" scaleBasedLabelVisibilityFlag="0">
+<qgis version="2.3.0-Master" minimumScale="-4.65661e-10" maximumScale="3000" simplifyDrawingHints="1" minLabelScale="0" maxLabelScale="1e+08" simplifyDrawingTol="1" simplifyMaxScale="1" hasScaleBasedVisibilityFlag="1" simplifyLocal="1" scaleBasedLabelVisibilityFlag="0">
   <renderer-v2 symbollevels="0" type="singleSymbol">
     <symbols>
       <symbol alpha="1" type="fill" name="0">
@@ -39,6 +39,7 @@
     <property key="labeling/bufferSizeMapUnitMaxScale" value="0"/>
     <property key="labeling/bufferSizeMapUnitMinScale" value="0"/>
     <property key="labeling/bufferTransp" value="0"/>
+    <property key="labeling/centroidInside" value="false"/>
     <property key="labeling/centroidWhole" value="false"/>
     <property key="labeling/decimals" value="3"/>
     <property key="labeling/displayAll" value="false"/>
@@ -50,7 +51,7 @@
     <property key="labeling/fieldName" value="identif"/>
     <property key="labeling/fontBold" value="true"/>
     <property key="labeling/fontCapitals" value="0"/>
-    <property key="labeling/fontFamily" value="Droid Sans"/>
+    <property key="labeling/fontFamily" value="Liberation Mono"/>
     <property key="labeling/fontItalic" value="false"/>
     <property key="labeling/fontLetterSpacing" value="1"/>
     <property key="labeling/fontLimitPixelSize" value="false"/>
@@ -89,6 +90,10 @@
     <property key="labeling/previewBkgrdColor" value="#ffffff"/>
     <property key="labeling/priority" value="10"/>
     <property key="labeling/quadOffset" value="4"/>
+    <property key="labeling/repeatDistance" value="0"/>
+    <property key="labeling/repeatDistanceMapUnitMaxScale" value="0"/>
+    <property key="labeling/repeatDistanceMapUnitMinScale" value="0"/>
+    <property key="labeling/repeatDistanceUnit" value="1"/>
     <property key="labeling/reverseDirectionSymbol" value="false"/>
     <property key="labeling/rightDirectionSymbol" value=">"/>
     <property key="labeling/scaleMax" value="1500"/>
@@ -186,13 +191,13 @@
     <selectedonly on=""/>
   </labelattributes>
   <edittypes>
-    <edittype labelontop="0" editable="1" type="0" name="fab_10k_gid"/>
-    <edittype labelontop="0" editable="1" type="0" name="gid"/>
-    <edittype labelontop="0" editable="1" type="0" name="identif"/>
-    <edittype labelontop="0" editable="1" type="0" name="local_gid"/>
-    <edittype labelontop="0" editable="1" type="0" name="mod_time"/>
-    <edittype labelontop="0" editable="1" type="0" name="team_id"/>
-    <edittype labelontop="0" editable="1" type="0" name="upload_time"/>
+    <edittype labelontop="0" editable="0" name="local_gid"/>
+    <edittype labelontop="0" editable="0" name="gid"/>
+    <edittype labelontop="0" editable="0" name="identif"/>
+    <edittype labelontop="0" editable="0" name="fab_10k_gid"/>
+    <edittype labelontop="0" editable="0" name="mod_time"/>
+    <edittype labelontop="0" editable="0" name="team_id"/>
+    <edittype labelontop="0" editable="0" name="upload_time"/>
   </edittypes>
   <editform></editform>
   <editforminit></editforminit>

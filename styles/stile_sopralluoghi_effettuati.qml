@@ -162,6 +162,7 @@
     <property key="labeling/bufferSizeMapUnitMaxScale" value="0"/>
     <property key="labeling/bufferSizeMapUnitMinScale" value="0"/>
     <property key="labeling/bufferTransp" value="0"/>
+    <property key="labeling/centroidInside" value="false"/>
     <property key="labeling/centroidWhole" value="false"/>
     <property key="labeling/decimals" value="0"/>
     <property key="labeling/displayAll" value="false"/>
@@ -173,7 +174,7 @@
     <property key="labeling/fieldName" value=""/>
     <property key="labeling/fontBold" value="true"/>
     <property key="labeling/fontCapitals" value="0"/>
-    <property key="labeling/fontFamily" value="Droid Sans"/>
+    <property key="labeling/fontFamily" value="Liberation Mono"/>
     <property key="labeling/fontItalic" value="false"/>
     <property key="labeling/fontLetterSpacing" value="0"/>
     <property key="labeling/fontLimitPixelSize" value="false"/>
@@ -212,6 +213,10 @@
     <property key="labeling/previewBkgrdColor" value="#ffffff"/>
     <property key="labeling/priority" value="5"/>
     <property key="labeling/quadOffset" value="4"/>
+    <property key="labeling/repeatDistance" value="0"/>
+    <property key="labeling/repeatDistanceMapUnitMaxScale" value="0"/>
+    <property key="labeling/repeatDistanceMapUnitMinScale" value="0"/>
+    <property key="labeling/repeatDistanceUnit" value="1"/>
     <property key="labeling/reverseDirectionSymbol" value="false"/>
     <property key="labeling/rightDirectionSymbol" value=">"/>
     <property key="labeling/scaleMax" value="1"/>
@@ -311,23 +316,23 @@
     <selectedonly on=""/>
   </labelattributes>
   <edittypes>
-    <edittype labelontop="0" editable="0" type="0" name="aggregato"/>
-    <edittype labelontop="0" editable="0" type="0" name="area"/>
-    <edittype labelontop="0" editable="0" type="0" name="codice"/>
-    <edittype labelontop="0" editable="1" type="0" name="controllo"/>
-    <edittype labelontop="0" editable="1" type="0" name="data"/>
-    <edittype labelontop="0" editable="0" type="0" name="edificio"/>
-    <edittype labelontop="0" editable="0" type="0" name="esito"/>
-    <edittype labelontop="0" editable="0" type="0" name="foglio"/>
-    <edittype labelontop="0" editable="0" type="0" name="gid"/>
-    <edittype labelontop="0" editable="1" type="0" name="id_evento"/>
-    <edittype labelontop="0" editable="0" type="0" name="id_hist"/>
-    <edittype labelontop="0" editable="0" type="0" name="id_scheda"/>
-    <edittype labelontop="0" editable="0" type="0" name="identif"/>
-    <edittype labelontop="0" editable="0" type="0" name="record"/>
-    <edittype labelontop="0" editable="0" type="0" name="time_end"/>
-    <edittype labelontop="0" editable="0" type="0" name="time_start"/>
-    <edittype labelontop="0" editable="0" type="0" name="topon"/>
+    <edittype labelontop="0" editable="0" name="gid"/>
+    <edittype labelontop="0" editable="0" name="foglio"/>
+    <edittype labelontop="0" editable="0" name="codice"/>
+    <edittype labelontop="0" editable="0" name="record"/>
+    <edittype labelontop="0" editable="0" name="topon"/>
+    <edittype labelontop="0" editable="0" name="area"/>
+    <edittype labelontop="0" editable="0" name="identif"/>
+    <edittype labelontop="0" editable="0" name="id_hist"/>
+    <edittype labelontop="0" editable="0" name="time_start"/>
+    <edittype labelontop="0" editable="0" name="time_end"/>
+    <edittype labelontop="0" editable="0" name="id_scheda"/>
+    <edittype labelontop="0" editable="0" name="aggregato"/>
+    <edittype labelontop="0" editable="0" name="edificio"/>
+    <edittype labelontop="0" editable="0" name="esito"/>
+    <edittype labelontop="0" editable="0" name="id_evento"/>
+    <edittype labelontop="0" editable="0" name="controllo"/>
+    <edittype labelontop="0" editable="0" name="data"/>
   </edittypes>
   <editform></editform>
   <editforminit></editforminit>
