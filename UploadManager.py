@@ -65,7 +65,7 @@ class UploadManager(DlgWaiting):
         settings = QSettings()
         self.safetyUrl = settings.value("/rt_geosisma_offline/safetyUrl", "/api/v1/safety/")
         self.sopralluoghiUrl = settings.value("/rt_geosisma_offline/sopralluoghiUrl", "/api/v1/sopralluoghi/")
-        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
+        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma.faunalia.it/")
         self.teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
         self.requestUrl = settings.value("/rt_geosisma_offline/requestUrl", "/api/v1/request/")
         self.attachmentUrl = settings.value("/rt_geosisma_offline/attachmentUrl", "/api/v1/attachment/")

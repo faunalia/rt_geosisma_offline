@@ -115,7 +115,7 @@ class DownloadRequests(DlgWaiting):
         
         # get connection conf
         settings = QSettings()
-        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
+        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma.faunalia.it/")
 
         # for each request api
         message = self.tr("Download Richiesta %s" % requestApi)

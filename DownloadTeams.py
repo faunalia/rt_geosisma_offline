@@ -61,7 +61,7 @@ class DownloadTeams(DlgWaiting):
         # get connection conf
         settings = QSettings()
         teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
-        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
+        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma.faunalia.it/")
 
         self.manager = QgsNetworkAccessManager.instance()
         # clean listeners to avoid overlap 

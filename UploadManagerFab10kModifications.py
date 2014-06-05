@@ -53,7 +53,7 @@ class UploadManagerFab10kModifications(DlgWaiting):
         # get connection conf
         settings = QSettings()
         self.fab10kmodUrl = settings.value("/rt_geosisma_offline/fab10kmodUrl", "/api/v1/fab10kmod/")
-        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma-test.faunalia.it/")
+        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma.faunalia.it/")
         #self.teamUrl = settings.value("/rt_geosisma_offline/teamUrl", "/api/v1/team/")
 
     def initRecords(self, records):
