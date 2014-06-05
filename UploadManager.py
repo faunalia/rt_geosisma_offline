@@ -23,6 +23,7 @@ import traceback
 import json
 import time
 import os
+import ast # used to convert string indict because json.loads could fail
 from qgis.core import QgsLogger, QgsMessageLog
 from qgis.core import QgsNetworkAccessManager
 from qgis.core import QgsCoordinateTransform, QgsCoordinateReferenceSystem, QgsGeometry
@@ -39,6 +40,7 @@ class UploadManager(DlgWaiting):
     # signals
     done = pyqtSignal(bool)
     singleSafetyUploadDone = pyqtSignal(bool)
+    singleSafetyUpdateDone = pyqtSignal(bool)
     singleSafetyDuplicationError = pyqtSignal()
     singleAttachmentUploadDone = pyqtSignal(bool)
     singleSafetyDownloadDone = pyqtSignal(bool)
@@ -88,6 +90,7 @@ class UploadManager(DlgWaiting):
             # set semaphores
             self.done.connect(self.setAllFinished)
             self.singleSafetyUploadDone.connect(self.setSingleSafetyUploadFinished)
+            self.singleSafetyUpdateDone.connect(self.setSingleSafetyUpdateFinished)
             self.singleSafetyDuplicationError.connect(self.setSingleSafetyDuplicationError)
             self.singleAttachmentUploadDone.connect(self.setSingleAttachmentUploadFinished)
             self.singleSafetyDownloadDone.connect(self.setSingleSafetyDownloadFinished)
@@ -125,6 +128,7 @@ class UploadManager(DlgWaiting):
                 
                 # set semaphore status for a single safety management
                 self.singleSafetyUploadFinished = False
+                self.singleSafetyUpdateFinished = False
                 self.singleSafetyDuplicationErrorReceived = False
                 self.singleSafetyDownloadFinished = False
                 self.singleSopralluoghiDownloadFinished = False
@@ -152,10 +156,16 @@ class UploadManager(DlgWaiting):
                     if self.singleSafetyDuplicationErrorReceived:
                         self.singleSafetyDuplicationErrorReceived = False
                         
-                        # remove safety number
+                        # remove safety number from the record and from the subsafety
                         safetyToUpload.pop("number")
                         self.saved_id = None
                         self.saved_number = None
+                        
+                        subSafetyDict = ast.literal_eval( safetyToUpload["safety"] )
+                        if "number" in subSafetyDict:
+                            subSafetyDict["number"]  = None
+                        safetyToUpload["safety"] = json.dumps(subSafetyDict)
+
                 
                 # some other emitted done signal
                 if (self.allFinished):
@@ -191,7 +201,26 @@ class UploadManager(DlgWaiting):
                     currentSafetyDict = json.loads( safety["safety"] )
                     currentSafetyDict["number"] = self.saved_number
                     safety["safety"] = json.dumps(currentSafetyDict)
+                    
+                    # prepare safety toi upload in case necessary to upload it again
+                    safetyToUpload["id"] = safety["id"]
+                    safetyToUpload["number"] = self.saved_number
+                    safetyToUpload["safety"] = json.dumps(currentSafetyDict)
+                    
+                # upload again the safety if number has been changed
+                if number != self.saved_number:
+                    self.updateSafety(safetyToUpload)
                 
+                    # wait end of single request
+                    # or error or dulication safety error
+                    while (not self.singleSafetyUpdateFinished and not self.allFinished):
+                        qApp.processEvents()
+                        time.sleep(0.1)
+                        
+                    # some other emitted done signal
+                    if (self.allFinished):
+                        break
+                    
                 # now download geometry to allow it's update... I can't use
                 # HTTP patch to update field because seems it's not supported by QNetworkAccessManager
                 # do this only if the_geom  is not None
@@ -287,6 +316,10 @@ class UploadManager(DlgWaiting):
         QgsLogger.debug("setSingleSafetyUploadFinished finished with %s" % success, 2 )
         self.singleSafetyUploadFinished = True
 
+    def setSingleSafetyUpdateFinished(self, success):
+        QgsLogger.debug("setSingleSafetyUpdateFinished finished with %s" % success, 2 )
+        self.singleSafetyUpdateFinished = True
+
     def setSingleSafetyDuplicationError(self):
         QgsLogger.debug("setSingleSafetyDuplicationError", 2 )
         self.singleSafetyDuplicationErrorReceived = True
@@ -354,6 +387,24 @@ class UploadManager(DlgWaiting):
         self.singleSafetyDownloadFinished = False
         self.manager.get(request)
         QgsLogger.debug("downloadRemoteSafety from url %s" % url.toString() ,2 )
+        for headerName in request.rawHeaderList():
+            QgsLogger.debug("Request header %s = %s" % (headerName, request.rawHeader(headerName)) ,2 )
+
+    def updateSafety(self, safety):
+        request = QNetworkRequest()
+        request.setRawHeader("Content-Type", "application/json");
+        url = QUrl(self.baseApiUrl + self.safetyUrl + str(safety["id"]) + "/")
+        
+        request.setUrl(url)
+        
+        # register response manager
+        self.manager.finished.connect(self.replyUpdateSafetyFinished)
+
+        # start update
+        self.singleSopralluoghiUpdateFinished = False
+        safety.pop("id")
+        self.manager.put(request, json.dumps(safety) )
+        QgsLogger.debug("updateSafety to url %s with safety %s" % (url.toString(), json.dumps(safety)) ,2 )
         for headerName in request.rawHeaderList():
             QgsLogger.debug("Request header %s = %s" % (headerName, request.rawHeader(headerName)) ,2 )
 
@@ -561,6 +612,34 @@ class UploadManager(DlgWaiting):
         # successfully end
         self.singleSafetyDownloadDone.emit(True)
         
+    def replyUpdateSafetyFinished(self, reply):
+        # disconnect current reply callback
+        self.manager.finished.disconnect(self.replyUpdateSafetyFinished)
+        
+        # dump headers
+        headerKeys = reply.rawHeaderList()
+        for headerName in headerKeys:
+            QgsLogger.debug("Response header %s = %s" % (headerName, reply.rawHeader(headerName)) ,2 )
+
+        # received error
+        if reply.error():
+            message = self.tr("Errore nella HTTP Request: %d - %s" % (reply.error(), reply.errorString()) )
+            self.message.emit(message, QgsMessageLog.CRITICAL)
+            self.done.emit(False)
+            return
+        
+        # well authenticated :)
+        gw.instance().autenthicated = True
+        gw.instance().authenticationRetryCounter = 0
+        
+        # check status code
+        statusCode = reply.attribute(QNetworkRequest.HttpStatusCodeAttribute)
+        reason = reply.attribute(QNetworkRequest.HttpReasonPhraseAttribute)
+        QgsLogger.debug("Response status %s = %s" % (statusCode, reason) ,2 )
+        
+        # successfully end
+        self.singleSafetyUpdateDone.emit(True)
+
     def replyDownloadSopralluoghiFinished(self, reply):
         # disconnect current reply callback
         self.manager.finished.disconnect(self.replyDownloadSopralluoghiFinished)
