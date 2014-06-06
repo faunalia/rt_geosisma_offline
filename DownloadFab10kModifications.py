@@ -173,7 +173,9 @@ class DownloadFab10kModifications(DlgWaiting):
                     self.message.emit(nextUrl, QgsMessageLog.INFO)
                     
                     request = reply.request()
-                    url = QUrl.fromEncoded(self.baseApiUrl + nextUrl)
+                    url = QUrl.fromEncoded(self.baseApiUrl)
+                    url.setPath("")
+                    url = QUrl.fromEncoded( url.toEncoded() + nextUrl )
                     request.setUrl(url)
                     
                     self.manager.get(request)
