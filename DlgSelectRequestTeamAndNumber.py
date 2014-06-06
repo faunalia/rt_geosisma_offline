@@ -38,7 +38,7 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 		self.selectedSafetyNumber = None
 		
 		self.requests = None
-		self.team_ids = None
+		self.teams = None
 		self.safety_numbers = None
 		
 		#self.setAttribute(Qt.WA_DeleteOnClose)
@@ -47,7 +47,6 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 
 		self.loadRequests()
 		self.loadTeams()
-		self.loadAllTeamIds()
 		self.loadSafetyNumbers()
 		
 		# init gui basing on value
@@ -55,10 +54,8 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 			self.requestNumberComboBox.addItem(str(request["number"]))
 		self.requestNumberComboBox.addItem("") # means no requesta ssociated
 		
-		for team_id in 	self.team_ids:
-			for team in self.teams:
-				if team["id"] == team_id:
-					self.teamIdComboBox.addItem( str(team["name"]), team_id)
+		for team in self.teams:
+			self.teamIdComboBox.addItem( str(team["name"]), team["id"])
 		
 		values = [int(v) for v in self.safety_numbers]
 		self.safetyNumberspinBox.setValue( max(values)+1 if len(values)>0 else 0 )
@@ -109,9 +106,6 @@ class DlgSelectRequestTeamAndNumber(QDialog, Ui_Dialog):
 	def loadTeams(self):
 		self.teams = ArchiveManager.instance().loadTeams()
 
-	def loadAllTeamIds(self):
-		self.team_ids = ArchiveManager.instance().loadAllTeamIds()
-		
 	def loadSafetyNumbers(self):
 		self.safety_numbers = ArchiveManager.instance().loadSafetyNumbers()
 		
