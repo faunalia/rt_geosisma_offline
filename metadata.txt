@@ -10,7 +10,7 @@
 name=RE Geosisma Offline
 qgisMinimumVersion=2.0
 description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
-version=version 1.3.1
+version=version 1.3.11
 author=Luigi Pirelli (luipir@gmail.com)
 email=info@faunalia.eu
 
@@ -19,7 +19,10 @@ email=info@faunalia.eu
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=1.3.1
+changelog=1.3.11
+	Fix bug nel download quando il nome del server contiene path
+	Possibilita' di selezionare il team anceh in mancanza di richieste
+	1.3.1
 	Impostato valore di default corretto del server di produzione
 	1.3.0
 	Impostato server di produzione come default
