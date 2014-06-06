@@ -102,7 +102,7 @@ class DownloadSopralluoghi(DlgWaiting):
         # get connection conf
         settings = QSettings()
         sopralluoghiUrl = settings.value("/rt_geosisma_offline/sopralluoghiUrl", "/api/v1/sopralluoghi/")
-        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://geosisma.faunalia.it/")
+        self.baseApiUrl = settings.value("/rt_geosisma_offline/baseApiUrl", "http://www200.regione.toscana.it/emergenza/geosisma/")
 
         # create json parametr for the bbox... without using geojson pytion module to avoid dependency
         geojsonbbox = """{"type": "Polygon", "coordinates": [[[%(minx)s, %(miny)s], [%(minx)s, %(maxy)s], [%(maxy)s, %(maxy)s], [%(maxx)s, %(miny)s], [%(minx)s, %(miny)s]]], "crs": {"type": "name", "properties": {"name": "EPSG:%(srid)s"}}}"""
