@@ -122,7 +122,9 @@ class DownloadRequests(DlgWaiting):
         self.message.emit(message, QgsMessageLog.INFO)
         
         request = QNetworkRequest()
-        url = QUrl(self.baseApiUrl + requestApi)
+        url = QUrl(self.baseApiUrl)
+        url.setPath("")
+        url = QUrl( str(url.toEncoded()) + requestApi )
         url.addQueryItem("format", "json")
         request.setUrl(url)
         
