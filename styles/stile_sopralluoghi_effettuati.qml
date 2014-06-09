@@ -174,7 +174,7 @@
     <property key="labeling/fieldName" value=""/>
     <property key="labeling/fontBold" value="true"/>
     <property key="labeling/fontCapitals" value="0"/>
-    <property key="labeling/fontFamily" value="Liberation Mono"/>
+    <property key="labeling/fontFamily" value="DejaVu Sans"/>
     <property key="labeling/fontItalic" value="false"/>
     <property key="labeling/fontLetterSpacing" value="0"/>
     <property key="labeling/fontLimitPixelSize" value="false"/>
