@@ -10,7 +10,7 @@
 name=RE Geosisma Offline
 qgisMinimumVersion=2.0
 description=Plugins per gestire in offline le schede di sopralluogo per Geosisma
-version=version 1.3.12
+version=version 1.3.13
 author=Luigi Pirelli (luipir@gmail.com)
 email=info@faunalia.eu
 
@@ -19,7 +19,9 @@ email=info@faunalia.eu
 # Optional items:
 
 # Uncomment the following line and add your changelog entries:
-changelog=1.3.12
+changelog=1.3.13
+	Fix bug conversione json scheda in dizionario - #515
+	1.3.12
 	Fix font a DejaVu Sans per evitare warning in Windows #493
 	Fix bug nel download delle richieste quando il nome del server contiene path
 	1.3.11
