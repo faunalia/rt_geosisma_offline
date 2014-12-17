@@ -26,6 +26,7 @@ import json # used to dump dicts in strings
 import ast # used to convert string indict because json.loads could fail
 import inspect
 import copy
+import re
 from datetime import date, datetime
 from psycopg2.extensions import adapt
 
@@ -1641,7 +1642,10 @@ class GeosismaWindow(QDockWidget):
         safetyLocationDataDict = GeoArchiveManager.instance().locationDataByBelfiore( nearestCatasto["belfiore"] )[0]
         
         # update safety json with catasto data (foglio and particella)
-        subSafetyDict = ast.literal_eval( self.currentSafety["safety"] )
+        QgsLogger.debug("Safety before sanification: "+self.currentSafety["safety"], 1)
+        sanifiedSafety = re.sub(":[ ]*true", ":True", self.currentSafety["safety"])
+        sanifiedSafety = re.sub(":[ ]*false", ":False", sanifiedSafety)
+        subSafetyDict = ast.literal_eval( sanifiedSafety )
         
         if "s1prov" not in subSafetyDict:
             subSafetyDict["s1prov"] = safetyLocationDataDict["sigla"]
@@ -2140,7 +2144,10 @@ class GeosismaWindow(QDockWidget):
         safetyLocationDataDict = GeoArchiveManager.instance().locationDataByBelfiore( featureDic["belfiore"] )[0]
         
         # update safety json with catasto data (foglio and particella)
-        subSafetyDict = ast.literal_eval( tempSafety["safety"] )
+        QgsLogger.debug("Safety before sanification: "+tempSafety["safety"], 1)
+        sanifiedSafety = re.sub(":[ ]*true", ":True", tempSafety["safety"])
+        sanifiedSafety = re.sub(":[ ]*false", ":False", sanifiedSafety)
+        subSafetyDict = ast.literal_eval( sanifiedSafety )
         
         subSafetyDict["s1prov"] = safetyLocationDataDict["sigla"]
         subSafetyDict["s1com"] = safetyLocationDataDict["toponimo"]
@@ -2233,7 +2240,10 @@ class GeosismaWindow(QDockWidget):
             return
         
         # update safety json with catasto data (foglio and particella)
-        subSafetyDict = ast.literal_eval( safety["safety"] )
+        QgsLogger.debug("Safety before sanification: "+safety["safety"], 1)
+        sanifiedSafety = re.sub(":[ ]*true", ":True", safety["safety"])
+        sanifiedSafety = re.sub(":[ ]*false", ":False", sanifiedSafety)
+        subSafetyDict = ast.literal_eval( sanifiedSafety )
         
         # update safety json with bbox of the current geometry
         # tranform input polygon to GEODBDEFAULT_SRID crs

@@ -161,7 +161,10 @@ class UploadManager(DlgWaiting):
                         self.saved_id = None
                         self.saved_number = None
                         
-                        subSafetyDict = ast.literal_eval( safetyToUpload["safety"] )
+                        QgsLogger.debug("Safety before sanification: "+safetyToUpload["safety"], 1)
+                        sanifiedSafety = re.sub(":[ ]*true", ":True", safetyToUpload["safety"])
+                        sanifiedSafety = re.sub(":[ ]*false", ":False", sanifiedSafety)
+                        subSafetyDict = ast.literal_eval( sanifiedSafety )
                         if "number" in subSafetyDict:
                             subSafetyDict["number"]  = None
                         safetyToUpload["safety"] = json.dumps(subSafetyDict)
